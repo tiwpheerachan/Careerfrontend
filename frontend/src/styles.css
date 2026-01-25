@@ -1,0 +1,196 @@
+/* ✅ Tailwind directives (ต้องผ่าน Tailwind build / PostCSS ถึงจะไม่ขึ้น error ใน editor)
+   ถ้า VSCode ฟ้อง "Unknown at rule @tailwind" ให้ติดตั้ง Tailwind CSS IntelliSense
+   หรือให้แน่ใจว่าไฟล์นี้ถูก build ผ่าน postcss/tailwind แล้ว
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Global base ---------- */
+:root {
+  color-scheme: light;
+  --page-max: 72rem;      /* 1152px (เหมือน max-w-6xl) */
+  --page-max-wide: 92rem; /* 1472px (สำหรับ section ใหญ่ เช่น globe + jobs) */
+  --page-pad: 1rem;       /* 16px */
+  --page-pad-sm: 1.5rem;  /* 24px */
+  --page-pad-lg: 2rem;    /* 32px */
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #ffffff;
+  color: #111827;
+  overflow-x: hidden; /* ✅ กันพวก full-bleed section ล้นแล้วทำให้ layout เพี้ยน */
+}
+
+/* ✅ ทำให้เลเอ้าที่ยืดหยุ่นขึ้น:
+   - รองรับ section ที่ต้องกว้างมาก (โลก + การ์ดงาน)
+   - มี safe gutter กันชนขอบจอ
+*/
+.container-page {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-pad);
+  padding-right: var(--page-pad);
+  max-width: var(--page-max);
+}
+
+@media (min-width: 640px) {
+  .container-page {
+    padding-left: var(--page-pad-sm);
+    padding-right: var(--page-pad-sm);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-page {
+    padding-left: var(--page-pad-lg);
+    padding-right: var(--page-pad-lg);
+  }
+}
+
+/* ✅ Container แบบกว้างพิเศษ ใช้กับ section โลก/สำนักงานของเราเพื่อไม่ให้ชนกัน */
+.container-page-wide {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-pad);
+  padding-right: var(--page-pad);
+  max-width: var(--page-max-wide);
+}
+
+@media (min-width: 640px) {
+  .container-page-wide {
+    padding-left: var(--page-pad-sm);
+    padding-right: var(--page-pad-sm);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-page-wide {
+    padding-left: var(--page-pad-lg);
+    padding-right: var(--page-pad-lg);
+  }
+}
+
+/* ✅ spacing utility สำหรับหน้าที่มี 2 คอลัมน์ใหญ่ (globe + jobs card)
+   - กันซ้อนทับ: บังคับให้ stack บน mobile และเพิ่ม gap บนจอใหญ่
+*/
+.section-air {
+  padding-top: 3.25rem;  /* 52px */
+  padding-bottom: 3.25rem;
+}
+
+@media (min-width: 768px) {
+  .section-air {
+    padding-top: 4rem;   /* 64px */
+    padding-bottom: 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-air {
+    padding-top: 4.5rem; /* 72px */
+    padding-bottom: 4.5rem;
+  }
+}
+
+/* ---------- Reusable component classes ---------- */
+/* ✅ ยังคงใช้ @layer เพื่อให้ Tailwind จัดลำดับให้ถูกต้อง */
+@layer components {
+  /* ปรับให้ container-page ในระบบเดิมยังใช้ได้เหมือนเดิม */
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /* ✅ เพิ่มตัวเลือกใหม่แบบ “ยืดหยุ่นขึ้น” ไม่กระทบของเดิม
+     ใช้แทนใน section ใหญ่ๆ ได้ทันที:
+     - ในโค้ด: เปลี่ยน container-page -> container-page-wide เฉพาะส่วนที่ต้องกว้าง
+  */
+  .container-page-wide {
+    @apply mx-auto w-full max-w-[92rem] px-4 sm:px-6 lg:px-8;
+  }
+
+  /* ✅ เพิ่ม utility สำหรับ section ที่ต้อง “หายใจ” มากขึ้น (โลก + การ์ดงาน)
+     ในโค้ด: ใส่ className="section-air" ใน wrapper ของ section นั้นได้
+  */
+  .section-air {
+    @apply py-14 md:py-16 lg:py-18;
+  }
+
+  .card {
+    @apply rounded-2xl border border-gray-200 bg-white shadow-sm;
+  }
+
+  .card-soft {
+    @apply rounded-2xl bg-white/80 backdrop-blur border border-gray-200 shadow-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition;
+  }
+
+  .btn-primary {
+    @apply btn bg-blue-600 text-white hover:bg-blue-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-gray-900 border border-gray-200 hover:bg-gray-50;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-gray-900 hover:bg-gray-100;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none ring-0 placeholder:text-gray-400 focus:border-blue-600;
+  }
+
+  .label {
+    @apply text-sm font-medium text-gray-800;
+  }
+
+  .muted {
+    @apply text-sm text-gray-500;
+  }
+}
+
+/* ---------- Small utilities ---------- */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* ✅ ช่วยแก้ปัญหา “ทับกัน” จาก element ที่ใช้ absolute เต็มจอ/ล้นจอ */
+  .safe-x {
+    overflow-x: hidden;
+  }
+
+  /* ✅ เพิ่ม padding ด้านล่างสำหรับ section ที่มี content overlay bottom (เช่น offices)
+     ใช้กับ container ที่อยู่เหนือ footer/ขอบล่าง เพื่อกันชน
+  */
+  .safe-bottom {
+    padding-bottom: max(3rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* =========================================================
+   ✅ แก้ปัญหา @tailwind base/components/utilities ใน VSCode
+   ---------------------------------------------------------
+   อาการ: editor ขึ้น "Unknown at rule @tailwind"
+   สาเหตุ: เป็น warning ของตัว linter ใน editor ไม่ใช่ runtime error
+   วิธีแก้หลัก (ทำอย่างใดอย่างหนึ่ง):
+   1) ติดตั้ง Extension: Tailwind CSS IntelliSense
+   2) ให้โปรเจกต์มี postcss.config.cjs + tailwind.config.js และไฟล์นี้ถูก import เข้าจุดเริ่ม (main.tsx/index.tsx)
+   3) ถ้าใช้ Vite: ตรวจว่าเปิด plugin tailwind ใน postcss แล้ว (tailwindcss, autoprefixer)
+   * ไม่ควรลบ @tailwind เพราะจะทำให้ Tailwind ใช้งานไม่ได้จริง
+   ========================================================= */

@@ -1,0 +1,156 @@
+{
+  "brand": "SHD Careers",
+  "nav": {
+    "about": "About",
+    "why": "Why SHD",
+    "jobs": "Jobs",
+    "partners": "Partners"
+  },
+  "common": {
+    "applyNow": "Apply now",
+    "viewDetail": "View detail",
+    "search": "Search jobs",
+    "country": "Country",
+    "department": "Department",
+    "level": "Level",
+    "location": "Location",
+    "all": "All",
+    "back": "Back",
+    "loading": "Loading...",
+    "notFound": "Not found",
+
+    "optional": "optional",
+    "select": "Select...",
+    "preview": "Preview",
+    "remove": "Remove",
+    "add": "Add"
+  },
+  "home": {
+    "headline": "Global Recruitment for SHD",
+    "subhead": "Official careers website. Multi-country, multi-language, fully responsive.",
+    "ctaPrimary": "Find jobs",
+    "ctaSecondary": "Why SHD",
+    "bannerNote": "* Replace banner images in /public/images with the required sizes."
+  },
+  "about": {
+    "title": "About SHD",
+    "p1": "SHD builds world-class teams across countries, with a culture focused on results and growth.",
+    "cards": [
+      {
+        "title": "Vision",
+        "desc": "Raise the bar of operations and services across markets."
+      },
+      {
+        "title": "Mission",
+        "desc": "Grow people, process, and technology sustainably."
+      },
+      {
+        "title": "Footprint",
+        "desc": "Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico"
+      }
+    ]
+  },
+  "why": {
+    "title": "Why SHD",
+    "p1": "We invest in people and long-term growth, with opportunities at a global scale.",
+    "items": [
+      {
+        "title": "Growth",
+        "desc": "Clear career ladders with continuous development."
+      },
+      {
+        "title": "Global team",
+        "desc": "Collaborate with colleagues across countries."
+      },
+      {
+        "title": "Professional standards",
+        "desc": "Transparent, auditable processes and ownership."
+      },
+      {
+        "title": "Benefits",
+        "desc": "Competitive benefits aligned with local needs."
+      }
+    ]
+  },
+  "jobs": {
+    "title": "Open Positions",
+    "openings": "openings",
+    "filters": "Filters",
+    "empty": "No jobs match your filters.",
+    "applyTitle": "Application",
+    "form": {
+      "personal": "Personal information",
+      "resume": "Resume (DOC/DOCX/PDF ≤ 2MB)",
+      "firstName": "First name*",
+      "lastName": "Last name*",
+      "email": "Email*",
+      "phone": "Phone*",
+      "address": "Current address*",
+      "education": "Education (up to 5 entries)",
+      "addEducation": "Add education",
+      "experience": "Experience (up to 20 entries)",
+      "addExperience": "Add experience",
+      "skills": "Skills (up to 8)",
+      "other": "Other information",
+      "visa": "Do you require immigration/visa support now or in the future?*",
+      "availability": "Availability (internship only)",
+      "url": "Website URL (LinkedIn/Github)",
+      "source": "How did you hear about this role?*",
+      "attachments": "Attachments (≤ 50MB)",
+      "agree": "I have read and agree to the Terms of Service and Privacy Policy",
+      "submit": "Submit application",
+      "submitting": "Submitting...",
+      "success": "Application submitted!",
+      "fail": "Submission failed. Please try again.",
+
+      "phoneCode": "Country code",
+      "phoneNumber": "Phone number",
+      "phonePreview": "Preview",
+
+      "currentAddressCountry": "Current Address (Country)",
+      "addressDetail": "Address detail",
+      "addressDetailPlaceholder": "Address detail (optional)",
+      "addressSavedAs": "Saved as",
+
+      "educationLevel": "Education Level",
+      "educationSelectLevel": "Select level...",
+      "educationSchool": "School / Institute",
+      "educationFrom": "From",
+      "educationTo": "To",
+
+      "experienceCompany": "Company",
+      "experienceTitle": "Title",
+      "experienceFrom": "From",
+      "experienceTo": "To",
+
+      "availableStartDate": "Available Start Date",
+      "skillsSelected": "Selected",
+      "skillsSearchPlaceholder": "Search skills...",
+      "skillsAddCustomPlaceholder": "Add custom skill (optional)",
+      "skillsTip": "Tip: choose up to 8 skills to keep it clear for HR.",
+
+      "tipsTitle": "Tips",
+      "tipsResume": "Resume file must be PDF/DOC/DOCX and ≤ 2MB",
+      "tipsAttachments": "Attachments total size ≤ 50MB",
+      "tipsSkills": "Choose up to 8 skills for clarity"
+    }
+  },
+  "partners": {
+    "title": "Partners",
+    "p1": "Our partners help us scale and deliver value across markets.",
+    "list": [
+      {
+        "name": "Partner A",
+        "desc": "Technology & infrastructure"
+      },
+      {
+        "name": "Partner B",
+        "desc": "Logistics & operations"
+      },
+      {
+        "name": "Partner C",
+        "desc": "Marketing & network"
+      }
+    ]
+  }
+}

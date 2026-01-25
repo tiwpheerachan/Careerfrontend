@@ -1,0 +1,156 @@
+{
+  "brand": "SHD 招聘",
+  "nav": {
+    "about": "关于我们",
+    "why": "为什么选择 SHD",
+    "jobs": "职位",
+    "partners": "合作伙伴"
+  },
+  "common": {
+    "applyNow": "立即申请",
+    "viewDetail": "查看详情",
+    "search": "搜索职位",
+    "country": "国家",
+    "department": "部门",
+    "level": "级别",
+    "location": "地点",
+    "all": "全部",
+    "back": "返回",
+    "loading": "加载中...",
+    "notFound": "未找到",
+
+    "optional": "可选",
+    "select": "请选择...",
+    "preview": "预览",
+    "remove": "删除",
+    "add": "添加"
+  },
+  "home": {
+    "headline": "SHD 全球招聘",
+    "subhead": "官方招聘网站，多国家、多语言，移动端/电脑端自适应。",
+    "ctaPrimary": "查看职位",
+    "ctaSecondary": "为什么选择 SHD",
+    "bannerNote": "* 可在 /public/images 替换指定尺寸的 Banner 图片。"
+  },
+  "about": {
+    "title": "关于 SHD",
+    "p1": "SHD 致力于建设国际化团队，以结果与成长为核心文化。",
+    "cards": [
+      {
+        "title": "愿景",
+        "desc": "在各市场持续提升运营与服务标准。"
+      },
+      {
+        "title": "使命",
+        "desc": "长期发展人才、流程与技术。"
+      },
+      {
+        "title": "覆盖国家",
+        "desc": "泰国、中国、印尼、菲律宾、越南、巴西、墨西哥"
+      }
+    ]
+  },
+  "why": {
+    "title": "为什么选择 SHD",
+    "p1": "我们重视人才与长期成长，并提供全球化发展机会。",
+    "items": [
+      {
+        "title": "成长",
+        "desc": "清晰的职业路径与持续培养。"
+      },
+      {
+        "title": "全球团队",
+        "desc": "与多国家同事协作。"
+      },
+      {
+        "title": "专业标准",
+        "desc": "透明、可追溯的流程与责任制。"
+      },
+      {
+        "title": "福利",
+        "desc": "贴合当地需求的福利体系。"
+      }
+    ]
+  },
+  "jobs": {
+    "title": "在招职位",
+    "openings": "个职位开放",
+    "filters": "筛选",
+    "empty": "没有符合筛选条件的职位。",
+    "applyTitle": "申请",
+    "form": {
+      "personal": "个人信息",
+      "resume": "简历 (DOC/DOCX/PDF ≤ 2MB)",
+      "firstName": "名*",
+      "lastName": "姓*",
+      "email": "邮箱*",
+      "phone": "电话*",
+      "address": "现居地址*",
+      "education": "教育经历（最多 5 条）",
+      "addEducation": "添加教育经历",
+      "experience": "工作经历（最多 20 条）",
+      "addExperience": "添加工作经历",
+      "skills": "技能（最多 8 项）",
+      "other": "其他信息",
+      "visa": "是否需要签证/移民支持（现在或未来）？*",
+      "availability": "可入职时间（仅实习）",
+      "url": "个人网站（LinkedIn/Github）",
+      "source": "你通过什么渠道了解到该职位？*",
+      "attachments": "附件（≤ 50MB）",
+      "agree": "我已阅读并同意服务条款与隐私政策",
+      "submit": "提交申请",
+      "submitting": "提交中...",
+      "success": "提交成功！",
+      "fail": "提交失败，请重试。",
+
+      "phoneCode": "国家/地区区号",
+      "phoneNumber": "电话号码",
+      "phonePreview": "预览",
+
+      "currentAddressCountry": "现居国家/地区",
+      "addressDetail": "地址详情",
+      "addressDetailPlaceholder": "地址详情（可选）",
+      "addressSavedAs": "将保存为",
+
+      "educationLevel": "学历",
+      "educationSelectLevel": "请选择学历...",
+      "educationSchool": "学校 / 机构",
+      "educationFrom": "开始时间",
+      "educationTo": "结束时间",
+
+      "experienceCompany": "公司",
+      "experienceTitle": "职位名称",
+      "experienceFrom": "开始时间",
+      "experienceTo": "结束时间",
+
+      "availableStartDate": "可入职日期",
+      "skillsSelected": "已选择",
+      "skillsSearchPlaceholder": "搜索技能...",
+      "skillsAddCustomPlaceholder": "添加自定义技能（可选）",
+      "skillsTip": "建议：最多选择 8 项技能，便于 HR 快速了解。",
+
+      "tipsTitle": "提示",
+      "tipsResume": "简历必须为 PDF/DOC/DOCX，且 ≤ 2MB",
+      "tipsAttachments": "附件总大小 ≤ 50MB",
+      "tipsSkills": "建议最多选择 8 项技能"
+    }
+  },
+  "partners": {
+    "title": "合作伙伴",
+    "p1": "我们的合作伙伴帮助我们在各市场持续扩张与交付价值。",
+    "list": [
+      {
+        "name": "合作伙伴 A",
+        "desc": "技术与基础设施"
+      },
+      {
+        "name": "合作伙伴 B",
+        "desc": "物流与运营"
+      },
+      {
+        "name": "合作伙伴 C",
+        "desc": "市场与网络"
+      }
+    ]
+  }
+}
