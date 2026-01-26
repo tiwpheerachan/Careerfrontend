@@ -347,12 +347,12 @@ app = FastAPI(title=APP_NAME)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS if CORS_ORIGINS else ["*"],
+    allow_origins=CORS_ORIGINS,             # ใช้ list จาก env
+    allow_origin_regex=r"^https://.*\.netlify\.app$",  # ✅ preview deploy
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.on_event("startup")
 async def _startup() -> None:

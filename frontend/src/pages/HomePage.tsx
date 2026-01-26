@@ -813,6 +813,287 @@ export default function HomePage() {
         </div>
       </section>
 
+{/* ===========================
+    OFFICES (ชิดกับ HERO — ไม่มีช่องว่าง)
+=========================== */}
+<section className="relative pt-0 -mt-px">
+  <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
+    <div className="relative overflow-hidden rounded-none">
+      {/* ✅ FIX #1: ลดความสูงกรอบรวมลงอีกนิด (ช่วยตัดพื้นที่โล่งด้านล่าง)
+          ✅ ผล: กลุ่มโลก+การ์ดดู “แน่น” ขึ้นและไม่เหลือพื้นที่ว่างมากเกิน
+      */}
+      <div className="relative min-h-[260px] md:min-h-[240px] lg:min-h-[220px]">
+        {/* bg image */}
+        <img
+          src={office.bgImage}
+          alt={`${office.label} office`}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover",
+            "scale-[1.03] will-change-transform",
+            "animate-[fadeIn_700ms_ease-out]"
+          )}
+        />
+
+        {/* overlays */}
+        <div className="absolute inset-0 bg-[radial-gradient(75%_70%_at_50%_18%,rgba(255,255,255,0.78),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(55%_55%_at_18%_35%,rgba(16,185,129,0.14),transparent_62%)]" />
+        {/* ✅ FIX: แก้ to-white/ ให้ถูกต้อง */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white/0" />
+
+        {/* header */}
+        <div className="relative z-10">
+          <div className="container-page px-4 pt-12 md:pt-14">
+            <div className="mx-auto max-w-[1020px] text-center">
+              <div className="text-xs font-semibold tracking-wide text-emerald-700">Local and global</div>
+              <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                Grow around the world
+              </h2>
+              <p className="mt-2 text-sm text-slate-700">
+                เลือกประเทศ แล้วดูตำแหน่งงานในประเทศนั้น (แสดง 4 ช่องต่อหน้า)
+              </p>
+
+              {/* dropdown row */}
+              <div className="mx-auto mt-6 flex max-w-[720px] flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+                <div className="relative w-full sm:w-[460px]">
+                  <select
+                    className="w-full appearance-none rounded-2xl border border-white/55 bg-white/45 px-4 py-3 pr-10 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-200 focus:ring-4 focus:ring-emerald-100"
+                    value={officeKey}
+                    onChange={(e) => selectOffice(e.target.value)}
+                  >
+                    {OFFICES.map((o) => (
+                      <option key={o.key} value={o.key}>
+                        {o.flagEmoji ? `${o.flagEmoji} ` : ""}
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+                </div>
+
+                <div className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/55 bg-white/45 px-4 py-3 text-sm font-semibold text-slate-900">
+                  <Briefcase className="h-4 w-4 text-slate-800" />
+                  {loadingJobs ? "Loading…" : `${officeJobsCount} openings`}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* mobile chips */}
+        <div className="absolute left-0 right-0 top-4 z-20 px-4 md:hidden">
+          <div
+            className={cn(
+              "flex gap-2 overflow-x-auto",
+              "rounded-3xl border border-white/55 bg-white/35 p-2 backdrop-blur-xl",
+              "shadow-[0_18px_70px_rgba(0,0,0,0.18)]",
+              "animate-[floatIn_800ms_cubic-bezier(.2,.8,.2,1)]"
+            )}
+          >
+            {OFFICES.map((o) => {
+              const active = o.key === officeKey;
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => selectOffice(o.key)}
+                  className={cn(
+                    "shrink-0 rounded-2xl border px-3 py-2 text-xs font-semibold transition",
+                    "active:scale-[0.98]",
+                    active
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_10px_26px_rgba(16,185,129,0.20)]"
+                      : "border-white/55 bg-white/20 text-slate-900 hover:bg-white/35"
+                  )}
+                >
+                  <span className="mr-1">{o.flagEmoji ?? "🏳️"}</span>
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ✅ content (อยู่ใน flow ปกติ -> ไม่ทับ/ขยับได้จริง) */}
+        <div className="relative z-10">
+          <div className="mx-auto w-full max-w-[1760px] px-6 pt-0 pb-4 md:px-10 md:pb-6 lg:px-16">
+            <div className="mt-8 md:mt-9 lg:mt-10">
+              <div className="w-full">
+                <div className="grid items-start gap-10 md:grid-cols-[minmax(0,920px)_minmax(0,520px)] md:gap-14 xl:gap-16">
+                  {/* LEFT: Globe */}
+                  <div className="min-w-0 pt-0 md:pt-1 animate-[rise_700ms_cubic-bezier(.2,.8,.2,1)] flex items-start justify-center">
+                    <div className="w-full px-2 sm:px-4 md:px-5 lg:px-6">
+                      <div className="-translate-y-[6%] md:-translate-y-[8%]">
+                        <Globe3D offices={OFFICES} activeKey={officeKey} onSelect={(k) => selectOffice(k)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RIGHT: jobs card */}
+                  <div
+                    className={cn(
+                      "min-w-0 pt-0 md:pt-2 mt-8 md:mt-10",
+                      "border-0 bg-transparent p-0 backdrop-blur-0 shadow-none",
+                      "shadow-[0_28px_120px_rgba(0,0,0,0.10)]",
+                      "-translate-x-6 lg:-translate-x-10"
+                    )}
+                  >
+                    {/* header badges */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-800">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
+                        <Flag className="h-3.5 w-3.5" />
+                        <span className="mr-1">{office.flagEmoji ?? "🏳️"}</span>
+                        {office.label}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {office.tagline ?? "Local excellence to global scale"}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
+                        <Briefcase className="h-3.5 w-3.5" />
+                        {loadingJobs ? "…" : `${officeJobsCount} openings`}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+                      สำนักงานของเรา
+                    </div>
+                    <div className="mt-1 text-sm text-slate-700">
+                      เลือกประเทศ แล้วสำรวจตำแหน่งงานที่เปิดรับในประเทศนั้น
+                    </div>
+
+                    {/* 4 cards always */}
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {loadingJobs ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="h-[88px] animate-pulse rounded-2xl bg-white/60" />
+                        ))
+                      ) : (
+                        Array.from({ length: 4 }).map((_, i) => {
+                          const j = (officePagedJobs as any[])?.[i];
+
+                          if (!j) {
+                            return (
+                              <div
+                                key={`empty-${officeKey}-${officePage}-${i}`}
+                                className="h-[88px] rounded-2xl border border-white/50 bg-white/20 backdrop-blur"
+                              />
+                            );
+                          }
+
+                          const id = getJobId(j);
+                          const title = getJobTitle(j);
+                          const dept = getJobDept(j);
+                          const lvl = getJobLevel(j);
+                          const href = id ? `/jobs/${id}` : "/jobs";
+                          const stableKey = `${officeKey}-${officePage}-${id || "noid"}-${i}`;
+
+                          return (
+                            <Link
+                              key={stableKey}
+                              to={href}
+                              className={cn(
+                                "group min-w-0 rounded-2xl border border-white/60 bg-white/40 p-4 backdrop-blur-xl",
+                                "transition hover:-translate-y-0.5 hover:bg-white/55",
+                                "hover:shadow-[0_18px_60px_rgba(0,0,0,0.10)]"
+                              )}
+                            >
+                              <div className="flex min-w-0 items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="min-w-0 text-sm font-black text-slate-900 line-clamp-2 break-words">
+                                    {title}
+                                  </div>
+                                  <div className="mt-1 min-w-0 text-xs text-slate-700 line-clamp-1 break-words">
+                                    {dept} • {lvl}
+                                  </div>
+                                </div>
+                                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-900" />
+                              </div>
+                            </Link>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="mt-4 flex items-center justify-between">
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => setOfficePage((p) => Math.max(1, p - 1))}
+                        disabled={officePage <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Prev
+                      </button>
+
+                      <div className="text-xs font-semibold text-slate-800">
+                        Page {officePage} / {officeTotalPages}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => setOfficePage((p) => Math.min(officeTotalPages, p + 1))}
+                        disabled={officePage >= officeTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => goToOfficeJobs(office)}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
+                          "bg-[#cd902e] text-white",
+                          "shadow-[0_18px_60px_rgba(111,87,48,0.35)]",
+                          "transition hover:-translate-y-0.5 hover:bg-[#c39227e2]",
+                          "active:scale-[0.98]"
+                        )}
+                      >
+                        ดูงานทั้งหมดของ {office.label}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+
+                      <Link
+                        to="/jobs"
+                        className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        ไปหน้าตำแหน่งงานทั้งหมด
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-center text-xs text-slate-700"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* keyframes */}
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(1.06); }
+            to   { opacity: 1; transform: scale(1.03); }
+          }
+          @keyframes rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes floatIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    </div>
+  </div>
+</section>
+
 {/* FIND YOUR FIT */}
 <section className="container-page py-16">
   {/* Header */}
@@ -930,301 +1211,6 @@ export default function HomePage() {
     * คลิกการ์ดเพื่อไปหน้า <span className="font-semibold">Jobs</span> พร้อม filter ตามแผนก
   </div>
 </section>
-
-{/* ===========================
-    OFFICES (layout จัดใหม่ให้ห่าง ไม่ติดกัน)
-=========================== */}
-<section className="relative pt-24">
-  <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
-    <div className="relative overflow-hidden rounded-none">
-      {/* ✅ FIX #1: ลดความสูงกรอบรวมลงอีกนิด (ช่วยตัดพื้นที่โล่งด้านล่าง)
-          ✅ ผล: กลุ่มโลก+การ์ดดู “แน่น” ขึ้นและไม่เหลือพื้นที่ว่างมากเกิน
-      */}
-      <div className="relative min-h-[260px] md:min-h-[240px] lg:min-h-[220px]">
-        {/* bg image */}
-        <img
-          src={office.bgImage}
-          alt={`${office.label} office`}
-          className={cn(
-            "absolute inset-0 h-full w-full object-cover",
-            "scale-[1.03] will-change-transform",
-            "animate-[fadeIn_700ms_ease-out]"
-          )}
-        />
-
-        {/* overlays */}
-        <div className="absolute inset-0 bg-[radial-gradient(75%_70%_at_50%_18%,rgba(255,255,255,0.78),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(55%_55%_at_18%_35%,rgba(16,185,129,0.14),transparent_62%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white/" />
-
-        {/* header */}
-        <div className="relative z-10">
-          <div className="container-page px-4 pt-12 md:pt-14">
-            <div className="mx-auto max-w-[1020px] text-center">
-              <div className="text-xs font-semibold tracking-wide text-emerald-700">Local and global</div>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Grow around the world</h2>
-              <p className="mt-2 text-sm text-slate-700">
-                เลือกประเทศ แล้วดูตำแหน่งงานในประเทศนั้น (แสดง 4 ช่องต่อหน้า)
-              </p>
-
-              {/* dropdown row */}
-              <div className="mx-auto mt-6 flex max-w-[720px] flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
-                <div className="relative w-full sm:w-[460px]">
-                  <select
-                    className="w-full appearance-none rounded-2xl border border-white/55 bg-white/45 px-4 py-3 pr-10 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-200 focus:ring-4 focus:ring-emerald-100"
-                    value={officeKey}
-                    onChange={(e) => selectOffice(e.target.value)}
-                  >
-                    {OFFICES.map((o) => (
-                      <option key={o.key} value={o.key}>
-                        {o.flagEmoji ? `${o.flagEmoji} ` : ""}
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
-                </div>
-
-                <div className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/55 bg-white/45 px-4 py-3 text-sm font-semibold text-slate-900">
-                  <Briefcase className="h-4 w-4 text-slate-800" />
-                  {loadingJobs ? "Loading…" : `${officeJobsCount} openings`}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* mobile chips */}
-        <div className="absolute left-0 right-0 top-4 z-20 px-4 md:hidden">
-          <div
-            className={cn(
-              "flex gap-2 overflow-x-auto",
-              "rounded-3xl border border-white/55 bg-white/35 p-2 backdrop-blur-xl",
-              "shadow-[0_18px_70px_rgba(0,0,0,0.18)]",
-              "animate-[floatIn_800ms_cubic-bezier(.2,.8,.2,1)]"
-            )}
-          >
-            {OFFICES.map((o) => {
-              const active = o.key === officeKey;
-              return (
-                <button
-                  key={o.key}
-                  type="button"
-                  onClick={() => selectOffice(o.key)}
-                  className={cn(
-                    "shrink-0 rounded-2xl border px-3 py-2 text-xs font-semibold transition",
-                    "active:scale-[0.98]",
-                    active
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_10px_26px_rgba(16,185,129,0.20)]"
-                      : "border-white/55 bg-white/20 text-slate-900 hover:bg-white/35"
-                  )}
-                >
-                  <span className="mr-1">{o.flagEmoji ?? "🏳️"}</span>
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ✅ content (อยู่ใน flow ปกติ -> ไม่ทับ/ขยับได้จริง) */}
-        <div className="relative z-10">
-          {/* ✅ FIX #2: “จัดก้อนให้อยู่กลางจอ” ตามกรอบแดง
-              - จากเดิม w-full max-w-none (ทำให้ชิดซ้าย)
-              - เปลี่ยนเป็น max-w + mx-auto (ทำให้กึ่งกลางทั้งก้อน)
-              ✅ ผล: กลุ่มโลก+การ์ดจะไปอยู่ “ตรงกลางหน้าจอ” แบบที่คุณวงไว้
-          */}
-          <div className="mx-auto w-full max-w-[1760px] px-6 pt-0 pb-4 md:px-10 md:pb-6 lg:px-16">
-            {/* ✅ FIX #3: ปรับระยะบน content ให้สมดุลกับกรอบที่เตี้ยลง */}
-            <div className="mt-8 md:mt-9 lg:mt-10">
-              <div className="w-full">
-                {/* ✅ FIX #4: grid ให้บาลานซ์ และ “กึ่งกลางทั้งก้อน” ชัดขึ้น
-                    - ยังเป็น 2 คอลัมน์ แต่คุมความกว้างรวมให้พอดี max-w ด้านบน
-                    - gap สมดุล ไม่ให้ก้อนดูเบียด/ชิดขอบ
-                */}
-                <div className="grid items-start gap-10 md:grid-cols-[minmax(0,920px)_minmax(0,520px)] md:gap-14 xl:gap-16">
-                  {/* LEFT: Globe */}
-                  {/* ✅ FIX #5: ขยับโลกขึ้นแบบอ้างอิงขนาดโลก + ให้มี “กรอบหายใจ” ไม่ชนขอบ */}
-                  <div className="min-w-0 pt-0 md:pt-1 animate-[rise_700ms_cubic-bezier(.2,.8,.2,1)] flex items-start justify-center">
-                    <div className="w-full px-2 sm:px-4 md:px-5 lg:px-6">
-                      {/* ✅ FIX #6: ยกโลกขึ้นให้พอดีกับการ์ด (อิงขนาด element โลก)
-                          - ปรับจากเดิมให้ “ขึ้นอีก” นิดเพื่อให้ระดับใกล้การ์ดตามภาพ
-                          ✅ ผล: โลกไม่ตก/ไม่ต่ำกว่า card
-                      */}
-{/* ✅ FIX: ขยับโลกลง */}
-<div className="-translate-y-[6%] md:-translate-y-[8%]">
-  <Globe3D offices={OFFICES} activeKey={officeKey} onSelect={(k) => selectOffice(k)} />
-</div>
-
-                    </div>
-                  </div>
-
-                  {/* RIGHT: jobs card */}
-<div
-  className={cn(
-    "min-w-0 pt-0 md:pt-2 mt-8 md:mt-10",
-    "border-0 bg-transparent p-0 backdrop-blur-0 shadow-none",
-    "shadow-[0_28px_120px_rgba(0,0,0,0.10)]",
-
-    // ✅ ขยับซ้ายให้สมดุล
-    "-translate-x-6 lg:-translate-x-10"
-  )}
->
-                    {/* header badges */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-800">
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
-                        <Flag className="h-3.5 w-3.5" />
-                        <span className="mr-1">{office.flagEmoji ?? "🏳️"}</span>
-                        {office.label}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {office.tagline ?? "Local excellence to global scale"}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
-                        <Briefcase className="h-3.5 w-3.5" />
-                        {loadingJobs ? "…" : `${officeJobsCount} openings`}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">สำนักงานของเรา</div>
-                    <div className="mt-1 text-sm text-slate-700">เลือกประเทศ แล้วสำรวจตำแหน่งงานที่เปิดรับในประเทศนั้น</div>
-
-                    {/* 4 cards always */}
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {loadingJobs ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-[88px] animate-pulse rounded-2xl bg-white/60" />
-                        ))
-                      ) : (
-                        Array.from({ length: 4 }).map((_, i) => {
-                          const j = (officePagedJobs as any[])?.[i];
-
-                          if (!j) {
-                            return (
-                              <div
-                                key={`empty-${officeKey}-${officePage}-${i}`}
-                                className="h-[88px] rounded-2xl border border-white/50 bg-white/20 backdrop-blur"
-                              />
-                            );
-                          }
-
-                          const id = getJobId(j);
-                          const title = getJobTitle(j);
-                          const dept = getJobDept(j);
-                          const lvl = getJobLevel(j);
-                          const href = id ? `/jobs/${id}` : "/jobs";
-                          const stableKey = `${officeKey}-${officePage}-${id || "noid"}-${i}`;
-
-                          return (
-                            <Link
-                              key={stableKey}
-                              to={href}
-                              className={cn(
-                                "group min-w-0 rounded-2xl border border-white/60 bg-white/40 p-4 backdrop-blur-xl",
-                                "transition hover:-translate-y-0.5 hover:bg-white/55",
-                                "hover:shadow-[0_18px_60px_rgba(0,0,0,0.10)]"
-                              )}
-                            >
-                              <div className="flex min-w-0 items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="min-w-0 text-sm font-black text-slate-900 line-clamp-2 break-words">
-                                    {title}
-                                  </div>
-                                  <div className="mt-1 min-w-0 text-xs text-slate-700 line-clamp-1 break-words">
-                                    {dept} • {lvl}
-                                  </div>
-                                </div>
-                                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-900" />
-                              </div>
-                            </Link>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="mt-4 flex items-center justify-between">
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => setOfficePage((p) => Math.max(1, p - 1))}
-                        disabled={officePage <= 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Prev
-                      </button>
-
-                      <div className="text-xs font-semibold text-slate-800">
-                        Page {officePage} / {officeTotalPages}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => setOfficePage((p) => Math.min(officeTotalPages, p + 1))}
-                        disabled={officePage >= officeTotalPages}
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-
-<div className="mt-3 flex flex-wrap gap-3">
-  <button
-    type="button"
-    onClick={() => goToOfficeJobs(office)}
-    className={cn(
-      "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
-      "bg-[#cd902e] text-white",
-      "shadow-[0_18px_60px_rgba(111,87,48,0.35)]",
-      "transition hover:-translate-y-0.5 hover:bg-[#c39227e2]",
-      "active:scale-[0.98]"
-    )}
-  >
-    ดูงานทั้งหมดของ {office.label}
-    <ArrowRight className="h-4 w-4" />
-  </button>
-
-  <Link
-    to="/jobs"
-    className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-  >
-    ไปหน้าตำแหน่งงานทั้งหมด
-  </Link>
-</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 text-center text-xs text-slate-700">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* keyframes */}
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: scale(1.06); }
-            to   { opacity: 1; transform: scale(1.03); }
-          }
-          @keyframes rise {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes floatIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-      </div>
-    </div>
-  </div>
-</section>
-
 
       {/* ✅ UPDATED UI: gallery */}
       <section className="container-page py-14" onMouseEnter={() => setGalleryPaused(true)} onMouseLeave={() => setGalleryPaused(false)}>
