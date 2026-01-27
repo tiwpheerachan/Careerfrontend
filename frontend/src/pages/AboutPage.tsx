@@ -465,7 +465,8 @@ function NetworkMesh({
 
 function AppsWall({
   title = "Apps for anything else",
-  desc = "A living wall of our offices — curated moments across teams, cities, and cultures.",
+  // ✅ shorter (one line)
+  desc = "A living wall of our offices.",
   images,
   bgImage = "/images/offices/ph-bg.jpg",
 }: {
@@ -480,6 +481,21 @@ function AppsWall({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [paused, setPaused] = useState(false);
   const resumeTimer = useRef<number | null>(null);
+
+  // ✅ typewriter (run once) — now types the TITLE (no OUR OFFICES)
+  const [typedTitle, setTypedTitle] = useState(reduced ? title : "");
+  useEffect(() => {
+    if (reduced) return;
+    const full = title || "";
+    setTypedTitle("");
+    let i = 0;
+    const t = window.setInterval(() => {
+      i++;
+      setTypedTitle(full.slice(0, i));
+      if (i >= full.length) window.clearInterval(t);
+    }, 34);
+    return () => window.clearInterval(t);
+  }, [reduced, title]);
 
   const setSpot = (e: React.MouseEvent) => {
     const el = wrapRef.current;
@@ -526,7 +542,10 @@ function AppsWall({
 
   const mkTrack = (key: string, items: Array<{ src: string; alt?: string }>, dir: "l" | "r") => (
     <div className="appsLane relative overflow-hidden">
-      <div className="laneGlow pointer-events-none absolute right-0 top-1/2 -translate-y-1/2" />
+      {/* ✅ stronger white fade on both sides (thicker / darker) */}
+      <div className="laneFade laneFadeL pointer-events-none absolute left-0 top-0 h-full" />
+      <div className="laneFade laneFadeR pointer-events-none absolute right-0 top-0 h-full" />
+
       <div className={cn("appsTrack", dir === "l" ? "appsLeft" : "appsRight")}>
         {[...items, ...items].map((img, idx) => (
           <div key={`${key}-${idx}`} className="appsTile" title={img.alt || "app"}>
@@ -567,19 +586,24 @@ function AppsWall({
 
         <div className="relative grid gap-8 lg:grid-cols-[380px_1fr] lg:items-start">
           <div className="lg:sticky lg:top-24">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 backdrop-blur">
-              <Sparkles className="h-4 w-4" />
-              OUR OFFICES
-            </span>
+            {/* ✅ removed OUR OFFICES completely */}
 
-            <h3 className="appsTitle mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">{title}</h3>
+            {/* ✅ title types here */}
+            <h3 className="appsTitle mt-1 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+              <span className="tType">
+                {typedTitle}
+                {!reduced && typedTitle.length < (title?.length ?? 0) ? <span className="tCaret" aria-hidden="true" /> : null}
+              </span>
+            </h3>
 
-            <p className="appsDesc mt-3 max-w-[60ch] text-sm leading-relaxed text-slate-800">{desc}</p>
+            {/* ✅ one-line description */}
+            <p className="appsDesc mt-2 max-w-[60ch] text-sm leading-relaxed text-slate-800">{desc}</p>
 
             <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-slate-700" />
           </div>
 
-          <div className="space-y-4">
+          {/* ✅ tighter spacing between top row 1 & 2 */}
+          <div className="space-y-3">
             <div className="flex justify-end">
               <div className="w-full max-w-[760px]">{mkTrack("top1", rows.top1, "l")}</div>
             </div>
@@ -600,6 +624,7 @@ function AppsWall({
             position: relative;
             border-radius: 36px;
           }
+
           .appsTitle, .appsDesc{ text-shadow:none; }
 
           .appsSpot{
@@ -610,17 +635,67 @@ function AppsWall({
                 transparent 74%);
           }
 
-          .appsLane{ border-radius:0; padding:0; background:transparent; border:none; backdrop-filter:none; box-shadow:none; }
+          /* ✅ typewriter caret for TITLE */
+          .tType{ display:inline-flex; align-items:center; gap: 8px; }
+          .tCaret{
+            width: 10px;
+            height: 18px;
+            border-radius: 2px;
+            background: rgba(15,23,42,0.70);
+            animation: t-blink 0.9s steps(2, end) infinite;
+          }
+          @keyframes t-blink{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
 
-          .laneGlow{
-            width:160px;
-            height:120px;
-            background: radial-gradient(circle at 20% 50%,
-              rgba(255,255,255,0.22),
-              rgba(255,255,255,0.10) 42%,
-              transparent 75%);
-            filter: blur(10px);
-            opacity: 0.9;
+          .appsLane{
+            border-radius:0;
+            padding:0;
+            background:transparent;
+            border:none;
+            backdrop-filter:none;
+            box-shadow:none;
+          }
+
+          /* ✅ white fade on both sides (each row) — thicker / stronger */
+          .laneFade{
+            width: 140px;
+            height: 100%;
+            z-index: 5;
+            opacity: .98;
+            filter: blur(2.2px);
+          }
+          .laneFadeL{
+            background: linear-gradient(to right,
+              rgba(255,255,255,0.995),
+              rgba(255,255,255,0.84) 18%,
+              rgba(255,255,255,0.46) 52%,
+              rgba(255,255,255,0.00) 100%);
+          }
+          .laneFadeR{
+            background: linear-gradient(to left,
+              rgba(255,255,255,0.995),
+              rgba(255,255,255,0.84) 18%,
+              rgba(255,255,255,0.46) 52%,
+              rgba(255,255,255,0.00) 100%);
+          }
+          @media (max-width: 640px){
+            .laneFade{ width: 96px; filter: blur(2px); }
+          }
+
+          /* ✅ stronger gradient "line" on each lane (like a rail) */
+          .appsLane::after{
+            content:"";
+            position:absolute;
+            left: 14px;
+            right: 14px;
+            bottom: -8px;
+            height: 3px;
+            border-radius: 999px;
+            background: linear-gradient(90deg,
+              rgba(251,191,36,0.40),
+              rgba(16,185,129,0.30),
+              rgba(56,189,248,0.40));
+            opacity: .95;
+            pointer-events:none;
           }
 
           .appsTrack{
@@ -639,6 +714,7 @@ function AppsWall({
           @media (prefers-reduced-motion: reduce){
             .appsTrack{ animation:none !important; transform:none !important; }
             .appsSpot{ display:none; }
+            .tCaret{ display:none; }
           }
           ${reduced ? ".appsTrack{ animation:none !important; transform:none !important; }" : ""}
 
