@@ -12,7 +12,6 @@ import {
   Compass,
   Globe2,
   HeartHandshake,
-  MapPin,
   Rocket,
   Smile,
   Sparkles,
@@ -88,10 +87,12 @@ function useMouseSpotlight() {
   return { ref, onMove };
 }
 
-/** ✅ Section with image background (everything floats above) */
+/** ✅ Section with image/video background (everything floats above) */
 function BgSection({
   id,
   bg,
+  bgVideo,
+  poster,
   className,
   children,
   overlay = "light",
@@ -99,7 +100,9 @@ function BgSection({
   bottomFade = true,
 }: {
   id?: string;
-  bg: string;
+  bg?: string;
+  bgVideo?: string;
+  poster?: string;
   className?: string;
   children: React.ReactNode;
   overlay?: "light" | "dark";
@@ -108,32 +111,47 @@ function BgSection({
 }) {
   return (
     <section id={id} className={cn("relative isolate overflow-hidden", className)}>
-      {/* background image */}
+      {/* background */}
       <div className="absolute inset-0 -z-10">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bg})` }}
-        />
-        {/* soft overlays for readability */}
+        {bgVideo ? (
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={poster}
+          >
+            <source src={bgVideo} type="video/mp4" />
+          </video>
+        ) : (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${bg})` }}
+          />
+        )}
+
+        {/* ✅ NO black cover — keep it clean & airy */}
         {overlay === "light" ? (
           <>
-            <div className="absolute inset-0 bg-white/65" />
-            <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_20%_10%,rgba(251,191,36,0.22),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_75%_80%,rgba(16,185,129,0.18),transparent_58%)]" />
+            <div className="absolute inset-0 bg-white/40" />
+            <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_20%_10%,rgba(251,191,36,0.18),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_75%_80%,rgba(16,185,129,0.14),transparent_58%)]" />
           </>
         ) : (
           <>
-            <div className="absolute inset-0 bg-slate-950/55" />
-            <div className="absolute inset-0 bg-[radial-gradient(1000px_520px_at_20%_15%,rgba(56,189,248,0.18),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(1100px_540px_at_70%_75%,rgba(34,197,94,0.14),transparent_58%)]" />
+            <div className="absolute inset-0 bg-slate-950/35" />
+            <div className="absolute inset-0 bg-[radial-gradient(1000px_520px_at_20%_15%,rgba(56,189,248,0.14),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(1100px_540px_at_70%_75%,rgba(34,197,94,0.12),transparent_58%)]" />
           </>
         )}
 
         {topFade ? (
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/90 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/65 to-transparent" />
         ) : null}
         {bottomFade ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white/90 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/65 to-transparent" />
         ) : null}
       </div>
 
@@ -290,6 +308,161 @@ function Timeline({ items }: { items: Array<{ year: string; title: string; desc:
   );
 }
 
+/** ✅ New: network dots + country labels + fiber lines (NO frame, no map card) */
+function NetworkMesh({
+  title = "Global Network",
+  subtitle = "Connected operations across regions",
+}: {
+  title?: string;
+  subtitle?: string;
+}) {
+  const reduced = usePrefersReducedMotion();
+
+  const points = useMemo(
+    () => [
+      { x: 72, y: 44, name: "China" },
+      { x: 64, y: 56, name: "Thailand" },
+      { x: 58, y: 72, name: "Indonesia" },
+      { x: 80, y: 60, name: "Vietnam" },
+      { x: 86, y: 66, name: "Philippines" },
+      { x: 28, y: 74, name: "Mexico" },
+      { x: 34, y: 86, name: "Brazil" },
+    ],
+    []
+  );
+
+  const links = useMemo(
+    () => [
+      ["China", "Thailand"],
+      ["Thailand", "Vietnam"],
+      ["Vietnam", "Philippines"],
+      ["Thailand", "Indonesia"],
+      ["Mexico", "Brazil"],
+      ["Thailand", "Mexico"],
+    ],
+    []
+  );
+
+  const find = (name: string) => points.find((p) => p.name === name)!;
+
+  return (
+    <div className="relative">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold text-slate-700">{title}</div>
+          <div className="mt-1 text-lg font-black tracking-tight text-slate-950">{subtitle}</div>
+        </div>
+
+        <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-800 ring-1 ring-slate-200/70 backdrop-blur">
+          <span className="h-2 w-2 rounded-full bg-emerald-500/80" />
+          Live links
+        </span>
+      </div>
+
+      <div className="relative mt-4 aspect-[16/10] w-full">
+        <div
+          className="absolute inset-0 opacity-[0.55]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(15,23,42,0.10) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+          }}
+        />
+
+        <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden="true">
+          <defs>
+            <linearGradient id="fiber" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="rgba(15,23,42,0)" />
+              <stop offset="50%" stopColor="rgba(15,23,42,0.22)" />
+              <stop offset="100%" stopColor="rgba(15,23,42,0)" />
+            </linearGradient>
+
+            <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="0.7" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <g fill="none" stroke="url(#fiber)" strokeWidth="0.6" strokeLinecap="round">
+            {links.map(([a, b], i) => {
+              const A = find(a);
+              const B = find(b);
+              const mx = (A.x + B.x) / 2;
+              const my = (A.y + B.y) / 2;
+              const cx = mx + (A.y < B.y ? 6 : -6);
+              const cy = my + (A.x < B.x ? -4 : 4);
+              return (
+                <path
+                  key={i}
+                  className="nmDash"
+                  d={`M ${A.x} ${A.y} Q ${cx} ${cy} ${B.x} ${B.y}`}
+                  opacity="0.95"
+                />
+              );
+            })}
+          </g>
+
+          <g fontFamily="ui-sans-serif, system-ui">
+            {points.map((p) => (
+              <g key={p.name} className="nmNode" style={{ transformOrigin: `${p.x}px ${p.y}px` }}>
+                <circle cx={p.x} cy={p.y} r="2.2" fill="rgba(16,185,129,0.16)" />
+                <circle cx={p.x} cy={p.y} r="1.05" fill="rgba(15,23,42,0.90)" filter="url(#softGlow)" />
+                <circle cx={p.x} cy={p.y} r="0.55" fill="rgba(255,255,255,0.95)" />
+                <text
+                  x={p.x + 2.8}
+                  y={p.y - 1.8}
+                  fontSize="3.2"
+                  fontWeight="800"
+                  fill="rgba(15,23,42,0.88)"
+                >
+                  {p.name}
+                </text>
+              </g>
+            ))}
+          </g>
+        </svg>
+
+        <style>{`
+          .nmDash{
+            stroke-dasharray: 2.2 2.6;
+            ${reduced ? "" : "animation: nm-dash 3.2s linear infinite;"}
+          }
+          @keyframes nm-dash{
+            to { stroke-dashoffset: -18; }
+          }
+          .nmNode{
+            ${reduced ? "" : "animation: nm-pulse 2.6s ease-in-out infinite;"}
+            opacity: .9;
+          }
+          .nmNode:nth-child(2){ animation-delay: .2s; }
+          .nmNode:nth-child(3){ animation-delay: .45s; }
+          .nmNode:nth-child(4){ animation-delay: .75s; }
+          .nmNode:nth-child(5){ animation-delay: 1.05s; }
+          .nmNode:nth-child(6){ animation-delay: 1.25s; }
+          .nmNode:nth-child(7){ animation-delay: 1.5s; }
+
+          @keyframes nm-pulse{
+            0%,100% { opacity: .72; }
+            50% { opacity: 1; }
+          }
+        `}</style>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-700">
+        <span className="rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-200/70 backdrop-blur">
+          China • Thailand • Indonesia • Vietnam • Philippines • Mexico • Brazil
+        </span>
+        <span className="rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-200/70 backdrop-blur">
+          Fiber network collaboration
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function AppsWall({
   title = "Apps for anything else",
   desc = "A living wall of our offices — curated moments across teams, cities, and cultures.",
@@ -353,7 +526,6 @@ function AppsWall({
 
   const mkTrack = (key: string, items: Array<{ src: string; alt?: string }>, dir: "l" | "r") => (
     <div className="appsLane relative overflow-hidden">
-      {/* ✅ end-of-row “fuzzy glow” (kept) */}
       <div className="laneGlow pointer-events-none absolute right-0 top-1/2 -translate-y-1/2" />
       <div className={cn("appsTrack", dir === "l" ? "appsLeft" : "appsRight")}>
         {[...items, ...items].map((img, idx) => (
@@ -373,55 +545,40 @@ function AppsWall({
 
   return (
     <section className="relative isolate overflow-hidden">
-      {/* ✅ background image (PURE: no dark overlays) */}
       <div className="absolute inset-0 -z-10">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bgImage})` }}
-        />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${bgImage})` }} />
       </div>
 
       <div
         ref={wrapRef}
-        className={cn(
-          "appsWrap mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12",
-          paused && "paused"
-        )}
+        className={cn("appsWrap mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12", paused && "paused")}
         onMouseEnter={() => pauseNow()}
         onMouseMove={(e) => {
-          pauseNow(); // ✅ move mouse = stop
-          setSpot(e); // ✅ spotlight follow
+          pauseNow();
+          setSpot(e);
         }}
         onMouseLeave={() => resumeLater(260)}
         onWheel={() => {
-          pauseNow(); // ✅ scroll wheel = stop briefly
+          pauseNow();
           resumeLater(520);
         }}
       >
-        {/* ✅ spotlight layer follows mouse (kept) */}
         <div className="appsSpot pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 md:opacity-100" />
 
-        {/* top area */}
         <div className="relative grid gap-8 lg:grid-cols-[380px_1fr] lg:items-start">
-          {/* left heading */}
           <div className="lg:sticky lg:top-24">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 backdrop-blur">
               <Sparkles className="h-4 w-4" />
               OUR OFFICES
             </span>
 
-<h3 className="appsTitle mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-  {title}
-</h3>
+            <h3 className="appsTitle mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">{title}</h3>
 
-<p className="appsDesc mt-3 max-w-[60ch] text-sm leading-relaxed text-slate-800">
-  {desc}
-</p>
+            <p className="appsDesc mt-3 max-w-[60ch] text-sm leading-relaxed text-slate-800">{desc}</p>
 
-<div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-slate-700" />
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-slate-700" />
           </div>
 
-          {/* right: 2 rows of 10 tiles */}
           <div className="space-y-4">
             <div className="flex justify-end">
               <div className="w-full max-w-[760px]">{mkTrack("top1", rows.top1, "l")}</div>
@@ -432,7 +589,6 @@ function AppsWall({
           </div>
         </div>
 
-        {/* ✅ equal row spacing + closer */}
         <div className="relative mt-10 space-y-4">
           {mkTrack("b1", rows.b1, "l")}
           {mkTrack("b2", rows.b2, "r")}
@@ -444,11 +600,8 @@ function AppsWall({
             position: relative;
             border-radius: 36px;
           }
-.appsTitle, .appsDesc{
-  text-shadow: none;
-}
+          .appsTitle, .appsDesc{ text-shadow:none; }
 
-          /* ✅ spotlight that follows mouse (kept) */
           .appsSpot{
             background:
               radial-gradient(560px 420px at var(--mx,50%) var(--my,40%),
@@ -457,20 +610,11 @@ function AppsWall({
                 transparent 74%);
           }
 
-          /* ✅ ROW: remove lane frames entirely */
-          .appsLane{
-            border-radius: 0;
-            padding: 0;
-            background: transparent;
-            border: none;
-            backdrop-filter: none;
-            box-shadow: none;
-          }
+          .appsLane{ border-radius:0; padding:0; background:transparent; border:none; backdrop-filter:none; box-shadow:none; }
 
-          /* ✅ “fuzzy” glow at the end of each row (kept) */
           .laneGlow{
-            width: 160px;
-            height: 120px;
+            width:160px;
+            height:120px;
             background: radial-gradient(circle at 20% 50%,
               rgba(255,255,255,0.22),
               rgba(255,255,255,0.10) 42%,
@@ -484,7 +628,7 @@ function AppsWall({
             gap: 12px;
             width:max-content;
             will-change: transform;
-            padding: 0; /* ✅ no inner padding (no frame look) */
+            padding: 0;
             animation-duration: 85s;
             animation-timing-function: linear;
             animation-iteration-count: infinite;
@@ -493,24 +637,16 @@ function AppsWall({
           .appsRight{ animation-name: apps-marquee-right; }
 
           @media (prefers-reduced-motion: reduce){
-            .appsTrack{ animation: none !important; transform: none !important; }
+            .appsTrack{ animation:none !important; transform:none !important; }
             .appsSpot{ display:none; }
           }
           ${reduced ? ".appsTrack{ animation:none !important; transform:none !important; }" : ""}
 
-          /* ✅ pause when mouse moves/enters/wheels */
           .appsWrap.paused .appsTrack{ animation-play-state: paused; }
 
-          @keyframes apps-marquee-left{
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          @keyframes apps-marquee-right{
-            0% { transform: translateX(-50%); }
-            100% { transform: translateX(0); }
-          }
+          @keyframes apps-marquee-left{ 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
+          @keyframes apps-marquee-right{ 0%{transform:translateX(-50%);} 100%{transform:translateX(0);} }
 
-          /* ✅ TILE: no border/no background frame — just image */
           .appsTile{
             position: relative;
             overflow:hidden;
@@ -528,7 +664,6 @@ function AppsWall({
             .appsTile{ height: 56px; width: 56px; border-radius: 18px; }
           }
 
-          /* ✅ keep “shine + lift” feel without frame */
           .appsTile::after{
             content:"";
             position:absolute;
@@ -564,25 +699,9 @@ export default function AboutPage() {
     []
   );
 
-  /**
-   * ✅ Images
-   * Put your files here:
-   * - frontend/public/images/about/hero.jpg
-   * - frontend/public/images/about/apps.jpg
-   * - frontend/public/images/about/story.jpg
-   * - frontend/public/images/about/mission.jpg
-   * - frontend/public/images/about/culture.jpg
-   * - frontend/public/images/about/journey.jpg
-   * - frontend/public/images/about/awards.jpg
-   *
-   * Office tiles:
-   * - frontend/public/images/offices/f1.png ... f100.png (or any count)
-   */
   const officeWallImages = useMemo(() => {
     const many: Array<{ src: string; alt?: string }> = [];
     for (let i = 1; i <= 120; i++) many.push({ src: `/images/offices/f${i}.png`, alt: `Office ${i}` });
-
-    // keep some extras (optional)
     many.push(
       { src: "/images/offices/th-bg.jpg", alt: "Thailand" },
       { src: "/images/offices/th-4bg.jpg", alt: "Thailand office" },
@@ -591,7 +710,6 @@ export default function AboutPage() {
       { src: "/images/offices/cn-bg.jpg", alt: "China" },
       { src: "/images/offices/id-bg.jpg", alt: "Indonesia" }
     );
-
     return many;
   }, []);
 
@@ -705,28 +823,26 @@ export default function AboutPage() {
       </Helmet>
 
       <div className="min-h-screen bg-white text-slate-900">
-        {/* HERO (bg image) */}
+        {/* HERO (✅ video bg + NO black cover + ✅ replace map with network dots) */}
         <BgSection
-          bg="/images/about/hero.jpg"
+          bgVideo="/videos/about/hero.mp4"
+          poster="/images/about/hero.jpg"
           className="pb-4"
           overlay="light"
         >
-          <section
-            ref={(n) => (hero.ref.current = n)}
-            onMouseMove={hero.onMove}
-            className={cn("relative")}
-          >
+          <section ref={(n) => (hero.ref.current = n)} onMouseMove={hero.onMove} className={cn("relative")}>
             {/* spotlight */}
             <div
               className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 md:opacity-100"
               style={{
                 background:
-                  "radial-gradient(520px 360px at var(--mx, 50%) var(--my, 30%), rgba(15,23,42,0.06), rgba(15,23,42,0.02) 45%, transparent 72%)",
+                  "radial-gradient(520px 360px at var(--mx, 50%) var(--my, 30%), rgba(15,23,42,0.10), rgba(15,23,42,0.05) 45%, transparent 72%)",
               }}
             />
 
             <div className="relative mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 pt-14 pb-8 sm:pt-16 sm:pb-10">
               <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+                {/* LEFT */}
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Pill icon={<Sparkles className="h-4 w-4" />} tone="brand">
@@ -738,12 +854,12 @@ export default function AboutPage() {
                     </Pill>
                   </div>
 
-                  <h1 className="mt-5 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                  <h1 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl">
                     SHD Technology
-                    <span className="block text-slate-700">จากเซินเจิ้น สู่การเติบโตในอาเซียน</span>
+                    <span className="block text-white/80">จากเซินเจิ้น สู่การเติบโตในอาเซียน</span>
                   </h1>
 
-                  <p className="mt-4 max-w-[78ch] text-base leading-relaxed text-slate-700 sm:text-lg">
+                  <p className="mt-4 max-w-[78ch] text-base leading-relaxed text-white/80 sm:text-lg">
                     เราช่วยแบรนด์อิเล็กทรอนิกส์ผู้บริโภค “ปรับตัวให้เข้ากับท้องถิ่น” และเติบโตได้จริง
                     ตั้งแต่เริ่มต้นจากศูนย์ (0→1) ไปจนถึงการขยายขนาดธุรกิจ (1→100)
                   </p>
@@ -753,8 +869,8 @@ export default function AboutPage() {
                       to="/jobs"
                       className={cn(
                         "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                        "bg-slate-950 text-white shadow-[0_18px_70px_rgba(15,23,42,0.18)]",
-                        "transition hover:-translate-y-0.5 hover:shadow-[0_28px_110px_rgba(15,23,42,0.22)] active:scale-[0.98]"
+                        "bg-white text-slate-950 shadow-[0_18px_70px_rgba(0,0,0,0.30)]",
+                        "transition hover:-translate-y-0.5 hover:shadow-[0_28px_110px_rgba(0,0,0,0.34)] active:scale-[0.98]"
                       )}
                     >
                       ดูตำแหน่งงานทั้งหมด <ArrowRight className="h-4 w-4" />
@@ -765,7 +881,7 @@ export default function AboutPage() {
                       onClick={() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" })}
                       className={cn(
                         "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                        "border border-slate-200 bg-white/80 text-slate-800 shadow-sm backdrop-blur",
+                        "border border-white/18 bg-white/10 text-white shadow-sm backdrop-blur",
                         "transition hover:-translate-y-0.5 active:scale-[0.98]"
                       )}
                     >
@@ -779,69 +895,25 @@ export default function AboutPage() {
                     <StatCard label="KA channels" value={`${kaStores}+`} suffix="stores" icon={<Users className="h-4 w-4" />} />
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-3 py-1.5 ring-1 ring-slate-200 backdrop-blur">
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/75">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 ring-1 ring-white/14 backdrop-blur">
                       <Warehouse className="h-3.5 w-3.5" />
                       Warehousing network
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-3 py-1.5 ring-1 ring-slate-200 backdrop-blur">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 ring-1 ring-white/14 backdrop-blur">
                       <Truck className="h-3.5 w-3.5" />
                       Local logistics
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-3 py-1.5 ring-1 ring-slate-200 backdrop-blur">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 ring-1 ring-white/14 backdrop-blur">
                       <HeartHandshake className="h-3.5 w-3.5" />
                       After-sales service
                     </span>
                   </div>
                 </div>
 
+                {/* RIGHT: ✅ remove the big map card; use free network dots + labels */}
                 <div className="relative">
-                  <Card className="p-6">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-black text-slate-950">Authorized distributor</div>
-                        <div className="mt-1 text-sm text-slate-700">(Authorized distributor of the following trademarks)</div>
-                      </div>
-                      <span className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-3 py-1.5 text-xs font-black text-white">
-                        <Sparkles className="h-4 w-4" />
-                        Official
-                      </span>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {authorizedBrands.map((b) => (
-                        <span
-                          key={b}
-                          className="rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-black text-slate-900 shadow-sm backdrop-blur"
-                        >
-                          {b}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="mt-6 h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
-                        <div className="text-xs font-semibold text-slate-600">Headquarters</div>
-                        <div className="mt-1 flex items-center gap-2 text-sm font-black text-slate-950">
-                          <MapPin className="h-4 w-4 text-slate-700" />
-                          Shenzhen • Thailand hub
-                        </div>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
-                        <div className="text-xs font-semibold text-slate-600">Focus</div>
-                        <div className="mt-1 text-sm font-black text-slate-950">ASEAN Market Expansion</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-4 backdrop-blur">
-                      <div className="text-xs font-semibold text-emerald-900">Quick summary</div>
-                      <div className="mt-1 text-sm leading-relaxed text-emerald-900/90">
-                        เราช่วยแบรนด์ “Localize ให้ถูก” + “ทำให้ขายได้จริง” ด้วยระบบครบวงจรตั้งแต่ช่องทางจนถึงการดำเนินการ
-                      </div>
-                    </div>
-                  </Card>
+                  <NetworkMesh />
                 </div>
               </div>
             </div>
@@ -865,7 +937,10 @@ export default function AboutPage() {
 
             <div className="mt-8 grid gap-4 lg:grid-cols-3">
               {storyBlocks.map((b) => (
-                <div key={b.title} className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur">
+                <div
+                  key={b.title}
+                  className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur"
+                >
                   <div className="text-sm font-black text-slate-950">{b.title}</div>
                   <p className="mt-2 text-sm leading-relaxed text-slate-700">{b.body}</p>
                 </div>
@@ -933,7 +1008,10 @@ export default function AboutPage() {
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {whoWeAre.map((x) => (
-                <div key={x.title} className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur">
+                <div
+                  key={x.title}
+                  className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur"
+                >
                   <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 ring-1 ring-slate-200 backdrop-blur">
                       {x.icon}
@@ -989,11 +1067,16 @@ export default function AboutPage() {
 
             <div className="mt-8 grid gap-3 lg:grid-cols-2">
               {awards.map((a, i) => (
-                <div key={`${a.year}-${i}`} className="rounded-3xl border border-slate-200/80 bg-white/80 px-6 py-5 shadow-sm backdrop-blur">
+                <div
+                  key={`${a.year}-${i}`}
+                  className="rounded-3xl border border-slate-200/80 bg-white/80 px-6 py-5 shadow-sm backdrop-blur"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">{a.year}</span>
+                        <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                          {a.year}
+                        </span>
                         <div className="text-sm font-black text-slate-950">{a.title}</div>
                       </div>
                       <div className="mt-2 text-sm text-slate-700">{a.org}</div>

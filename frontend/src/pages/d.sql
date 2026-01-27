@@ -1,1333 +1,1295 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// frontend/src/pages/AboutPage.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  Briefcase,
-  Globe2,
-  ShieldCheck,
-  Sparkles,
-  ChevronLeft,
+  Award,
+  Building2,
+  CheckCircle2,
   ChevronRight,
+  Compass,
+  Globe2,
+  HeartHandshake,
   MapPin,
+  Rocket,
+  Smile,
+  Sparkles,
+  Target,
+  Truck,
   Users,
-  Flag,
-  ChevronDown,
+  Warehouse,
 } from "lucide-react";
-import { Helmet } from "react-helmet-async";
-
-import { listJobs } from "@/lib/api";
-import type { Job, Language } from "@/lib/types";
-
-/** ✅ 3D Globe deps */
-import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Html, useTexture } from "@react-three/drei";
 
 function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
 }
 
-function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const set = () => setReduced(!!mq.matches);
+    set();
+    mq.addEventListener?.("change", set);
+    return () => mq.removeEventListener?.("change", set);
+  }, []);
+  return reduced;
+}
+
+/** count animation: 0 → target */
+function useCountTo(target: number, opts?: { ms?: number; enabled?: boolean }) {
+  const { ms = 820, enabled = true } = opts ?? {};
+  const reduced = usePrefersReducedMotion();
+  const [v, setV] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (reduced) {
+      setV(target);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const from = 0;
+    const to = target;
+
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / ms);
+      const e = 1 - Math.pow(1 - p, 3); // ease-out
+      const next = Math.max(from, Math.min(to, Math.round(from + (to - from) * e)));
+      setV(next);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms, enabled, reduced]);
+
+  return v;
+}
+
+/** mouse spotlight (light mode) */
+function useMouseSpotlight() {
+  const ref = useRef<HTMLElement | null>(null);
+
+  const onMove = (e: React.MouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    el.style.setProperty("--mx", `${x}%`);
+    el.style.setProperty("--my", `${y}%`);
+  };
+
+  return { ref, onMove };
+}
+
+/** ✅ Section with image background (everything floats above) */
+function BgSection({
+  id,
+  bg,
+  className,
+  children,
+  overlay = "light",
+  topFade = true,
+  bottomFade = true,
+}: {
+  id?: string;
+  bg: string;
+  className?: string;
+  children: React.ReactNode;
+  overlay?: "light" | "dark";
+  topFade?: boolean;
+  bottomFade?: boolean;
+}) {
   return (
-    <div className="card p-6">
-      <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">{icon}</div>
-        <div>
-          <div className="text-sm font-black text-slate-900">{title}</div>
-          <div className="mt-1 text-sm text-slate-600">{desc}</div>
-        </div>
+    <section id={id} className={cn("relative isolate overflow-hidden", className)}>
+      {/* background image */}
+      <div className="absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${bg})` }}
+        />
+        {/* soft overlays for readability */}
+        {overlay === "light" ? (
+          <>
+            <div className="absolute inset-0 bg-white/65" />
+            <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_20%_10%,rgba(251,191,36,0.22),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_75%_80%,rgba(16,185,129,0.18),transparent_58%)]" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-slate-950/55" />
+            <div className="absolute inset-0 bg-[radial-gradient(1000px_520px_at_20%_15%,rgba(56,189,248,0.18),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(1100px_540px_at_70%_75%,rgba(34,197,94,0.14),transparent_58%)]" />
+          </>
+        )}
+
+        {topFade ? (
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/90 to-transparent" />
+        ) : null}
+        {bottomFade ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white/90 to-transparent" />
+        ) : null}
       </div>
+
+      {children}
+    </section>
+  );
+}
+
+function Pill({
+  icon,
+  children,
+  tone = "neutral",
+}: {
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  tone?: "neutral" | "brand" | "good";
+}) {
+  const toneCls =
+    tone === "brand"
+      ? "border-amber-200 bg-amber-50/90 text-amber-900"
+      : tone === "good"
+      ? "border-emerald-200 bg-emerald-50/90 text-emerald-900"
+      : "border-slate-200 bg-white/85 text-slate-700";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur",
+        toneCls
+      )}
+    >
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+function SectionHeader({
+  kicker,
+  title,
+  desc,
+  icon,
+  align = "left",
+}: {
+  kicker: string;
+  title: string;
+  desc?: string;
+  icon?: React.ReactNode;
+  align?: "left" | "center";
+}) {
+  return (
+    <div className={cn("flex flex-col gap-3", align === "center" ? "text-center items-center" : "")}>
+      <div className={cn("inline-flex", align === "center" ? "justify-center" : "")}>
+        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur">
+          {icon}
+          {kicker}
+        </span>
+      </div>
+
+      <h2 className={cn("text-2xl font-black tracking-tight text-slate-950 sm:text-3xl")}>{title}</h2>
+      {desc ? <p className="max-w-[82ch] text-sm leading-relaxed text-slate-700">{desc}</p> : null}
     </div>
   );
 }
 
-/** ---------- Smart field getters (รองรับหลาย schema) ---------- */
-function getJobId(j: any) {
-  return String(j?.job_id ?? j?.id ?? j?.jobId ?? j?.jobID ?? "");
-}
-function getJobTitle(j: any) {
-  return String(j?.title ?? j?.job_title ?? j?.name ?? j?.position ?? "Untitled");
-}
-function getJobDept(j: any) {
-  return String(j?.department ?? j?.dept ?? j?.team ?? j?.function ?? "Other");
-}
-function getJobLevel(j: any) {
-  return String(j?.level ?? j?.seniority ?? j?.job_level ?? j?.grade ?? "ALL");
-}
-function getJobCountry(j: any) {
-  const v =
-    j?.country ??
-    j?.country_code ??
-    j?.countryCode ??
-    j?.location_country ??
-    j?.locationCountry ??
-    j?.region ??
-    j?.office_country ??
-    "";
-  return String(v || "ALL");
+function Card({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/78 backdrop-blur",
+        "shadow-[0_18px_70px_rgba(15,23,42,0.10)]",
+        className
+      )}
+    >
+      <div className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-amber-100/55 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-28 -right-24 h-72 w-72 rounded-full bg-emerald-100/55 blur-3xl" />
+      <div className="relative">{children}</div>
+    </div>
+  );
 }
 
-/** ---------- Office config ---------- */
-type Office = {
-  key: string;
+function StatCard({
+  label,
+  value,
+  suffix,
+  icon,
+}: {
   label: string;
-  countryValueMatch: string[];
-  flagEmoji?: string;
-  bgImage: string;
-  portraitImage: string; // (คงไว้ตามเดิม ถึงแม้เราจะไม่ใช้แล้ว)
-  tagline?: string;
-
-  /** ✅ สำหรับ Globe pin */
-  lat: number;
-  lng: number;
-};
-
-const OFFICES: Office[] = [
-  {
-    key: "TH",
-    label: "Thailand",
-    countryValueMatch: ["TH", "Thailand", "ไทย", "Bangkok"],
-    flagEmoji: "🇹🇭",
-    bgImage: "/images/offices/th-bg.jpg",
-    portraitImage: "/images/offices/th-portrait.jpg",
-    tagline: "Bangkok • Local excellence to global scale",
-    lat: 13.7563,
-    lng: 100.5018,
-  },
-  {
-    key: "CN",
-    label: "China",
-    countryValueMatch: ["CN", "China", "จีน"],
-    flagEmoji: "🇨🇳",
-    bgImage: "/images/offices/cn-bg.jpg",
-    portraitImage: "/images/offices/cn-portrait.jpg",
-    tagline: "Innovation hub • Supply chain & product",
-    lat: 31.2304,
-    lng: 121.4737,
-  },
-  {
-    key: "ID",
-    label: "Indonesia",
-    countryValueMatch: ["ID", "Indonesia", "อินโดนีเซีย"],
-    flagEmoji: "🇮🇩",
-    bgImage: "/images/offices/id-bg.jpg",
-    portraitImage: "/images/offices/id-portrait.jpg",
-    tagline: "SEA growth • Marketplace acceleration",
-    lat: -6.2088,
-    lng: 106.8456,
-  },
-  {
-    key: "PH",
-    label: "Philippines",
-    countryValueMatch: ["PH", "Philippines", "ฟิลิปปินส์"],
-    flagEmoji: "🇵🇭",
-    bgImage: "/images/offices/ph-bg.jpg",
-    portraitImage: "/images/offices/ph-portrait.jpg",
-    tagline: "Operations • Customer experience",
-    lat: 14.5995,
-    lng: 120.9842,
-  },
-  {
-    key: "VN",
-    label: "Vietnam",
-    countryValueMatch: ["VN", "Vietnam", "เวียดนาม"],
-    flagEmoji: "🇻🇳",
-    bgImage: "/images/offices/vn-bg.jpg",
-    portraitImage: "/images/offices/vn-portrait.jpg",
-    tagline: "Regional team • Logistics & growth",
-    lat: 21.0278,
-    lng: 105.8342,
-  },
-  {
-    key: "BR",
-    label: "Brazil",
-    countryValueMatch: ["BR", "Brazil", "บราซิล"],
-    flagEmoji: "🇧🇷",
-    bgImage: "/images/offices/br-bg.jpg",
-    portraitImage: "/images/offices/br-portrait.jpg",
-    tagline: "LATAM • Go-to-market & distribution",
-    lat: -23.5505,
-    lng: -46.6333,
-  },
-  {
-    key: "MX",
-    label: "Mexico",
-    countryValueMatch: ["MX", "Mexico", "เม็กซิโก"],
-    flagEmoji: "🇲🇽",
-    bgImage: "/images/offices/mx-bg.jpg",
-    portraitImage: "/images/offices/mx-portrait.jpg",
-    tagline: "LATAM expansion • Partnerships",
-    lat: 19.4326,
-    lng: -99.1332,
-  },
-];
-
-/** ---------- Horizontal 16:8 gallery images (17 boxes) ---------- */
-const GALLERY_16x8: string[] = Array.from({ length: 17 }).map((_, i) => `/images/gallery/g${i + 1}.jpg`);
-
-/** =========================================================
- *  ✅ 3D Globe (day style)
- * ========================================================= */
-
-function latLngToVec3(lat: number, lng: number, radius: number) {
-  const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lng + 180) * (Math.PI / 180);
-  const x = -radius * Math.sin(phi) * Math.cos(theta);
-  const z = radius * Math.sin(phi) * Math.sin(theta);
-  const y = radius * Math.cos(phi);
-  return new THREE.Vector3(x, y, z);
-}
-
-function clamp(n: number, a: number, b: number) {
-  return Math.max(a, Math.min(b, n));
-}
-
-/** ✅ ErrorBoundary กันกรณี texture path ผิด / loader error แล้วหน้าขาว */
-class R3FErrorBoundary extends React.Component<
-  { fallback?: React.ReactNode; children?: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { fallback?: React.ReactNode; children?: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(err: any) {
-    console.error("Globe render error:", err);
-  }
-
-  render() {
-    if (this.state.hasError) return this.props.fallback ?? null;
-    return this.props.children ?? null;
-  }
-}
-
-function GlobeFallbackCard() {
+  value: React.ReactNode;
+  suffix?: string;
+  icon?: React.ReactNode;
+}) {
   return (
-    <div className="flex h-full w-full items-center justify-center">
-      <div className="rounded-2xl border border-white/35 bg-black/35 px-4 py-3 text-xs font-semibold text-white backdrop-blur">
-        Loading globe…
-        <div className="mt-1 text-[11px] font-medium text-white/70">
-          Check: /public/images/offices/globe/earth_day.jpg
+    <div className="rounded-3xl border border-slate-200/80 bg-white/80 px-5 py-4 shadow-sm backdrop-blur">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-semibold text-slate-600">{label}</div>
+        {icon ? <div className="text-slate-700">{icon}</div> : null}
+      </div>
+      <div className="mt-2 flex items-baseline gap-2">
+        <div className="text-3xl font-black tracking-tight text-slate-950">{value}</div>
+        {suffix ? <div className="text-sm font-semibold text-slate-500">{suffix}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <div className="group rounded-3xl border border-slate-200/80 bg-white/80 px-6 py-6 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_18px_70px_rgba(15,23,42,0.12)]">
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 ring-1 ring-slate-200">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-black text-slate-950">{title}</div>
+          <div className="mt-1 text-sm leading-relaxed text-slate-700">{desc}</div>
         </div>
       </div>
     </div>
   );
 }
 
-/** ✅ Pin component: glow + pulse ring (active) */
-function GlobePin({
-  o,
-  active,
-  onSelect,
-  radius,
-}: {
-  o: Office;
-  active: boolean;
-  onSelect: (k: string) => void;
-  radius: number;
-}) {
-  const pos = useMemo(() => latLngToVec3(o.lat, o.lng, radius * 1.02), [o.lat, o.lng, radius]);
-  const ringRef = useRef<THREE.Mesh>(null);
-  const ringMatRef = useRef<THREE.MeshBasicMaterial>(null);
-  const headRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (ringRef.current && ringMatRef.current) {
-      if (!active) {
-        ringRef.current.scale.setScalar(0.0001);
-        ringMatRef.current.opacity = 0;
-      } else {
-        const p = (Math.sin(t * 3.2) + 1) * 0.5; // 0..1
-        const s = 1.0 + p * 0.9;
-        ringRef.current.scale.setScalar(s);
-        ringMatRef.current.opacity = 0.26 - p * 0.11;
-      }
-    }
-
-    if (headRef.current) {
-      headRef.current.scale.setScalar(active ? 1.0 + Math.sin(t * 6) * 0.01 : 1.0);
-    }
-  });
-
+function Timeline({ items }: { items: Array<{ year: string; title: string; desc: string; tag?: string }> }) {
   return (
-    <group position={pos.toArray()}>
-      {/* stem */}
-      <mesh
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(o.key);
-        }}
-      >
-        <cylinderGeometry args={[0.0055, 0.0055, 0.11, 10]} />
-        <meshStandardMaterial
-          color={active ? "#10b981" : "#ffffff"}
-          transparent
-          opacity={active ? 0.95 : 0.62}
-          emissive={active ? new THREE.Color("#10b981") : new THREE.Color("#ffffff")}
-          emissiveIntensity={active ? 0.55 : 0.08}
-        />
-      </mesh>
+    <div className="mt-8 grid gap-4 lg:grid-cols-2">
+      {items.map((it, i) => (
+        <div
+          key={`${it.year}-${i}`}
+          className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 px-6 py-6 shadow-sm backdrop-blur"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/70 ring-1 ring-slate-200">
+              <div className="text-sm font-black text-slate-950">{it.year}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-sm font-black text-slate-950">{it.title}</div>
+                {it.tag ? (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50/90 px-3 py-1 text-[11px] font-black text-emerald-900 backdrop-blur">
+                    {it.tag}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-2 text-sm leading-relaxed text-slate-700">{it.desc}</div>
 
-      {/* head */}
-      <mesh
-        ref={headRef}
-        position={[0, 0.065, 0]}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(o.key);
-        }}
-      >
-        <sphereGeometry args={[0.018, 16, 16]} />
-        <meshStandardMaterial
-          color={active ? "#10b981" : "#ffffff"}
-          emissive={active ? new THREE.Color("#10b981") : new THREE.Color("#ffffff")}
-          emissiveIntensity={active ? 0.9 : 0.12}
-          roughness={0.35}
-          metalness={0.1}
-        />
-      </mesh>
-
-      {/* pulse ring (active only) */}
-      <mesh
-        ref={ringRef}
-        position={[0, 0.065, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-        renderOrder={999}
-      >
-        <ringGeometry args={[0.028, 0.05, 40]} />
-        <meshBasicMaterial
-          ref={ringMatRef}
-          color={"#34d399"}
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-
-      {/* ✅ Label ใหม่: เล็กลงมาก + ไม่รก
-          - active: โชว์ชื่อเต็ม (เล็ก)
-          - non-active: โชว์แค่ "จุด/ธง" เล็ก ๆ (ไม่มีตัวหนังสือยาว) ลดการทับกัน
-      */}
-<Html distanceFactor={6} position={[0.052, 0.12, 0]}>
-  <button
-    type="button"
-    onClick={() => onSelect(o.key)}
-    className={cn(
-      "pointer-events-auto select-none",
-      "transition active:scale-[0.98]",
-      active
-        ? cn(
-            "inline-flex items-center gap-1.5 whitespace-nowrap",
-            "rounded-full bg-black/30 px-2.5 py-1 text-[px] md:text-[5px] font-semibold text-white backdrop-blur",
-            "shadow-[0_10px_26px_rgba(0,0,0,0.18)]",
-            "ring-2 ring-emerald-300/55"
-          )
-        : cn(
-            "hidden sm:inline-flex items-center justify-center",
-            "h-6 w-6 rounded-full bg-black/18 text-[5px] text-white/90 backdrop-blur",
-            "shadow-[0_10px_20px_rgba(0,0,0,0.12)]",
-            "hover:bg-black/26"
-          )
-    )}
-  >
-          <span>{o.flagEmoji ?? "•"}</span>
-          {active ? <span className="max-w-[120px] truncate">{o.label}</span> : null}
-        </button>
-      </Html>
-    </group>
-  );
-}
-
-function Globe3D({
-  offices,
-  activeKey,
-  onSelect,
-}: {
-  offices: Office[];
-  activeKey: string;
-  onSelect: (k: string) => void;
-}) {
-  return (
-    <div className="relative min-w-0">
-      {/* ✅ ปรับ: ให้มี "พื้นที่หายใจ" รอบโลกมากขึ้น
-          - เพิ่ม padding ในกรอบ
-          - globe ไม่ชนขอบ -> label ไม่เลยขอบง่าย
-      */}
-      {/* ✅ FIX G1: เอา overflow/rounded ออก -> ไม่เกิดกรอบสี่เหลี่ยม */}
-        <div className="relative w-full">
-        <div className="relative h-[360px] w-full p-3 sm:h-[460px] sm:p-4 md:h-[560px] lg:h-[600px]">
-          <div className="relative h-full w-full">
-            <R3FErrorBoundary fallback={<GlobeFallbackCard />}>
-              <Canvas
-                // ✅ กล้องถอยนิด + fov ลดนิด -> โลกไม่เต็มเฟรมเกิน
-                camera={{ position: [0, 0, 3.05], fov: 42 }}
-                dpr={[1, 2]}
-                gl={{ antialias: true, alpha: true }}
-              >
-                <R3FErrorBoundary
-                  fallback={
-                    <Html center>
-                      <div className="rounded-2xl border border-white/30 bg-black/35 px-3 py-2 text-xs font-semibold text-white backdrop-blur">
-                        Loading globe…
-                      </div>
-                    </Html>
-                  }
-                >
-                  <Suspense
-                    fallback={
-                      <Html center>
-                        <div className="rounded-2xl border border-white/30 bg-black/35 px-3 py-2 text-xs font-semibold text-white backdrop-blur">
-                          Loading texture…
-                        </div>
-                      </Html>
-                    }
-                  >
-                    <GlobeScene offices={offices} activeKey={activeKey} onSelect={onSelect} />
-                  </Suspense>
-                </R3FErrorBoundary>
-              </Canvas>
-            </R3FErrorBoundary>
-{/* ✅ FIX G3: overlay ให้เป็นวงกลมตามลูกโลก ไม่ใช่สี่เหลี่ยมเต็มกล่อง */}
-<div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(70%_60%_at_50%_30%,rgba(255,255,255,0.14),transparent_65%)]" />
-<div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(65%_55%_at_35%_40%,rgba(16,185,129,0.10),transparent_62%)]" />
+              <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span>Build • Scale • Global</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* hint */}
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <div className="text-[11px] text-slate-700">
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-function GlobeScene({
-  offices,
-  activeKey,
-  onSelect,
+function AppsWall({
+  title = "Apps for anything else",
+  desc = "A living wall of our offices — curated moments across teams, cities, and cultures.",
+  images,
+  bgImage = "/images/offices/ph-bg.jpg",
 }: {
-  offices: Office[];
-  activeKey: string;
-  onSelect: (k: string) => void;
+  title?: string;
+  desc?: string;
+  images: Array<{ src: string; alt?: string }>;
+  bgImage?: string;
 }) {
-  const groupRef = useRef<THREE.Group>(null);
-  const controlsRef = useRef<any>(null);
+  const reduced = usePrefersReducedMotion();
 
-  // ✅ ลด radius ลงเล็กน้อย -> มี margin รอบโลก
-  const radius = 0.85;
+  // ✅ pause when mouse moves / wheels, resume after leave
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [paused, setPaused] = useState(false);
+  const resumeTimer = useRef<number | null>(null);
 
-  // ✅ texture
-  const earthDay = useTexture("/images/offices/globe/earth_day.jpg");
-  const earthNight = useTexture("/images/offices/globe/earth_night.jpg");
+  const setSpot = (e: React.MouseEvent) => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    el.style.setProperty("--mx", `${x}%`);
+    el.style.setProperty("--my", `${y}%`);
+  };
 
-  useMemo(() => {
-    earthDay.colorSpace = THREE.SRGBColorSpace;
-    earthDay.anisotropy = 8;
-    earthDay.wrapS = THREE.ClampToEdgeWrapping;
-    earthDay.wrapT = THREE.ClampToEdgeWrapping;
-  }, [earthDay]);
+  const pauseNow = () => {
+    if (resumeTimer.current) window.clearTimeout(resumeTimer.current);
+    setPaused(true);
+  };
 
-  /** ✅ mouse follow */
-  const pointer = useRef({ x: 0, y: 0 });
+  const resumeLater = (ms = 280) => {
+    if (resumeTimer.current) window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => setPaused(false), ms);
+  };
+
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const nx = (e.clientX / window.innerWidth) * 2 - 1;
-      const ny = (e.clientY / window.innerHeight) * 2 - 1;
-      pointer.current.x = nx;
-      pointer.current.y = ny;
+    return () => {
+      if (resumeTimer.current) window.clearTimeout(resumeTimer.current);
     };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  /** ✅ Smooth fly-to-target */
-  const targetQuat = useRef(new THREE.Quaternion());
-  const currentQuat = useRef(new THREE.Quaternion());
-  const [ready, setReady] = useState(false);
+  // Build rows: top 2 rows -> 10 tiles (right side). bottom 3 rows -> 20 tiles (full width).
+  const rows = useMemo(() => {
+    const safe = images.length ? images : [{ src: "/images/offices/f1.png", alt: "Office" }];
+    const pick = (n: number, offset: number) => {
+      const out: Array<{ src: string; alt?: string }> = [];
+      for (let i = 0; i < n; i++) out.push(safe[(offset + i) % safe.length]);
+      return out;
+    };
+    return {
+      top1: pick(10, 0),
+      top2: pick(10, 10),
+      b1: pick(20, 20),
+      b2: pick(20, 40),
+      b3: pick(20, 60),
+    };
+  }, [images]);
 
-  useEffect(() => {
-    const g = groupRef.current;
-    if (!g) return;
-    currentQuat.current.copy(g.quaternion);
-    targetQuat.current.copy(g.quaternion);
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    const g = groupRef.current;
-    if (!g) return;
-
-    const of = offices.find((o) => o.key === activeKey);
-    if (!of) return;
-
-    const pin = latLngToVec3(of.lat, of.lng, 1.0).normalize();
-    const front = new THREE.Vector3(0, 0, 1);
-
-    const q = new THREE.Quaternion().setFromUnitVectors(pin, front);
-
-    // tilt เล็กน้อย
-    const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.08, 0, 0));
-    q.multiply(tilt);
-
-    targetQuat.current.copy(q);
-    controlsRef.current?.update?.();
-  }, [activeKey, offices, ready]);
-
-  useFrame((_, dt) => {
-    const g = groupRef.current;
-    if (!g) return;
-
-    const idleSpin = dt * 0.055;
-
-    const tx = clamp(pointer.current.y * 0.12, -0.12, 0.12);
-    const ty = clamp(pointer.current.x * 0.14, -0.14, 0.14);
-
-    const pointerQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(tx, ty, 0));
-    const spinQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), idleSpin);
-
-    const composedTarget = targetQuat.current.clone().multiply(pointerQ).multiply(spinQ);
-
-    const t = 1 - Math.exp(-dt * 3.8);
-    currentQuat.current.slerp(composedTarget, t);
-    g.quaternion.copy(currentQuat.current);
-
-    targetQuat.current.copy(g.quaternion);
-  });
+  const mkTrack = (key: string, items: Array<{ src: string; alt?: string }>, dir: "l" | "r") => (
+    <div className="appsLane relative overflow-hidden">
+      {/* ✅ end-of-row “fuzzy glow” (kept) */}
+      <div className="laneGlow pointer-events-none absolute right-0 top-1/2 -translate-y-1/2" />
+      <div className={cn("appsTrack", dir === "l" ? "appsLeft" : "appsRight")}>
+        {[...items, ...items].map((img, idx) => (
+          <div key={`${key}-${idx}`} className="appsTile" title={img.alt || "app"}>
+            <img
+              src={img.src}
+              alt={img.alt || "app"}
+              className="h-full w-full object-cover"
+              draggable={false}
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
-    <>
-      {/* ✅ เพิ่มไฟเพื่อให้ "ด้านหลังโลก" ไม่มืดจนเหมือนหาย
-          - HemisphereLight + back rim light
-          - ambient เพิ่มนิด
-      */}
-      <ambientLight intensity={0.9} />
-      <hemisphereLight args={["#bfe6ff", "#0b1020", 0.65]} />
-      <directionalLight position={[3, 2, 2]} intensity={1.25} />
-      <directionalLight position={[-3, -1, -2]} intensity={0.45} />
-      <directionalLight position={[0.5, 0.2, -4]} intensity={0.75} />
+    <section className="relative isolate overflow-hidden">
+      {/* ✅ background image (PURE: no dark overlays) */}
+      <div className="absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        />
+      </div>
 
-      <group ref={groupRef}>
-        {/* Globe */}
-        <mesh>
-          <sphereGeometry args={[radius, 64, 64]} />
-          {/* ✅ ใช้ StandardMaterial + emissiveMap
-              -> texture เดียวครอบทั้งลูกอยู่แล้ว แต่ emissive ทำให้ฝั่งมืด "ยังเห็นรายละเอียด"
-          */}
-<meshStandardMaterial
-  map={earthDay}
-  emissive={"#ffffff"}
-  emissiveMap={earthNight}
-  emissiveIntensity={0.9}
-  roughness={0.95}
-  metalness={0.0}
-/>
-        </mesh>
+      <div
+        ref={wrapRef}
+        className={cn(
+          "appsWrap mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12",
+          paused && "paused"
+        )}
+        onMouseEnter={() => pauseNow()}
+        onMouseMove={(e) => {
+          pauseNow(); // ✅ move mouse = stop
+          setSpot(e); // ✅ spotlight follow
+        }}
+        onMouseLeave={() => resumeLater(260)}
+        onWheel={() => {
+          pauseNow(); // ✅ scroll wheel = stop briefly
+          resumeLater(520);
+        }}
+      >
+        {/* ✅ spotlight layer follows mouse (kept) */}
+        <div className="appsSpot pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 md:opacity-100" />
 
-        {/* Atmosphere */}
-        <mesh>
-          <sphereGeometry args={[radius * 1.045, 64, 64]} />
-          <meshStandardMaterial
-            color="#9ddcff"
-            transparent
-            opacity={0.10}
-            emissive="#7bd3ff"
-            emissiveIntensity={0.24}
-          />
-        </mesh>
+        {/* top area */}
+        <div className="relative grid gap-8 lg:grid-cols-[380px_1fr] lg:items-start">
+          {/* left heading */}
+          <div className="lg:sticky lg:top-24">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/90 backdrop-blur">
+              <Sparkles className="h-4 w-4" />
+              OUR OFFICES
+            </span>
 
-        {/* Pins */}
-        {offices.map((o) => (
-          <GlobePin key={o.key} o={o} active={o.key === activeKey} onSelect={onSelect} radius={radius} />
-        ))}
-      </group>
+<h3 className="appsTitle mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+  {title}
+</h3>
 
-      {/* ✅ มือถือสามารถลากหมุนได้ */}
-      <OrbitControls ref={controlsRef} enablePan={false} enableZoom={false} rotateSpeed={0.6} />
-    </>
+<p className="appsDesc mt-3 max-w-[60ch] text-sm leading-relaxed text-slate-800">
+  {desc}
+</p>
+
+<div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-slate-700" />
+          </div>
+
+          {/* right: 2 rows of 10 tiles */}
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <div className="w-full max-w-[760px]">{mkTrack("top1", rows.top1, "l")}</div>
+            </div>
+            <div className="flex justify-end">
+              <div className="w-full max-w-[760px]">{mkTrack("top2", rows.top2, "r")}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ✅ equal row spacing + closer */}
+        <div className="relative mt-10 space-y-4">
+          {mkTrack("b1", rows.b1, "l")}
+          {mkTrack("b2", rows.b2, "r")}
+          {mkTrack("b3", rows.b3, "l")}
+        </div>
+
+        <style>{`
+          .appsWrap{
+            position: relative;
+            border-radius: 36px;
+          }
+.appsTitle, .appsDesc{
+  text-shadow: none;
+}
+
+          /* ✅ spotlight that follows mouse (kept) */
+          .appsSpot{
+            background:
+              radial-gradient(560px 420px at var(--mx,50%) var(--my,40%),
+                rgba(255,255,255,0.22),
+                rgba(255,255,255,0.10) 42%,
+                transparent 74%);
+          }
+
+          /* ✅ ROW: remove lane frames entirely */
+          .appsLane{
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            box-shadow: none;
+          }
+
+          /* ✅ “fuzzy” glow at the end of each row (kept) */
+          .laneGlow{
+            width: 160px;
+            height: 120px;
+            background: radial-gradient(circle at 20% 50%,
+              rgba(255,255,255,0.22),
+              rgba(255,255,255,0.10) 42%,
+              transparent 75%);
+            filter: blur(10px);
+            opacity: 0.9;
+          }
+
+          .appsTrack{
+            display:flex;
+            gap: 12px;
+            width:max-content;
+            will-change: transform;
+            padding: 0; /* ✅ no inner padding (no frame look) */
+            animation-duration: 85s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+          }
+          .appsLeft{ animation-name: apps-marquee-left; }
+          .appsRight{ animation-name: apps-marquee-right; }
+
+          @media (prefers-reduced-motion: reduce){
+            .appsTrack{ animation: none !important; transform: none !important; }
+            .appsSpot{ display:none; }
+          }
+          ${reduced ? ".appsTrack{ animation:none !important; transform:none !important; }" : ""}
+
+          /* ✅ pause when mouse moves/enters/wheels */
+          .appsWrap.paused .appsTrack{ animation-play-state: paused; }
+
+          @keyframes apps-marquee-left{
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          @keyframes apps-marquee-right{
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+          }
+
+          /* ✅ TILE: no border/no background frame — just image */
+          .appsTile{
+            position: relative;
+            overflow:hidden;
+            flex: 0 0 auto;
+            height: 44px;
+            width: 44px;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            transform: translateZ(0);
+            transition: transform .18s ease, filter .18s ease;
+          }
+          @media (min-width: 640px){
+            .appsTile{ height: 56px; width: 56px; border-radius: 18px; }
+          }
+
+          /* ✅ keep “shine + lift” feel without frame */
+          .appsTile::after{
+            content:"";
+            position:absolute;
+            inset:-55%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.45), transparent 56%);
+            opacity: 0;
+            transition: opacity .22s ease;
+          }
+          .appsTile:hover::after{ opacity: 1; }
+          .appsTile:hover{
+            transform: translateY(-2px);
+            filter: drop-shadow(0 14px 26px rgba(0,0,0,0.28));
+          }
+        `}</style>
+      </div>
+    </section>
   );
 }
 
-export default function HomePage() {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language as Language;
-  const nav = useNavigate();
+export default function AboutPage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
-  // jobs
-  const [loadingJobs, setLoadingJobs] = useState(true);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [jobsError, setJobsError] = useState<string | null>(null);
+  const hero = useMouseSpotlight();
 
-  // hero hover image
-  const [heroHover, setHeroHover] = useState(false);
+  // Stats
+  const years = useCountTo(12, { ms: 820, enabled: true });
+  const brands = useCountTo(20, { ms: 880, enabled: true });
+  const kaStores = useCountTo(1000, { ms: 920, enabled: true });
 
-  // office selector
-  const [officeKey, setOfficeKey] = useState<string>(OFFICES[0]?.key ?? "TH");
-  const office = useMemo(() => OFFICES.find((o) => o.key === officeKey) ?? OFFICES[0], [officeKey]);
+  const authorizedBrands = useMemo(
+    () => ["Xiaomi", "Dreame", "70mai", "Zepp", "Wanbo", "Levoit", "Jimmy", "MAIMO", "Usmile"],
+    []
+  );
 
-  // office jobs paging
-  const OFFICE_PAGE_SIZE = 4;
-  const [officePage, setOfficePage] = useState(1);
+  /**
+   * ✅ Images
+   * Put your files here:
+   * - frontend/public/images/about/hero.jpg
+   * - frontend/public/images/about/apps.jpg
+   * - frontend/public/images/about/story.jpg
+   * - frontend/public/images/about/mission.jpg
+   * - frontend/public/images/about/culture.jpg
+   * - frontend/public/images/about/journey.jpg
+   * - frontend/public/images/about/awards.jpg
+   *
+   * Office tiles:
+   * - frontend/public/images/offices/f1.png ... f100.png (or any count)
+   */
+  const officeWallImages = useMemo(() => {
+    const many: Array<{ src: string; alt?: string }> = [];
+    for (let i = 1; i <= 120; i++) many.push({ src: `/images/offices/f${i}.png`, alt: `Office ${i}` });
 
-  function selectOffice(nextKey: string) {
-    setOfficeKey(nextKey);
-    setOfficePage(1);
-  }
+    // keep some extras (optional)
+    many.push(
+      { src: "/images/offices/th-bg.jpg", alt: "Thailand" },
+      { src: "/images/offices/th-4bg.jpg", alt: "Thailand office" },
+      { src: "/images/offices/th-bg1.jpg", alt: "Thailand team" },
+      { src: "/images/offices/th-bg2.jpg", alt: "Thailand ops" },
+      { src: "/images/offices/cn-bg.jpg", alt: "China" },
+      { src: "/images/offices/id-bg.jpg", alt: "Indonesia" }
+    );
 
-  // gallery (auto marquee 2 rows)
-  const [galleryPaused, setGalleryPaused] = useState(false);
+    return many;
+  }, []);
 
-  useEffect(() => {
-    let alive = true;
-    setLoadingJobs(true);
-    setJobsError(null);
+  const storyBlocks = useMemo(
+    () => [
+      {
+        title: "เริ่มต้นจากเซินเจิ้น สู่การสร้างรากฐานในอาเซียน",
+        body:
+          "บริษัทเทคโนโลยีเซินหงเตี้ยน (เซินเจิ้น) จำกัด ก่อตั้งขึ้นอย่างเป็นทางการในปี 2013 ที่เมืองเซินเจิ้น และดำเนินธุรกิจมากว่า 12 ปี เราเริ่มต้นด้วยเป้าหมายเดียว — ช่วยให้แบรนด์ปรับตัวให้เข้ากับท้องถิ่นได้จริง และเติบโตได้เร็วในตลาดใหม่",
+      },
+      {
+        title: "เห็นโอกาสทองของอาเซียน และลงทุนสร้างระบบครบวงจร",
+        body:
+          "เรามองเห็นโอกาสของตลาดอาเซียน จึงสร้างโครงสร้างพื้นฐานของตัวเองอย่างครบวงจร ทั้งเครือข่ายคลังสินค้าและโลจิสติกส์ท้องถิ่น ศูนย์บริการหลังการขาย ระบบ OMO และการตลาดดิจิทัล เพื่อช่วยให้แบรนด์บุกตลาดได้อย่างแม่นยำ",
+      },
+      {
+        title: "จาก 0→1 ไปสู่ 1→100 ด้วย 4 มิติการเติบโต",
+        body:
+          'ด้วยแนวทาง “Brand Positioning → Channel → Marketing → Operations” เราช่วยผลักดันแบรนด์อิเล็กทรอนิกส์ผู้บริโภคกว่า 20+ แบรนด์เข้าสู่ตลาดอาเซียน หลายแบรนด์เติบโตขึ้นเป็นอันดับ 1 ในหมวดหมู่บนแพลตฟอร์มภายในปีแรก',
+      },
+    ],
+    []
+  );
 
-    listJobs({ lang })
-      .then((r: any) => {
-        if (!alive) return;
-        const list = Array.isArray(r?.jobs) ? (r.jobs as Job[]) : [];
-        setJobs(list);
-      })
-      .catch((e: any) => {
-        if (!alive) return;
-        setJobsError(e?.message ?? "Error");
-        setJobs([]);
-      })
-      .finally(() => {
-        if (!alive) return;
-        setLoadingJobs(false);
-      });
+  const mission =
+    "เชื่อมต่อเทคโนโลยีล้ำสมัยให้ชีวิตของผู้ใช้งานหลากหลายมากขึ้น เรามุ่งมั่นยกระดับคุณภาพชีวิตของผู้ใช้งานทั่วโลก ผ่านนวัตกรรมเทคโนโลยีและโซลูชันอัจฉริยะ เพื่อสร้างไลฟ์สไตล์ที่สะดวกสบาย สุขภาพดี และมีสีสันยิ่งขึ้น";
 
-    return () => {
-      alive = false;
-    };
-  }, [lang]);
+  const vision =
+    "เป็นแบรนด์ค้าปลีกใหม่ระดับโลกที่มีคุณค่าและอบอุ่น เราใส่ใจกับความหลากหลายทางวัฒนธรรม เติมเต็มความอบอุ่นในการบริการ และสร้างระบบที่มีผู้ใช้เป็นศูนย์กลาง";
 
-  /** ---------- Derived: Department counts from REAL jobs ---------- */
-  const deptCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const j of jobs as any[]) {
-      const dRaw = getJobDept(j);
-      const d = dRaw?.trim() || "Other";
-      m.set(d, (m.get(d) ?? 0) + 1);
-    }
-    return Array.from(m.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, 12);
-  }, [jobs]);
+  const whoWeAre = useMemo(
+    () => [
+      {
+        icon: <Compass className="h-6 w-6 text-emerald-700" />,
+        title: "เรียบง่าย",
+        desc: "เราเชื่อในความเรียบง่ายและความจริงใจ ซื่อสัตย์ ติดดิน และจริงใจกับตัวเอง",
+      },
+      {
+        icon: <Smile className="h-6 w-6 text-emerald-700" />,
+        title: "มีความสุข",
+        desc: "เราเป็นมิตร รักความสนุก และเต็มไปด้วยพลังงาน กระจายความสุขให้คนรอบตัว",
+      },
+      {
+        icon: <Users className="h-6 w-6 text-emerald-700" />,
+        title: "ร่วมมือร่วมใจ",
+        desc: "เราแข็งแกร่งจากการทำงานร่วมกัน และให้คุณค่ากับเวลาที่มีร่วมกันในที่ทำงาน",
+      },
+    ],
+    []
+  );
 
-  const totalOpenings = useMemo(() => jobs.length, [jobs.length]);
+  const journey = useMemo(
+    () => [
+      {
+        year: "2013",
+        title: "Founded in Shenzhen",
+        desc: "ก่อตั้งอย่างเป็นทางการที่เซินเจิ้น เริ่มต้นจากประสบการณ์เชิงลึกในอุตสาหกรรมอิเล็กทรอนิกส์",
+        tag: "Start",
+      },
+      {
+        year: "2014–2017",
+        title: "Rooted in Thailand",
+        desc: "เลือกกลยุทธ์หยั่งรากในประเทศไทย เริ่มจากออฟไลน์ในกรุงเทพฯ และขยายเครือข่ายช่องทางท้องถิ่น",
+        tag: "Local",
+      },
+      {
+        year: "2018",
+        title: "Brand-first Operations",
+        desc: "ก้าวข้ามโมเดลเดิม หันมาเน้นการทำงานแบบแบรนด์เป็นหลัก สร้างทีมท้องถิ่นและร่วมมือเชิงลึกกับแบรนด์",
+        tag: "Brand",
+      },
+      {
+        year: "2019–2021",
+        title: "Co-Brand Building Model",
+        desc: "พัฒนาโมเดล “การสร้างแบรนด์ร่วมกัน” สนับสนุนตั้งแต่กำหนดตำแหน่งสินค้า ช่องทาง ไปจนถึงการตลาด",
+        tag: "Co-build",
+      },
+      {
+        year: "2022–Now",
+        title: "Scale Across Regions",
+        desc: "ขยายสเกลการดำเนินงาน สร้างระบบโลจิสติกส์ บริการหลังการขาย และการตลาดดิจิทัลให้แข็งแรงยิ่งขึ้น",
+        tag: "Scale",
+      },
+    ],
+    []
+  );
 
-  /** ---------- Derived: office jobs ---------- */
-  const officeJobs = useMemo(() => {
-    const matches = office?.countryValueMatch ?? [];
-    const list = (jobs as any[]).filter((j) => {
-      const c = getJobCountry(j);
-      if (!c) return false;
-      return matches.some((k) => String(c).toLowerCase().includes(String(k).toLowerCase()));
-    });
-    return list.length ? list : (jobs as any[]).slice(0, 16);
-  }, [jobs, office]);
-
-  const officeJobsCount = useMemo(() => officeJobs.length, [officeJobs.length]);
-
-  const officeTotalPages = useMemo(() => Math.max(1, Math.ceil(officeJobs.length / OFFICE_PAGE_SIZE)), [officeJobs.length]);
-
-  const officePagedJobs = useMemo(() => {
-    const p = Math.max(1, Math.min(officePage, officeTotalPages));
-    const start = (p - 1) * OFFICE_PAGE_SIZE;
-    return officeJobs.slice(start, start + OFFICE_PAGE_SIZE);
-  }, [officeJobs, officePage, officeTotalPages]);
-
-  useEffect(() => {
-    setOfficePage(1);
-  }, [officeKey]);
-
-  useEffect(() => {
-    setOfficePage((p) => Math.min(Math.max(1, p), officeTotalPages));
-  }, [officeTotalPages]);
-
-  /** ---------- Click dept -> go to jobs with filter ---------- */
-  function goToDept(dept: string) {
-    const sp = new URLSearchParams();
-    sp.set("department", dept);
-    nav(`/jobs?${sp.toString()}`);
-  }
-
-  /** ---------- Click office -> go to jobs with country filter ---------- */
-  function goToOfficeJobs(of: Office) {
-    const sp = new URLSearchParams();
-    sp.set("country", of.key);
-    nav(`/jobs?${sp.toString()}`);
-  }
-
-  /** ---------- Gallery split ---------- */
-  const galleryTop = useMemo(() => GALLERY_16x8.filter((_, i) => i % 2 === 0), []);
-  const galleryBottom = useMemo(() => GALLERY_16x8.filter((_, i) => i % 2 === 1), []);
-  const topTrack = useMemo(() => [...galleryTop, ...galleryTop], [galleryTop]);
-  const bottomTrack = useMemo(() => [...galleryBottom, ...galleryBottom], [galleryBottom]);
-
-  /** ✅ HERO spotlight vars */
-  const heroRef = useRef<HTMLElement | null>(null);
+  const awards = useMemo(
+    () => [
+      { year: "2021", title: "รางวัลผู้จำหน่ายยอดเยี่ยมประจำปี", org: "Tera Gadget — Lazada ประเทศไทย" },
+      { year: "2021", title: "รางวัลผู้จำหน่ายดาวรุ่งแห่งปี", org: "SUNMOON168 — Shopee ประเทศไทย" },
+      { year: "2023", title: "รางวัลสินค้าขายดีที่สุดแห่งปี", org: "Thaimall — Shopee ประเทศไทย" },
+      { year: "2023", title: "รางวัลผู้ขายดีเด่นประจำปี", org: "70mai — Shopee ประเทศไทย" },
+      { year: "2024", title: "รางวัลแบรนด์ที่พึงพอใจสูงสุด", org: "Dreame — Shopee ประเทศไทย" },
+      { year: "2023", title: "อันดับ 1 ยอดขายหมวดเครื่องใช้ไฟฟ้าในครัวเรือน", org: "Dreame — Lazada ประเทศไทย" },
+      { year: "2024", title: "รางวัลยอดเยี่ยมหมวดยานยนต์", org: "DDPai — LAZMALL Lazada ฟิลิปปินส์" },
+      { year: "2024", title: "รางวัลยอดเยี่ยมหมวดอุปกรณ์อิเล็กทรอนิกส์", org: "Xiaomi — LAZMALL Lazada ฟิลิปปินส์" },
+      { year: "Now", title: "อันดับ 1 ยอดขายในหลายแพลตฟอร์ม/ประเทศ", org: "70mai / DDPai / Wanbo ใน TH • ID • PH เป็นต้น" },
+    ],
+    []
+  );
 
   return (
-    <>
-      <Helmet>
-        <title>SHD Careers</title>
-        <meta name="description" content="SHD global recruitment — multi-country, multi-language, responsive." />
-      </Helmet>
+  <>
+    <Helmet>
+      <title>{t("nav.about")} • SHD Careers</title>
+      <meta
+        name="description"
+        content="About SHD Technology — story, mission, vision, culture, journey, awards, and brand ecosystem."
+      />
+    </Helmet>
 
-      {/* ===========================
-          HERO
-      =========================== */}
-      <section
-        ref={(n) => (heroRef.current = n)}
-        className="group relative isolate overflow-hidden bg-slate-950"
-        onMouseEnter={() => setHeroHover(true)}
-        onMouseLeave={() => setHeroHover(false)}
-        onTouchStart={() => setHeroHover((v) => !v)}
-        onMouseMove={(e) => {
-          const el = heroRef.current;
-          if (!el) return;
-          const r = el.getBoundingClientRect();
-          const x = ((e.clientX - r.left) / r.width) * 100;
-          const y = ((e.clientY - r.top) / r.height) * 100;
-          el.style.setProperty("--mx", `${x}%`);
-          el.style.setProperty("--my", `${y}%`);
-        }}
-      >
-        {/* FULL-BLEED BACKGROUND */}
-        <div className="absolute inset-0">
+    <div className="min-h-screen bg-white text-slate-900">
+      {/* HERO (bg image) */}
+      <BgSection bg="/images/about/hero.jpg" className="pb-4" overlay="light">
+        <section
+          ref={(n) => (hero.ref.current = n)}
+          onMouseMove={hero.onMove}
+          className={cn("relative")}
+        >
+          {/* spotlight */}
           <div
-            className={cn("absolute inset-0 bg-cover bg-center", "scale-[1.03] will-change-transform", "transition-opacity duration-700")}
-            style={{ backgroundImage: `url(/images/5_07_Charge_Faster_Clean_Longer_1200x.webp)` }}
-          />
-          <div
-            className={cn(
-              "absolute inset-0 bg-cover bg-center",
-              "scale-[1.03] will-change-transform",
-              "transition-opacity duration-700",
-              heroHover ? "opacity-100" : "opacity-0"
-            )}
-            style={{ backgroundImage: `url(/images/x50-ultra-banner.webp)` }}
+            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 md:opacity-100"
+            style={{
+              background:
+                "radial-gradient(520px 360px at var(--mx, 50%) var(--my, 30%), rgba(15,23,42,0.10), rgba(15,23,42,0.05) 45%, transparent 72%)",
+            }}
           />
 
-          {/* overlays */}
-          <div className="absolute inset-0 bg-[radial-gradient(700px_360px_at_50%_30%,rgba(255,215,120,0.22),transparent_65%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_70%_35%,rgba(255,170,150,0.18),transparent_70%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_18%_22%,rgba(255,255,255,0.22),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(700px_420px_at_76%_18%,rgba(56,189,248,0.22),transparent_58%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_78%_70%,rgba(168,85,247,0.20),transparent_62%)]" />
-
+          {/* ✅ subtle contrast for readability (not full overlay) */}
           <div
-            className="absolute inset-0 opacity-[0.18] mix-blend-overlay bg-cover bg-center"
-            style={{ backgroundImage: "url(/images/impact/impact-1.jpg)" }}
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(2,6,23,0.58) 0%, rgba(2,6,23,0.18) 46%, rgba(2,6,23,0.05) 70%, rgba(2,6,23,0.02) 100%)",
+            }}
           />
 
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          <div className="relative mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 pt-14 pb-8 sm:pt-16 sm:pb-10">
+            <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+              {/* LEFT */}
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Pill icon={<Sparkles className="h-4 w-4" />} tone="brand">
+                    Company Story
+                  </Pill>
+                  <Pill icon={<Globe2 className="h-4 w-4" />}>
+                    Global • Localization • Growth
+                  </Pill>
+                  <Pill icon={<Truck className="h-4 w-4" />} tone="good">
+                    OMO & Operations
+                  </Pill>
+                </div>
+
+                <h1 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl">
+                  SHD Technology
+                  <span className="block text-white/80">
+                    จากเซินเจิ้น สู่การเติบโตในอาเซียน
+                  </span>
+                </h1>
+
+                <p className="mt-4 max-w-[78ch] text-base leading-relaxed text-white/80 sm:text-lg">
+                  เราช่วยแบรนด์อิเล็กทรอนิกส์ผู้บริโภค “ปรับตัวให้เข้ากับท้องถิ่น” และเติบโตได้จริง
+                  ตั้งแต่เริ่มต้นจากศูนย์ (0→1) ไปจนถึงการขยายขนาดธุรกิจ (1→100)
+                </p>
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Link
+                    to="/jobs"
+                    className={cn(
+                      "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
+                      "bg-white text-slate-950 shadow-[0_18px_70px_rgba(0,0,0,0.30)]",
+                      "transition hover:-translate-y-0.5 hover:shadow-[0_28px_110px_rgba(0,0,0,0.34)] active:scale-[0.98]"
+                    )}
+                  >
+                    ดูตำแหน่งงานทั้งหมด <ArrowRight className="h-4 w-4" />
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById("story")?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    className={cn(
+                      "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
+                      "border border-white/18 bg-black/30 text-white shadow-sm backdrop-blur",
+                      "transition hover:-translate-y-0.5 active:scale-[0.98]"
+                    )}
+                  >
+                    อ่านเรื่องราวบริษัท <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <StatCard
+                    label="Years of experience"
+                    value={years}
+                    suffix="years"
+                    icon={<Target className="h-4 w-4" />}
+                  />
+                  <StatCard
+                    label="Brands supported"
+                    value={`${brands}+`}
+                    suffix="brands"
+                    icon={<Building2 className="h-4 w-4" />}
+                  />
+                  <StatCard
+                    label="KA channels"
+                    value={`${kaStores}+`}
+                    suffix="stores"
+                    icon={<Users className="h-4 w-4" />}
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/75">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-black/28 px-3 py-1.5 ring-1 ring-white/14 backdrop-blur">
+                    <Warehouse className="h-3.5 w-3.5" />
+                    Warehousing network
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-black/28 px-3 py-1.5 ring-1 ring-white/14 backdrop-blur">
+                    <Truck className="h-3.5 w-3.5" />
+                    Local logistics
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-black/28 px-3 py-1.5 ring-1 ring-white/14 backdrop-blur">
+                    <HeartHandshake className="h-3.5 w-3.5" />
+                    After-sales service
+                  </span>
+                </div>
+              </div>
+
+{/* RIGHT: Hex World Map (7 countries labels, white clean) */}
+<div className="relative">
+  <div className="mapWrap relative overflow-hidden rounded-[32px] p-6 sm:p-7">
+    {/* clean white base */}
+    <div className="absolute inset-0 bg-white/92" />
+    <div
+      className="absolute inset-0 opacity-[0.85]"
+      style={{
+        background:
+          "radial-gradient(680px 420px at 20% 18%, rgba(99,102,241,0.14), transparent 55%)," +
+          "radial-gradient(760px 520px at 88% 40%, rgba(34,211,238,0.12), transparent 60%)," +
+          "radial-gradient(700px 420px at 36% 92%, rgba(168,85,247,0.10), transparent 60%)",
+      }}
+    />
+
+    {/* shimmer sweep */}
+    <div className="mapSweep pointer-events-none absolute inset-0" />
+
+    <div className="relative">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold text-slate-500">Global presence</div>
+          <div className="mt-1 text-lg font-black tracking-tight text-slate-900">
+            7 key markets connected
+          </div>
         </div>
 
-        {/* MOUSE SPOTLIGHT */}
-        <div
-          className={cn("pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300", "group-hover:opacity-100")}
-          style={{
-            background:
-              "radial-gradient(520px 360px at var(--mx, 50%) var(--my, 35%), rgba(255,255,255,0.16), rgba(255,255,255,0.06) 40%, transparent 70%)",
-          }}
-        />
+        {/* tiny legend (no boxy frame) */}
+        <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-indigo-400/80" />
+            Growth
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-sky-400/80" />
+            Operations
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-fuchsia-400/80" />
+            Talent
+          </span>
+        </div>
+      </div>
 
-        {/* CONTENT */}
-        <div className="container-page relative py-14 sm:py-16 lg:py-20">
-          <div className="mx-auto max-w-[920px] text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/90 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_28px_rgba(52,211,153,0.65)]" />
-              SHD TECHNOLOGY
+      <div className="mt-5">
+        <div className="mapCanvas relative aspect-[16/10] w-full overflow-hidden rounded-[28px]">
+          {/* subtle topographic feel */}
+          <div
+            className="absolute inset-0 opacity-[0.35]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 1px 1px, rgba(15,23,42,0.10) 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }}
+          />
+
+          {/* Hex-map style SVG */}
+          <svg
+            viewBox="0 0 1100 620"
+            className="absolute inset-0 h-full w-full"
+            aria-hidden="true"
+          >
+            <defs>
+              {/* soft shadow */}
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="18" stdDeviation="18" floodColor="rgba(2,6,23,0.14)" />
+              </filter>
+
+              {/* hex pattern */}
+              <pattern id="hexGrid" width="22" height="19" patternUnits="userSpaceOnUse">
+                <path
+                  d="M11 0 L22 6 L22 13 L11 19 L0 13 L0 6 Z"
+                  fill="rgba(2,6,23,0.03)"
+                  stroke="rgba(2,6,23,0.05)"
+                  strokeWidth="1"
+                />
+              </pattern>
+
+              {/* colored speckles (animated via CSS) */}
+              <linearGradient id="heatA" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="rgba(99,102,241,0.0)" />
+                <stop offset="40%" stopColor="rgba(99,102,241,0.22)" />
+                <stop offset="60%" stopColor="rgba(34,211,238,0.20)" />
+                <stop offset="100%" stopColor="rgba(168,85,247,0.0)" />
+              </linearGradient>
+
+              {/* mask for “continents” silhouettes (best-effort) */}
+              <mask id="worldMask">
+                <rect width="1100" height="620" fill="black" />
+                {/* Americas */}
+                <path
+                  d="M160 150c70-60 140-78 198-52 40 18 62 56 54 92-10 48-60 68-96 88-36 20-52 54-38 86 16 38 62 46 96 54 40 10 74 26 92 54 24 36 8 80-34 96-60 22-140-4-204-46-62-40-108-100-124-164-18-70 2-134 64-198z"
+                  fill="white"
+                />
+                <path
+                  d="M320 360c50-34 110-36 154-10 38 24 48 70 22 106-26 38-84 56-134 54-50-2-92-24-104-58-12-34 10-70 62-92z"
+                  fill="white"
+                />
+                {/* Europe/Africa */}
+                <path
+                  d="M560 160c54-44 118-56 168-28 34 20 50 54 38 84-12 30-46 46-78 56-38 12-66 30-64 60 2 34 46 42 76 50 44 12 72 32 78 62 8 42-28 76-86 86-68 12-144-18-198-70-58-56-82-122-62-180 16-44 62-70 128-120z"
+                  fill="white"
+                />
+                {/* Asia/Oceania */}
+                <path
+                  d="M760 170c66-40 150-44 208-6 46 30 58 82 26 120-30 36-84 48-130 58-54 12-84 40-74 74 10 38 60 50 108 54 52 4 92 22 104 54 14 38-22 74-88 88-78 16-170-10-236-64-62-50-86-120-56-178 20-40 72-56 138-100z"
+                  fill="white"
+                />
+                <path
+                  d="M910 430c34-22 78-24 106-6 22 14 26 38 10 56-16 18-44 24-68 28-28 4-44 18-40 34 4 18 30 24 54 26 26 2 46 10 52 24 8 18-10 34-42 40-38 8-82-4-114-30-30-24-40-56-26-82 10-16 34-22 68-40z"
+                  fill="white"
+                />
+              </mask>
+            </defs>
+
+            {/* base hex grid */}
+            <rect x="0" y="0" width="1100" height="620" fill="url(#hexGrid)" />
+
+            {/* world area */}
+            <g filter="url(#softShadow)">
+              <rect
+                x="70"
+                y="80"
+                width="960"
+                height="470"
+                rx="36"
+                fill="rgba(255,255,255,0.78)"
+              />
+              <rect
+                x="70"
+                y="80"
+                width="960"
+                height="470"
+                rx="36"
+                fill="url(#hexGrid)"
+                opacity="0.9"
+              />
+
+              {/* continents filled by hex grid via mask */}
+              <g mask="url(#worldMask)">
+                <rect x="0" y="0" width="1100" height="620" fill="url(#hexGrid)" />
+                <rect className="heatBand" x="-260" y="0" width="520" height="620" fill="url(#heatA)" />
+              </g>
+
+              {/* connection lines (soft, no boxes) */}
+              <g fill="none" stroke="rgba(15,23,42,0.18)" strokeWidth="2" strokeLinecap="round">
+                {/* Thailand -> Vietnam -> Philippines */}
+                <path className="linkDash" d="M760 310 C 780 300, 810 290, 835 305" />
+                <path className="linkDash" d="M835 305 C 860 320, 890 330, 920 320" />
+                {/* China -> Vietnam */}
+                <path className="linkDash" d="M800 240 C 820 250, 800 280, 770 300" />
+                {/* Brazil -> Mexico */}
+                <path className="linkDash" d="M330 410 C 290 360, 250 320, 210 290" />
+                {/* Mexico -> USA-ish (decor) */}
+                <path className="linkDash" d="M210 290 C 230 260, 250 245, 280 230" />
+              </g>
+
+              {/* nodes (7) */}
+              <g>
+                {[
+                  { x: 760, y: 310, name: "Thailand" },
+                  { x: 800, y: 240, name: "China" },
+                  { x: 720, y: 360, name: "Indonesia" },
+                  { x: 920, y: 320, name: "Philippines" },
+                  { x: 835, y: 305, name: "Vietnam" },
+                  { x: 330, y: 410, name: "Brazil" },
+                  { x: 210, y: 290, name: "Mexico" },
+                ].map((p, i) => (
+                  <g key={i} className="mapNode">
+                    <circle cx={p.x} cy={p.y} r="10" fill="rgba(99,102,241,0.16)" />
+                    <circle cx={p.x} cy={p.y} r="5.5" fill="rgba(15,23,42,0.85)" />
+                    <circle cx={p.x} cy={p.y} r="3.2" fill="rgba(255,255,255,0.95)" />
+                  </g>
+                ))}
+              </g>
+
+              {/* country labels (no square box) */}
+              <g fontFamily="ui-sans-serif, system-ui" fontSize="13" fontWeight="700" fill="rgba(15,23,42,0.88)">
+                <text x="778" y="302">Thailand</text>
+                <text x="820" y="233">China</text>
+                <text x="740" y="382">Indonesia</text>
+                <text x="938" y="315">Philippines</text>
+                <text x="855" y="300">Vietnam</text>
+                <text x="350" y="430">Brazil</text>
+                <text x="228" y="285">Mexico</text>
+              </g>
+            </g>
+          </svg>
+
+          {/* soft edge fade */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(1200px 520px at 50% 30%, transparent 40%, rgba(255,255,255,0.78) 100%)",
+            }}
+          />
+        </div>
+
+        {/* bottom hint chips (clean) */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          <span className="rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-200">
+            Thailand • China • Indonesia • Philippines • Vietnam • Brazil • Mexico
+          </span>
+          <span className="rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-200">
+            Always connected, always moving
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <style>{`
+      .mapWrap{
+        box-shadow: 0 26px 90px rgba(2,6,23,0.16);
+      }
+
+      /* sweeping shimmer like the sample */
+      .mapSweep{
+        background: linear-gradient(120deg,
+          transparent 0%,
+          rgba(255,255,255,0.00) 22%,
+          rgba(255,255,255,0.46) 45%,
+          rgba(255,255,255,0.00) 68%,
+          transparent 100%);
+        transform: translateX(-55%);
+        animation: map-sweep 7.2s ease-in-out infinite;
+        opacity: .55;
+        filter: blur(0.4px);
+        mix-blend-mode: soft-light;
+      }
+      @keyframes map-sweep{
+        0%   { transform: translateX(-60%); opacity: .30; }
+        50%  { transform: translateX(8%);   opacity: .70; }
+        100% { transform: translateX(62%);  opacity: .30; }
+      }
+
+      /* animated colored band over hex “continents” */
+      .heatBand{
+        animation: heat-move 6.5s ease-in-out infinite;
+        opacity: .9;
+        mix-blend-mode: multiply;
+      }
+      @keyframes heat-move{
+        0% { transform: translateX(-160px); opacity: .55; }
+        50% { transform: translateX(860px); opacity: .95; }
+        100% { transform: translateX(1240px); opacity: .55; }
+      }
+
+      /* dotted moving links */
+      .linkDash{
+        stroke-dasharray: 8 10;
+        animation: dash 2.9s linear infinite;
+        opacity: .75;
+      }
+      @keyframes dash{
+        to { stroke-dashoffset: -40; }
+      }
+
+      /* node pulse */
+      .mapNode{
+        transform-origin: center;
+        animation: nodePulse 2.4s ease-in-out infinite;
+      }
+      .mapNode:nth-child(2){ animation-delay: .25s; }
+      .mapNode:nth-child(3){ animation-delay: .55s; }
+      .mapNode:nth-child(4){ animation-delay: .9s; }
+      .mapNode:nth-child(5){ animation-delay: 1.2s; }
+      .mapNode:nth-child(6){ animation-delay: 1.45s; }
+      .mapNode:nth-child(7){ animation-delay: 1.7s; }
+
+      @keyframes nodePulse{
+        0%,100% { opacity: .72; filter: drop-shadow(0 0 0 rgba(15,23,42,0)); }
+        50% { opacity: 1; filter: drop-shadow(0 0 18px rgba(99,102,241,0.30)); }
+      }
+    `}</style>
+  </div>
+</div>
+            </div>
+          </div>
+        </section>
+      </BgSection>
+        {/* ✅ Apps section (bg image, no frame) */}
+        <BgSection bg="/images/about/apps.jpg" overlay="light" className="py-2">
+          <AppsWall images={officeWallImages} />
+        </BgSection>
+
+        {/* STORY (bg image) */}
+        <BgSection id="story" bg="/images/about/story.jpg" overlay="light" className="py-2">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+            <SectionHeader
+              kicker="OUR STORY"
+              icon={<Compass className="h-4 w-4" />}
+              title="เรื่องราวของ SHD"
+              desc="จากเซินเจิ้นสู่การสร้างเครื่องยนต์การเติบโตในอาเซียน — ที่ทำให้แบรนด์ไปได้ไกลและยั่งยืน"
+            />
+
+            <div className="mt-8 grid gap-4 lg:grid-cols-3">
+              {storyBlocks.map((b) => (
+                <div key={b.title} className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <div className="text-sm font-black text-slate-950">{b.title}</div>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{b.body}</p>
+                </div>
+              ))}
             </div>
 
-            <h1 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-              {t("home.headline")}
-            </h1>
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <FeatureCard
+                icon={<Warehouse className="h-6 w-6 text-emerald-700" />}
+                title="โครงสร้างพื้นฐานครบวงจร"
+                desc="เครือข่ายคลังสินค้า + โลจิสติกส์ท้องถิ่น + ศูนย์บริการหลังการขาย เพื่อให้แบรนด์ส่งมอบประสบการณ์ที่ดีได้จริง"
+              />
+              <FeatureCard
+                icon={<Sparkles className="h-6 w-6 text-emerald-700" />}
+                title="ระบบ OMO + Digital Marketing"
+                desc="เชื่อมออนไลน์และออฟไลน์ พร้อมระบบการตลาดดิจิทัลที่สั่งสมมานานหลายปี เพื่อบุกตลาดได้แม่นยำ"
+              />
+            </div>
+          </div>
+        </BgSection>
 
-            <p className="mx-auto mt-4 max-w-[70ch] text-base leading-relaxed text-white/80 sm:text-lg">
-              {t("home.subhead")}
-            </p>
+        {/* MISSION / VISION (bg image) */}
+        <BgSection bg="/images/about/mission.jpg" overlay="light" className="py-2">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card className="p-7">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50/80 ring-1 ring-emerald-200 backdrop-blur">
+                    <HeartHandshake className="h-6 w-6 text-emerald-700" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-600">MISSION</div>
+                    <div className="mt-1 text-lg font-black text-slate-950">พันธกิจของเรา</div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{mission}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-7">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50/80 ring-1 ring-amber-200 backdrop-blur">
+                    <Globe2 className="h-6 w-6 text-amber-700" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-600">VISION</div>
+                    <div className="mt-1 text-lg font-black text-slate-950">วิสัยทัศน์ของเรา</div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{vision}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </BgSection>
+
+        {/* WHO WE ARE (bg image) */}
+        <BgSection bg="/images/about/culture.jpg" overlay="light" className="py-2">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+            <SectionHeader
+              kicker="WHO WE ARE"
+              icon={<Users className="h-4 w-4" />}
+              title="ความเป็นเรา"
+              desc="นิยามว่าเราคือใคร — สื่อสารอย่างไร ทำงานอย่างไร และตอบสนองต่อสถานการณ์ต่าง ๆ อย่างไร"
+              align="center"
+            />
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {whoWeAre.map((x) => (
+                <div key={x.title} className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 ring-1 ring-slate-200 backdrop-blur">
+                      {x.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-black text-slate-950">{x.title}</div>
+                      <div className="mt-1 text-sm leading-relaxed text-slate-700">{x.desc}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mx-auto mt-8 max-w-[980px] rounded-[28px] border border-slate-200/80 bg-white/80 px-6 py-5 shadow-sm backdrop-blur">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50/80 ring-1 ring-emerald-200 backdrop-blur">
+                  <Sparkles className="h-5 w-5 text-emerald-700" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-black text-slate-950">Core principle</div>
+                  <div className="mt-1 text-sm leading-relaxed text-slate-700">
+                    เราเชื่อใน “ชนะไปด้วยกันและเติบโตไปด้วยกัน” เพราะการสร้างคุณค่าที่ยั่งยืนต้องเกิดจากทีมที่ร่วมมือกันจริง
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </BgSection>
+
+        {/* JOURNEY (bg image) */}
+        <BgSection bg="/images/about/journey.jpg" overlay="light" className="py-2">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+            <SectionHeader
+              kicker="OUR JOURNEY"
+              icon={<Rocket className="h-4 w-4" />}
+              title="เส้นทางการเติบโต"
+              desc="จากการเริ่มต้น สู่การสร้างโมเดล Co-Brand Building และระบบที่พาแบรนด์โตในอาเซียน"
+              align="center"
+            />
+            <Timeline items={journey} />
+          </div>
+        </BgSection>
+
+        {/* AWARDS (bg image) */}
+        <BgSection bg="/images/about/awards.jpg" overlay="light" className="py-2">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+            <SectionHeader
+              kicker="AWARDS & RECOGNITION"
+              icon={<Award className="h-4 w-4" />}
+              title="รางวัลและเกียรติยศของแบรนด์"
+              desc="บทพิสูจน์จากการทำงานร่วมกับพาร์ทเนอร์และแพลตฟอร์มในหลายประเทศ"
+            />
+
+            <div className="mt-8 grid gap-3 lg:grid-cols-2">
+              {awards.map((a, i) => (
+                <div key={`${a.year}-${i}`} className="rounded-3xl border border-slate-200/80 bg-white/80 px-6 py-5 shadow-sm backdrop-blur">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">{a.year}</span>
+                        <div className="text-sm font-black text-slate-950">{a.title}</div>
+                      </div>
+                      <div className="mt-2 text-sm text-slate-700">{a.org}</div>
+                    </div>
+                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-600" />
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/jobs"
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                  "bg-white text-slate-950 shadow-[0_22px_70px_rgba(0,0,0,0.40)]",
-                  "transition hover:-translate-y-0.5 hover:shadow-[0_30px_110px_rgba(0,0,0,0.48)]"
+                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
+                  "bg-slate-950 text-white shadow-[0_18px_70px_rgba(15,23,42,0.18)]",
+                  "transition hover:-translate-y-0.5 active:scale-[0.98]"
                 )}
               >
-                {t("home.ctaPrimary")} <ArrowRight className="h-4 w-4" />
+                Explore open roles <ArrowRight className="h-4 w-4" />
               </Link>
 
-              <Link
-                to="/why-shd"
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                  "border border-white/16 bg-white/10 text-white backdrop-blur",
-                  "transition hover:bg-white/16 hover:-translate-y-0.5"
+                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
+                  "border border-slate-200 bg-white/80 text-slate-800 shadow-sm backdrop-blur",
+                  "transition hover:-translate-y-0.5 active:scale-[0.98]"
                 )}
               >
-                {t("home.ctaSecondary")}
-              </Link>
+                Back to top <ChevronRight className="h-4 w-4 rotate-[-90deg]" />
+              </button>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/75">
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/14 bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Briefcase className="h-3.5 w-3.5" />
-                {loadingJobs ? "Loading jobs…" : `${totalOpenings} openings`}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/14 bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Globe2 className="h-3.5 w-3.5" />
-                SEA → Asia → LATAM
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/14 bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5" />
-                Premium hiring experience
-              </span>
-            </div>
-
-            <p className="mt-5 text-xs text-white/55">{t("home.bannerNote")}</p>
+            <div className="h-4" />
           </div>
+        </BgSection>
 
-          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Feature icon={<Globe2 className="h-5 w-5" />} title="Multi-country" desc="Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico." />
-            <Feature icon={<Sparkles className="h-5 w-5" />} title="3 languages" desc="Thai, English, Chinese with instant switching." />
-            <Feature icon={<ShieldCheck className="h-5 w-5" />} title="Professional" desc="Clean, formal design like top global career sites." />
-            <Feature icon={<Briefcase className="h-5 w-5" />} title="Structured jobs" desc="Filter by Country / Department / Level." />
-          </div>
-        </div>
-      </section>
-
-{/* FIND YOUR FIT */}
-<section className="container-page py-16">
-  {/* Header */}
-  <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-    <div>
-      <div
-        className={cn(
-          "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
-          "border border-[#6f5730]/30 bg-[#6f5730]/10 text-[#6f5730]"
-        )}
-      >
-        <Briefcase className="h-4 w-4" />
-        Find your fit
+        <div className="h-10" />
       </div>
-
-      <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-        ค้นหาความชอบของคุณ
-      </h2>
-
-      <p className="mt-2 max-w-xl text-sm text-slate-600">
-        อิงจากตำแหน่งที่ประกาศจริง เลือกแผนก แล้วดูว่ามีกี่ตำแหน่งที่กำลังเปิดรับ
-      </p>
-    </div>
-
-    <Link
-      to="/jobs"
-      className={cn(
-        "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
-        "bg-[#6f5730] text-white",
-        "shadow-[0_16px_50px_rgba(111,87,48,0.35)]",
-        "transition hover:-translate-y-0.5 hover:bg-[#5f4a28] active:scale-[0.97]"
-      )}
-    >
-      ไปหน้าตำแหน่งงานทั้งหมด
-      <ArrowRight className="h-4 w-4" />
-    </Link>
-  </div>
-
-  {/* Error */}
-  {jobsError && (
-    <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-      {jobsError}
-    </div>
-  )}
-
-  {/* Cards */}
-  <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-    {loadingJobs ? (
-      Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-[120px] animate-pulse rounded-3xl bg-slate-100"
-        />
-      ))
-    ) : deptCounts.length === 0 ? (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        ยังไม่มีตำแหน่งงานในระบบ
-      </div>
-    ) : (
-      deptCounts.map(([dept, count]) => (
-        <button
-          key={dept}
-          type="button"
-          onClick={() => goToDept(dept)}
-          className={cn(
-            "group relative overflow-hidden rounded-3xl p-6 text-left",
-            "border border-slate-200 bg-white",
-            "transition-all duration-300",
-            "hover:-translate-y-1 hover:border-[#6f5730]/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)]",
-            "active:scale-[0.98]"
-          )}
-        >
-          {/* subtle gradient on hover */}
-          <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#6f5730]/10 via-transparent to-transparent" />
-          </div>
-
-          <div className="relative flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-black text-slate-900">{dept}</div>
-              <div className="mt-1 text-sm text-slate-600">
-                รับสมัคร{" "}
-                <span className="font-black text-slate-900">{count}</span>{" "}
-                ตำแหน่ง
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
-                "border border-slate-200 bg-slate-50 text-slate-700",
-                "transition-all duration-300",
-                "group-hover:border-[#6f5730]/40 group-hover:bg-[#6f5730] group-hover:text-white",
-                "group-hover:translate-x-0.5"
-              )}
-            >
-              <ArrowRight className="h-4 w-4" />
-            </div>
-          </div>
-
-          <div className="relative mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
-              <Users className="h-3.5 w-3.5" /> Team
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
-              <Briefcase className="h-3.5 w-3.5" /> Openings
-            </span>
-          </div>
-        </button>
-      ))
-    )}
-  </div>
-
-  <div className="mt-5 text-xs text-slate-500">
-    * คลิกการ์ดเพื่อไปหน้า <span className="font-semibold">Jobs</span> พร้อม filter ตามแผนก
-  </div>
-</section>
-
-{/* ===========================
-    OFFICES (layout จัดใหม่ให้ห่าง ไม่ติดกัน)
-=========================== */}
-<section className="relative pt-24">
-  <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
-    <div className="relative overflow-hidden rounded-none">
-      {/* ✅ FIX #1: ลดความสูงกรอบรวมลงอีกนิด (ช่วยตัดพื้นที่โล่งด้านล่าง)
-          ✅ ผล: กลุ่มโลก+การ์ดดู “แน่น” ขึ้นและไม่เหลือพื้นที่ว่างมากเกิน
-      */}
-      <div className="relative min-h-[260px] md:min-h-[240px] lg:min-h-[220px]">
-        {/* bg image */}
-        <img
-          src={office.bgImage}
-          alt={`${office.label} office`}
-          className={cn(
-            "absolute inset-0 h-full w-full object-cover",
-            "scale-[1.03] will-change-transform",
-            "animate-[fadeIn_700ms_ease-out]"
-          )}
-        />
-
-        {/* overlays */}
-        <div className="absolute inset-0 bg-[radial-gradient(75%_70%_at_50%_18%,rgba(255,255,255,0.78),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(55%_55%_at_18%_35%,rgba(16,185,129,0.14),transparent_62%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white/" />
-
-        {/* header */}
-        <div className="relative z-10">
-          <div className="container-page px-4 pt-12 md:pt-14">
-            <div className="mx-auto max-w-[1020px] text-center">
-              <div className="text-xs font-semibold tracking-wide text-emerald-700">Local and global</div>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Grow around the world</h2>
-              <p className="mt-2 text-sm text-slate-700">
-                เลือกประเทศ แล้วดูตำแหน่งงานในประเทศนั้น (แสดง 4 ช่องต่อหน้า)
-              </p>
-
-              {/* dropdown row */}
-              <div className="mx-auto mt-6 flex max-w-[720px] flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
-                <div className="relative w-full sm:w-[460px]">
-                  <select
-                    className="w-full appearance-none rounded-2xl border border-white/55 bg-white/45 px-4 py-3 pr-10 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-200 focus:ring-4 focus:ring-emerald-100"
-                    value={officeKey}
-                    onChange={(e) => selectOffice(e.target.value)}
-                  >
-                    {OFFICES.map((o) => (
-                      <option key={o.key} value={o.key}>
-                        {o.flagEmoji ? `${o.flagEmoji} ` : ""}
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
-                </div>
-
-                <div className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/55 bg-white/45 px-4 py-3 text-sm font-semibold text-slate-900">
-                  <Briefcase className="h-4 w-4 text-slate-800" />
-                  {loadingJobs ? "Loading…" : `${officeJobsCount} openings`}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* mobile chips */}
-        <div className="absolute left-0 right-0 top-4 z-20 px-4 md:hidden">
-          <div
-            className={cn(
-              "flex gap-2 overflow-x-auto",
-              "rounded-3xl border border-white/55 bg-white/35 p-2 backdrop-blur-xl",
-              "shadow-[0_18px_70px_rgba(0,0,0,0.18)]",
-              "animate-[floatIn_800ms_cubic-bezier(.2,.8,.2,1)]"
-            )}
-          >
-            {OFFICES.map((o) => {
-              const active = o.key === officeKey;
-              return (
-                <button
-                  key={o.key}
-                  type="button"
-                  onClick={() => selectOffice(o.key)}
-                  className={cn(
-                    "shrink-0 rounded-2xl border px-3 py-2 text-xs font-semibold transition",
-                    "active:scale-[0.98]",
-                    active
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-[0_10px_26px_rgba(16,185,129,0.20)]"
-                      : "border-white/55 bg-white/20 text-slate-900 hover:bg-white/35"
-                  )}
-                >
-                  <span className="mr-1">{o.flagEmoji ?? "🏳️"}</span>
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ✅ content (อยู่ใน flow ปกติ -> ไม่ทับ/ขยับได้จริง) */}
-        <div className="relative z-10">
-          {/* ✅ FIX #2: “จัดก้อนให้อยู่กลางจอ” ตามกรอบแดง
-              - จากเดิม w-full max-w-none (ทำให้ชิดซ้าย)
-              - เปลี่ยนเป็น max-w + mx-auto (ทำให้กึ่งกลางทั้งก้อน)
-              ✅ ผล: กลุ่มโลก+การ์ดจะไปอยู่ “ตรงกลางหน้าจอ” แบบที่คุณวงไว้
-          */}
-          <div className="mx-auto w-full max-w-[1760px] px-6 pt-0 pb-4 md:px-10 md:pb-6 lg:px-16">
-            {/* ✅ FIX #3: ปรับระยะบน content ให้สมดุลกับกรอบที่เตี้ยลง */}
-            <div className="mt-8 md:mt-9 lg:mt-10">
-              <div className="w-full">
-                {/* ✅ FIX #4: grid ให้บาลานซ์ และ “กึ่งกลางทั้งก้อน” ชัดขึ้น
-                    - ยังเป็น 2 คอลัมน์ แต่คุมความกว้างรวมให้พอดี max-w ด้านบน
-                    - gap สมดุล ไม่ให้ก้อนดูเบียด/ชิดขอบ
-                */}
-                <div className="grid items-start gap-10 md:grid-cols-[minmax(0,920px)_minmax(0,520px)] md:gap-14 xl:gap-16">
-                  {/* LEFT: Globe */}
-                  {/* ✅ FIX #5: ขยับโลกขึ้นแบบอ้างอิงขนาดโลก + ให้มี “กรอบหายใจ” ไม่ชนขอบ */}
-                  <div className="min-w-0 pt-0 md:pt-1 animate-[rise_700ms_cubic-bezier(.2,.8,.2,1)] flex items-start justify-center">
-                    <div className="w-full px-2 sm:px-4 md:px-5 lg:px-6">
-                      {/* ✅ FIX #6: ยกโลกขึ้นให้พอดีกับการ์ด (อิงขนาด element โลก)
-                          - ปรับจากเดิมให้ “ขึ้นอีก” นิดเพื่อให้ระดับใกล้การ์ดตามภาพ
-                          ✅ ผล: โลกไม่ตก/ไม่ต่ำกว่า card
-                      */}
-{/* ✅ FIX: ขยับโลกลง */}
-<div className="-translate-y-[6%] md:-translate-y-[8%]">
-  <Globe3D offices={OFFICES} activeKey={officeKey} onSelect={(k) => selectOffice(k)} />
-</div>
-
-                    </div>
-                  </div>
-
-                  {/* RIGHT: jobs card */}
-<div
-  className={cn(
-    "min-w-0 pt-0 md:pt-2 mt-8 md:mt-10",
-    "border-0 bg-transparent p-0 backdrop-blur-0 shadow-none",
-    "shadow-[0_28px_120px_rgba(0,0,0,0.10)]",
-
-    // ✅ ขยับซ้ายให้สมดุล
-    "-translate-x-6 lg:-translate-x-10"
-  )}
->
-                    {/* header badges */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-800">
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
-                        <Flag className="h-3.5 w-3.5" />
-                        <span className="mr-1">{office.flagEmoji ?? "🏳️"}</span>
-                        {office.label}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {office.tagline ?? "Local excellence to global scale"}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
-                        <Briefcase className="h-3.5 w-3.5" />
-                        {loadingJobs ? "…" : `${officeJobsCount} openings`}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">สำนักงานของเรา</div>
-                    <div className="mt-1 text-sm text-slate-700">เลือกประเทศ แล้วสำรวจตำแหน่งงานที่เปิดรับในประเทศนั้น</div>
-
-                    {/* 4 cards always */}
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {loadingJobs ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-[88px] animate-pulse rounded-2xl bg-white/60" />
-                        ))
-                      ) : (
-                        Array.from({ length: 4 }).map((_, i) => {
-                          const j = (officePagedJobs as any[])?.[i];
-
-                          if (!j) {
-                            return (
-                              <div
-                                key={`empty-${officeKey}-${officePage}-${i}`}
-                                className="h-[88px] rounded-2xl border border-white/50 bg-white/20 backdrop-blur"
-                              />
-                            );
-                          }
-
-                          const id = getJobId(j);
-                          const title = getJobTitle(j);
-                          const dept = getJobDept(j);
-                          const lvl = getJobLevel(j);
-                          const href = id ? `/jobs/${id}` : "/jobs";
-                          const stableKey = `${officeKey}-${officePage}-${id || "noid"}-${i}`;
-
-                          return (
-                            <Link
-                              key={stableKey}
-                              to={href}
-                              className={cn(
-                                "group min-w-0 rounded-2xl border border-white/60 bg-white/40 p-4 backdrop-blur-xl",
-                                "transition hover:-translate-y-0.5 hover:bg-white/55",
-                                "hover:shadow-[0_18px_60px_rgba(0,0,0,0.10)]"
-                              )}
-                            >
-                              <div className="flex min-w-0 items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="min-w-0 text-sm font-black text-slate-900 line-clamp-2 break-words">
-                                    {title}
-                                  </div>
-                                  <div className="mt-1 min-w-0 text-xs text-slate-700 line-clamp-1 break-words">
-                                    {dept} • {lvl}
-                                  </div>
-                                </div>
-                                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-slate-900" />
-                              </div>
-                            </Link>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="mt-4 flex items-center justify-between">
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => setOfficePage((p) => Math.max(1, p - 1))}
-                        disabled={officePage <= 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Prev
-                      </button>
-
-                      <div className="text-xs font-semibold text-slate-800">
-                        Page {officePage} / {officeTotalPages}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => setOfficePage((p) => Math.min(officeTotalPages, p + 1))}
-                        disabled={officePage >= officeTotalPages}
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-
-<div className="mt-3 flex flex-wrap gap-3">
-  <button
-    type="button"
-    onClick={() => goToOfficeJobs(office)}
-    className={cn(
-      "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
-      "bg-[#cd902e] text-white",
-      "shadow-[0_18px_60px_rgba(111,87,48,0.35)]",
-      "transition hover:-translate-y-0.5 hover:bg-[#c39227e2]",
-      "active:scale-[0.98]"
-    )}
-  >
-    ดูงานทั้งหมดของ {office.label}
-    <ArrowRight className="h-4 w-4" />
-  </button>
-
-  <Link
-    to="/jobs"
-    className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-  >
-    ไปหน้าตำแหน่งงานทั้งหมด
-  </Link>
-</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 text-center text-xs text-slate-700">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* keyframes */}
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: scale(1.06); }
-            to   { opacity: 1; transform: scale(1.03); }
-          }
-          @keyframes rise {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes floatIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-      {/* ✅ UPDATED UI: gallery */}
-      <section className="container-page py-14" onMouseEnter={() => setGalleryPaused(true)} onMouseLeave={() => setGalleryPaused(false)}>
-        <style>{`
-          @keyframes shd-marquee-left {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          @keyframes shd-marquee-right {
-            0% { transform: translateX(-50%); }
-            100% { transform: translateX(0); }
-          }
-          .no-scrollbar::-webkit-scrollbar { display: none; }
-          .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        `}</style>
-
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold text-slate-700">
-              <Sparkles className="h-4 w-4" />
-              Partners
-            </div>
-
-            <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">ผู้จัดจำหน่ายอย่างเป็นทางการ</h2>
-
-            <p className="mt-2 text-sm text-slate-600">Authorized distributor of the following trademarks</p>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-3xl bg-white/70 shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] ring-1 ring-black/5 backdrop-blur">
-          <div className="p-4 md:p-5">
-            {/* Row 1 */}
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white/80 to-white/0" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white/80 to-white/0" />
-
-              <div className="no-scrollbar overflow-x-auto">
-                <div
-                  className="flex w-max gap-2.5 pr-6 will-change-transform"
-                  style={{
-                    animation: "shd-marquee-left 34s linear infinite",
-                    animationPlayState: galleryPaused ? "paused" : "running",
-                  }}
-                >
-                  {topTrack.map((src, idx) => (
-                    <div key={`${src}-top-${idx}`} className="shrink-0">
-                      <div className="w-[160px] sm:w-[190px] md:w-[220px]">
-                        <div className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md">
-                          <div className="relative aspect-[16/8]">
-                            <img
-                              src={src}
-                              alt={`Gallery top ${idx + 1}`}
-                              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-                              draggable={false}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white/35" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="h-3.5" />
-
-            {/* Row 2 */}
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white/80 to-white/0" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white/80 to-white/0" />
-
-              <div className="no-scrollbar overflow-x-auto">
-                <div
-                  className="flex w-max gap-2.5 pr-6 will-change-transform"
-                  style={{
-                    animation: "shd-marquee-right 36s linear infinite",
-                    animationPlayState: galleryPaused ? "paused" : "running",
-                  }}
-                >
-                  {bottomTrack.map((src, idx) => (
-                    <div key={`${src}-bot-${idx}`} className="shrink-0">
-                      <div className="w-[160px] sm:w-[190px] md:w-[220px]">
-                        <div className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md">
-                          <div className="relative aspect-[16/8]">
-                            <img
-                              src={src}
-                              alt={`Gallery bottom ${idx + 1}`}
-                              className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-                              draggable={false}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-white/35" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
