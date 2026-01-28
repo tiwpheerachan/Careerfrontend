@@ -794,142 +794,152 @@ useEffect(() => {
       <div className="min-h-screen bg-white text-slate-900">
         {/* HERO (✅ background pure, no overlay/blur/cover; ✅ colors updated; ✅ remove Global network) */}
         <BgSection bgVideo="/videos/about/hero.mp4" poster="/images/about/hero.jpg" className="pb-4">
- <section className="relative">
-  {/* ✅ removed: ref={heroParallaxRef} + transform translate3d(...) */}
-  <div className="relative">
-    <div className="relative mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 pt-14 pb-8 sm:pt-16 sm:pb-10">
-      <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-        {/* LEFT */}
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold text-slate-900 ring-1 ring-slate-900/10 shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4" />
-              Company Story
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-xs font-bold text-slate-800 ring-1 ring-slate-900/10 shadow-sm backdrop-blur">
-              <Globe2 className="h-4 w-4" />
-              Global • Localization • Growth
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-xs font-bold text-slate-800 ring-1 ring-slate-900/10 shadow-sm backdrop-blur">
-              <Truck className="h-4 w-4" />
-              OMO & Operations
-            </span>
-          </div>
-
-          {/* ✅ SHD Technology typewriter (run once) */}
-          <h1 className="mt-6 text-4xl font-black tracking-tight text-[#4b2e1f] sm:text-6xl">
-            <span className="inline-flex items-center gap-2">
-              {typedHeroTitle}
-              {!reduced && typedHeroTitle.length < "SHD Technology".length ? (
-                <span className="h-[0.9em] w-[10px] rounded-[2px] bg-[#4b2e1f]/70 animate-[shdCaret_0.9s_steps(2,end)_infinite]" />
-              ) : null}
-            </span>
-
-            <span className="mt-2 block text-2xl font-black tracking-tight text-black sm:text-4xl">
-              ความเป็นเลิศที่ส่งมอบได้จริง
-            </span>
-          </h1>
-
-          <p className="mt-4 max-w-[78ch] text-base leading-relaxed text-[#4b2e1f] sm:text-lg">
-            เรามุ่งเน้นคุณภาพตั้งแต่ต้นทางถึงปลายทาง เพื่อให้ทุกประสบการณ์ของลูกค้า “ชัดเจนและมั่นใจ”
-          </p>
-
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              to="/jobs"
-              className={cn(
-                "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black text-white",
-                // ✅ warm orange-brown
-                "bg-[#C25A2A] shadow-[0_18px_70px_rgba(194,90,42,0.28)]",
-                "transition hover:-translate-y-0.5 hover:bg-[#A84B22] hover:shadow-[0_28px_110px_rgba(194,90,42,0.32)] active:scale-[0.98]"
-              )}
+          <section className="relative">
+            <div
+              ref={heroParallaxRef}
+              className="relative will-change-transform"
+              style={{ transform: "translate3d(var(--hx,0px), var(--hy,0px), 0)" }}
             >
-              ดูตำแหน่งงานทั้งหมด <ArrowRight className="h-4 w-4" />
-            </Link>
+              <div className="relative mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 pt-14 pb-8 sm:pt-16 sm:pb-10">
+                <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+                  {/* LEFT */}
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-extrabold text-slate-900 ring-1 ring-slate-900/10 shadow-sm backdrop-blur">
+                        <Sparkles className="h-4 w-4" />
+                        Company Story
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-xs font-bold text-slate-800 ring-1 ring-slate-900/10 shadow-sm backdrop-blur">
+                        <Globe2 className="h-4 w-4" />
+                        Global • Localization • Growth
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-4 py-2 text-xs font-bold text-slate-800 ring-1 ring-slate-900/10 shadow-sm backdrop-blur">
+                        <Truck className="h-4 w-4" />
+                        OMO & Operations
+                      </span>
+                    </div>
 
-            <button
-              type="button"
-              onClick={() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" })}
-              className={cn(
-                "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                "bg-white/75 text-slate-900 ring-1 ring-slate-900/10 shadow-sm backdrop-blur",
-                "transition hover:-translate-y-0.5 hover:bg-white/85 active:scale-[0.98]"
-              )}
-            >
-              อ่านเรื่องราวบริษัท <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+                    {/* ✅ color changes */}
+                    <h1 className="mt-6 text-4xl font-black tracking-tight text-[#4b2e1f] sm:text-6xl">
+                      SHD Technology
+                      <span className="mt-2 block text-2xl font-black tracking-tight text-black sm:text-4xl">
+                        ความเป็นเลิศที่ส่งมอบได้จริง
+                      </span>
+                    </h1>
 
-          {/* ✅ stats — glass blur (no double frame) */}
-          <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            {[
-              {
-                label: "Years of experience",
-                value: years,
-                suffix: "years",
-                icon: <Target className="h-4 w-4" />,
-              },
-              {
-                label: "Brands supported",
-                value: `${brands}+`,
-                suffix: "brands",
-                icon: <Building2 className="h-4 w-4" />,
-              },
-              {
-                label: "KA channels",
-                value: `${kaStores}+`,
-                suffix: "stores",
-                icon: <Users className="h-4 w-4" />,
-              },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className={cn(
-                  "group relative overflow-hidden rounded-3xl p-4",
-                  "bg-white/28 backdrop-blur-xl",
-                  "ring-1 ring-white/45",
-                  "shadow-[0_18px_70px_rgba(15,23,42,0.10)]",
-                  "transition hover:-translate-y-0.5 hover:shadow-[0_28px_110px_rgba(15,23,42,0.14)]"
-                )}
-              >
-                <div className="pointer-events-none absolute -left-10 -top-14 h-40 w-40 rounded-full bg-white/35 blur-2xl opacity-80" />
-                <div className="pointer-events-none absolute -bottom-16 -right-12 h-44 w-44 rounded-full bg-white/25 blur-3xl opacity-70" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-80" />
+                    {/* ✅ updated sentence + color */}
+                    <p className="mt-4 max-w-[78ch] text-base leading-relaxed text-[#4b2e1f] sm:text-lg">
+                      เรามุ่งเน้นคุณภาพตั้งแต่ต้นทางถึงปลายทาง เพื่อให้ทุกประสบการณ์ของลูกค้า “ชัดเจนและมั่นใจ”
+                    </p>
 
-                <div className="relative">
-                  <StatCard label={s.label} value={s.value} suffix={s.suffix} icon={s.icon} frame={false} />
-                </div>
-              </div>
-            ))}
-          </div>
+                    <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <Link
+                        to="/jobs"
+                        className={cn(
+                          "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
+                          "bg-slate-950 text-white shadow-[0_18px_70px_rgba(2,6,23,0.22)]",
+                          "transition hover:-translate-y-0.5 hover:shadow-[0_28px_110px_rgba(2,6,23,0.26)] active:scale-[0.98]"
+                        )}
+                      >
+                        ดูตำแหน่งงานทั้งหมด <ArrowRight className="h-4 w-4" />
+                      </Link>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-700">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-900/10 backdrop-blur">
-              <Warehouse className="h-3.5 w-3.5" />
-              Warehousing
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-900/10 backdrop-blur">
-              <Truck className="h-3.5 w-3.5" />
-              Local logistics
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-900/10 backdrop-blur">
-              <HeartHandshake className="h-3.5 w-3.5" />
-              After-sales service
-            </span>
-          </div>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" })}
+                        className={cn(
+                          "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
+                          "bg-white/75 text-slate-900 ring-1 ring-slate-900/10 shadow-sm backdrop-blur",
+                          "transition hover:-translate-y-0.5 hover:bg-white/85 active:scale-[0.98]"
+                        )}
+                      >
+                        อ่านเรื่องราวบริษัท <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
 
-          {/* ✅ caret keyframes (local to this section) */}
-          <style>{`
-            @keyframes shdCaret { 0%,49%{opacity:1} 50%,100%{opacity:0} }
-          `}</style>
-        </div>
+{/* ✅ stats — glass blur (no double frame) */}
+<div className="mt-7 grid gap-3 sm:grid-cols-3">
+  {[
+    {
+      label: "Years of experience",
+      value: years,
+      suffix: "years",
+      icon: <Target className="h-4 w-4" />,
+    },
+    {
+      label: "Brands supported",
+      value: `${brands}+`,
+      suffix: "brands",
+      icon: <Building2 className="h-4 w-4" />,
+    },
+    {
+      label: "KA channels",
+      value: `${kaStores}+`,
+      suffix: "stores",
+      icon: <Users className="h-4 w-4" />,
+    },
+  ].map((s) => (
+    <div
+      key={s.label}
+      className={cn(
+        "group relative overflow-hidden rounded-3xl p-4",
+        // ✅ glass
+        "bg-white/28 backdrop-blur-xl",
+        // ✅ soft edge (not a hard border)
+        "ring-1 ring-white/45",
+        // ✅ depth
+        "shadow-[0_18px_70px_rgba(15,23,42,0.10)]",
+        // ✅ hover lift (subtle)
+        "transition hover:-translate-y-0.5 hover:shadow-[0_28px_110px_rgba(15,23,42,0.14)]"
+      )}
+    >
+      {/* ✅ glossy highlight (no extra frame) */}
+      <div className="pointer-events-none absolute -left-10 -top-14 h-40 w-40 rounded-full bg-white/35 blur-2xl opacity-80" />
+      <div className="pointer-events-none absolute -bottom-16 -right-12 h-44 w-44 rounded-full bg-white/25 blur-3xl opacity-70" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-80" />
 
-        {/* RIGHT (✅ removed Global network completely) */}
-        <div className="hidden lg:block" />
+      <div className="relative">
+        <StatCard
+          label={s.label}
+          value={s.value}
+          suffix={s.suffix}
+          icon={s.icon}
+          frame={false} // ✅ important: stop inner border/bg
+        />
       </div>
     </div>
-  </div>
-</section>
+  ))}
+</div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-900/10 backdrop-blur">
+                        <Warehouse className="h-3.5 w-3.5" />
+                        Warehousing
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-900/10 backdrop-blur">
+                        <Truck className="h-3.5 w-3.5" />
+                        Local logistics
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 ring-1 ring-slate-900/10 backdrop-blur">
+                        <HeartHandshake className="h-3.5 w-3.5" />
+                        After-sales service
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* RIGHT (✅ removed Global network completely) */}
+                  <div className="hidden lg:block" />
+                </div>
+              </div>
+            </div>
+
+            {/* ✅ subtle parallax easing */}
+            <style>{`
+              @media (prefers-reduced-motion: reduce){
+                [style*="--hx"]{ transform:none !important; }
+              }
+            `}</style>
+          </section>
         </BgSection>
 
         {/* ✅ Apps section (bg image, no frame) */}
@@ -1061,66 +1071,307 @@ useEffect(() => {
           </div>
         </BgSection>
 
-        {/* AWARDS (bg image) */}
-        <BgSection bg="/images/about/awards.jpg" className="py-2">
-          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
-            <SectionHeader
-              kicker="AWARDS & RECOGNITION"
-              icon={<Award className="h-4 w-4" />}
-              title="รางวัลและเกียรติยศของแบรนด์"
-              desc="บทพิสูจน์จากการทำงานร่วมกับพาร์ทเนอร์และแพลตฟอร์มในหลายประเทศ"
+ {/* AWARDS (mosaic grid — clean, no gradients, Highlights supports VIDEO) */}
+<BgSection bg="/images/about/awards.jpg" className="py-2">
+  <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+    <SectionHeader
+      kicker="AWARDS & RECOGNITION"
+      icon={<Award className="h-4 w-4" />}
+      title="รางวัลและเกียรติยศของแบรนด์"
+      desc="บทพิสูจน์จากการทำงานร่วมกับพาร์ทเนอร์และแพลตฟอร์มในหลายประเทศ"
+    />
+
+    {(() => {
+      // a1..a14
+      const getImg = (i: number) => `/images/about/awards/a${(i % 14) + 1}.jpg`;
+
+      // ✅ Highlights video path (put this file here)
+      const HIGHLIGHTS_VIDEO = "/images/about/awards/video.mp4";
+
+      const total = awards?.length ?? 0;
+
+      const a0 = awards?.[0] ?? { year: "—", title: "Award Highlight", org: "—" };
+      const a1 = awards?.[1] ?? a0;
+      const a2 = awards?.[2] ?? a0;
+      const a3 = awards?.[3] ?? a0;
+      const a4 = awards?.[4] ?? a0;
+      const a5 = awards?.[5] ?? a0;
+
+      const Tile = ({ className, children }: { className: string; children: React.ReactNode }) => (
+        <div className={cn("relative overflow-hidden rounded-3xl", className)}>{children}</div>
+      );
+
+      const CornerLabel = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
+        <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-black/50 px-3 py-1 text-[11px] font-black text-white">
+          {icon}
+          {text}
+        </div>
+      );
+
+      // ✅ Video tile (for Highlights only)
+      const VideoTile = ({
+        src,
+        className,
+        label,
+      }: {
+        src: string;
+        className: string;
+        label?: string;
+      }) => (
+        <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            src={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
+          {/* solid overlay only */}
+          <div className="absolute inset-0 bg-black/25" />
+          {label ? <CornerLabel icon={<Award className="h-3.5 w-3.5" />} text={label} /> : null}
+        </Tile>
+      );
+
+      const ImgTile = ({
+        src,
+        className,
+        label,
+      }: {
+        src: string;
+        className: string;
+        label?: string;
+      }) => (
+        <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
+          <img
+            src={src}
+            alt={label || "award"}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-black/25" />
+          {label ? <CornerLabel icon={<Award className="h-3.5 w-3.5" />} text={label} /> : null}
+        </Tile>
+      );
+
+      const FlipTile = ({
+        aSrc,
+        bSrc,
+        className,
+        label,
+        intervalMs = 2600,
+      }: {
+        aSrc: string;
+        bSrc: string;
+        className: string;
+        label?: string;
+        intervalMs?: number;
+      }) => {
+        const [idx, setIdx] = React.useState<0 | 1>(0);
+
+        React.useEffect(() => {
+          const t = window.setInterval(() => setIdx((v) => (v === 0 ? 1 : 0)), intervalMs);
+          return () => window.clearInterval(t);
+        }, [intervalMs]);
+
+        return (
+          <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
+            <img
+              src={aSrc}
+              alt="flip-a"
+              className={cn(
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
+                idx === 0 ? "opacity-100" : "opacity-0"
+              )}
+              loading="lazy"
+              draggable={false}
+            />
+            <img
+              src={bSrc}
+              alt="flip-b"
+              className={cn(
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
+                idx === 1 ? "opacity-100" : "opacity-0"
+              )}
+              loading="lazy"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-black/25" />
+            {label ? <CornerLabel icon={<Sparkles className="h-3.5 w-3.5" />} text={label} /> : null}
+          </Tile>
+        );
+      };
+
+      const TextTile = ({
+        a,
+        className,
+        bgSrc,
+      }: {
+        a: { year: string; title: string; org: string; note?: string };
+        className: string;
+        bgSrc: string;
+      }) => (
+        <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
+          <img
+            src={bgSrc}
+            alt="award-bg"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-black/55" />
+
+          <div className="relative p-5 sm:p-6 text-white">
+            <div className="flex items-start justify-between gap-3">
+              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-black text-white">
+                {a.year}
+              </span>
+              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+            </div>
+
+            <div className="mt-3 text-sm font-black leading-snug">{a.title}</div>
+            <div className="mt-2 text-sm leading-relaxed text-white/85">{a.org}</div>
+
+            {a.note ? <div className="mt-3 text-xs text-white/70">{a.note}</div> : null}
+          </div>
+        </Tile>
+      );
+
+      const StatTile = ({ className, bgSrc }: { className: string; bgSrc: string }) => (
+        <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
+          <img
+            src={bgSrc}
+            alt="stat-bg"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-black/55" />
+
+          <div className="relative p-5 sm:p-6 text-white">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-black">
+              <Sparkles className="h-3.5 w-3.5" />
+              Recognition
+            </div>
+
+            <div className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+              {Math.max(1, total)}
+              <span className="text-white/60">+</span>
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white/85">Awards across platforms & regions</div>
+
+            <div className="mt-4 text-sm leading-relaxed text-white/80">
+              จากการร่วมมืออย่างใกล้ชิดกับแบรนด์และแพลตฟอร์ม เราสร้างผลลัพธ์ที่ “วัดได้จริง” และ “ส่งมอบได้จริง”
+            </div>
+          </div>
+        </Tile>
+      );
+
+      // ✅ Unique image plan
+      const IMG_F1A = getImg(1);  // a2
+      const IMG_F1B = getImg(2);  // a3
+      const IMG_STAT = getImg(3); // a4
+      const IMG_T0 = getImg(4);   // a5
+      const IMG_6 = getImg(5);    // a6
+      const IMG_7 = getImg(6);    // a7
+      const IMG_8 = getImg(7);    // a8
+      const IMG_T1 = getImg(8);   // a9
+      const IMG_F2A = getImg(9);  // a10
+      const IMG_F2B = getImg(10); // a11
+
+      const IMG_D2 = getImg(11);  // a12
+      const IMG_D3 = getImg(12);  // a13
+      const IMG_D4 = getImg(13);  // a14
+
+      const IMG_M5 = IMG_D2; // mobile-only
+
+      return (
+        <div className="mt-8">
+          <div className="grid grid-cols-12 gap-3">
+            {/* Row 1 */}
+            {/* ✅ Highlights is VIDEO now */}
+            <VideoTile className="col-span-12 sm:col-span-4" src={HIGHLIGHTS_VIDEO} label="Highlights" />
+
+            {/* ✅ Flip tile #1 */}
+            <FlipTile
+              className="col-span-6 sm:col-span-4"
+              aSrc={IMG_F1A}
+              bSrc={IMG_F1B}
+              label="Award Moments"
+              intervalMs={2600}
             />
 
-            <div className="mt-8 grid gap-3 lg:grid-cols-2">
-              {awards.map((a, i) => (
-                <div
-                  key={`${a.year}-${i}`}
-                  className="rounded-3xl border border-slate-200/80 bg-white/80 px-6 py-5 shadow-sm backdrop-blur"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
-                          {a.year}
-                        </span>
-                        <div className="text-sm font-black text-slate-950">{a.title}</div>
-                      </div>
-                      <div className="mt-2 text-sm text-slate-700">{a.org}</div>
-                    </div>
-                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-600" />
-                  </div>
-                </div>
-              ))}
+            <StatTile className="col-span-6 sm:col-span-4" bgSrc={IMG_STAT} />
+
+            {/* Row 2 */}
+            <TextTile className="col-span-12 lg:col-span-6" a={a0} bgSrc={IMG_T0} />
+            <ImgTile className="col-span-6 lg:col-span-3" src={IMG_6} />
+            <ImgTile className="col-span-6 lg:col-span-3" src={IMG_7} />
+
+            {/* Row 3 */}
+            <ImgTile className="col-span-6 lg:col-span-4" src={IMG_8} />
+            <TextTile className="col-span-6 lg:col-span-4" a={a1} bgSrc={IMG_T1} />
+
+            {/* ✅ Flip tile #2 */}
+            <FlipTile
+              className="col-span-12 lg:col-span-4"
+              aSrc={IMG_F2A}
+              bSrc={IMG_F2B}
+              label="Trusted by partners"
+              intervalMs={3000}
+            />
+
+            {/* Row 4 (desktop only) */}
+            <div className="hidden lg:col-span-4 lg:block">
+              <TextTile className="h-full" a={a2} bgSrc={IMG_D2} />
+            </div>
+            <div className="hidden lg:col-span-4 lg:block">
+              <TextTile className="h-full" a={a3} bgSrc={IMG_D3} />
+            </div>
+            <div className="hidden lg:col-span-4 lg:block">
+              <TextTile className="h-full" a={a4} bgSrc={IMG_D4} />
             </div>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                to="/jobs"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
-                  "bg-slate-950 text-white shadow-[0_18px_70px_rgba(15,23,42,0.18)]",
-                  "transition hover:-translate-y-0.5 active:scale-[0.98]"
-                )}
-              >
-                Explore open roles <ArrowRight className="h-4 w-4" />
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
-                  "border border-slate-200 bg-white/80 text-slate-800 shadow-sm backdrop-blur",
-                  "transition hover:-translate-y-0.5 active:scale-[0.98]"
-                )}
-              >
-                Back to top <ChevronRight className="h-4 w-4 rotate-[-90deg]" />
-              </button>
+            {/* Mobile only */}
+            <div className="lg:hidden col-span-12">
+              <TextTile className="" a={a5} bgSrc={IMG_M5} />
             </div>
-
-            <div className="h-4" />
           </div>
-        </BgSection>
+
+          {/* bottom actions */}
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              to="/jobs"
+              className={cn(
+                "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black text-white",
+                "bg-[#C25A2A]",
+                "transition hover:-translate-y-0.5 active:scale-[0.98]"
+              )}
+            >
+              Explore open roles <ArrowRight className="h-4 w-4" />
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className={cn(
+                "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
+                "bg-white/75 text-slate-900",
+                "transition hover:-translate-y-0.5 active:scale-[0.98]"
+              )}
+            >
+              Back to top <ChevronRight className="h-4 w-4 rotate-[-90deg]" />
+            </button>
+          </div>
+        </div>
+      );
+    })()}
+
+    <div className="h-4" />
+  </div>
+</BgSection>
 
         <div className="h-10" />
       </div>
