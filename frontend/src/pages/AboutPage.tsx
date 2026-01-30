@@ -20,7 +20,219 @@ import {
   Users,
   Warehouse,
 } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
+function JourneyShowcase({
+  items,
+  defaultIndex = 0,
+}: {
+  items: Array<{ year: string; title: string; desc: string; tag?: string }>;
+  defaultIndex?: number;
+}) {
+  const reduced = usePrefersReducedMotion();
+  const safe = items?.length ? items : [{ year: "—", title: "—", desc: "—", tag: "—" }];
+
+  const [idx, setIdx] = React.useState(() => {
+    const v = Math.max(0, Math.min(safe.length - 1, defaultIndex));
+    return v;
+  });
+
+  const active = safe[idx];
+  const canPrev = idx > 0;
+  const canNext = idx < safe.length - 1;
+
+  const prev = () => setIdx((v) => Math.max(0, v - 1));
+  const next = () => setIdx((v) => Math.min(safe.length - 1, v + 1));
+
+  // label row (Start / Local / Brand / Co-build / Scale)
+  const labels = safe.map((x) => x.tag || `Step ${x.year}`);
+
+  // progress % along the bar
+  const progress = safe.length <= 1 ? 0 : (idx / (safe.length - 1)) * 100;
+
+  // year helper for right rail
+  const yearAt = (i: number) => safe[i]?.year ?? "—";
+
+  // keyboard nav (optional)
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp") prev();
+      if (e.key === "ArrowDown") next();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="mt-8">
+      <div className="mx-auto w-full max-w-[980px]">
+        {/* Step bar */}
+        <div className="px-2 sm:px-6">
+          <div className="relative">
+            {/* labels */}
+            <div className="grid grid-cols-5 gap-2 text-[12px] sm:text-sm">
+              {labels.map((lb, i) => {
+                const activeStep = i === idx;
+                return (
+                  <button
+                    key={`${lb}-${i}`}
+                    type="button"
+                    onClick={() => setIdx(i)}
+                    className={cn(
+                      "text-left transition",
+                      activeStep ? "text-slate-950 font-semibold" : "text-slate-500 hover:text-slate-700"
+                    )}
+                    aria-current={activeStep ? "step" : undefined}
+                  >
+                    {lb}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* rail */}
+            <div className="relative mt-2 h-8">
+              {/* base line */}
+              <div className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-slate-200" />
+
+              {/* progress line (gradient like screenshot) */}
+              <div
+                className="absolute left-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full"
+                style={{
+                  width: `${progress}%`,
+                  background:
+                    "linear-gradient(90deg, rgba(245,158,11,0.95), rgba(236,72,153,0.42))",
+                }}
+              />
+
+              {/* dots */}
+              <div className="absolute inset-0 flex items-center justify-between">
+                {safe.map((_, i) => {
+                  const activeDot = i === idx;
+                  return (
+                    <button
+                      key={`dot-${i}`}
+                      type="button"
+                      onClick={() => setIdx(i)}
+                      className={cn(
+                        "relative grid place-items-center rounded-full transition",
+                        activeDot ? "scale-110" : "hover:scale-105"
+                      )}
+                      aria-label={`Go to ${labels[i]}`}
+                    >
+                      <span
+                        className={cn(
+                          "block h-3.5 w-3.5 rounded-full",
+                          activeDot
+                            ? "bg-amber-500 shadow-[0_10px_24px_rgba(245,158,11,0.35)]"
+                            : "bg-amber-500/85"
+                        )}
+                      />
+                      {/* active halo */}
+                      {activeDot ? (
+                        <span className="pointer-events-none absolute -inset-3 rounded-full bg-amber-500/10" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* content (2 cols like screenshot) */}
+        <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_220px]">
+          {/* LEFT */}
+          <div className="px-2 sm:px-6">
+            {/* small tag pill (Start) */}
+            {active.tag ? (
+              <div className="mb-4">
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-5 py-2 text-sm font-semibold text-amber-900">
+                  {active.tag}
+                </span>
+              </div>
+            ) : null}
+
+            <div
+              className={cn(
+                "transition",
+                reduced ? "" : "will-change-transform"
+              )}
+              style={{
+                transform: reduced ? undefined : "translateZ(0)",
+              }}
+            >
+              <h3 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                {active.title}
+              </h3>
+
+              <p className="mt-5 max-w-[68ch] text-base leading-relaxed text-slate-700 sm:text-lg">
+                {active.desc}
+              </p>
+
+              <div className="mt-6">
+                <span className="inline-flex items-center rounded-full bg-fuchsia-100/80 px-5 py-2 text-sm font-semibold text-slate-900">
+                  Build • Scale • Global
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: year picker */}
+          <div className="px-2 sm:px-6 lg:px-0">
+            <div className="mx-auto w-full max-w-[220px]">
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={prev}
+                  disabled={!canPrev}
+                  className={cn(
+                    "grid h-11 w-11 place-items-center rounded-2xl transition",
+                    canPrev ? "hover:bg-slate-900/5 active:scale-[0.98]" : "opacity-30 cursor-not-allowed"
+                  )}
+                  aria-label="Previous year"
+                >
+                  <ChevronUp className="h-7 w-7 text-slate-900" />
+                </button>
+
+                <div className="mt-1 text-center">
+                  <div className="text-xl font-semibold text-slate-400">{yearAt(idx - 1)}</div>
+
+                  <div className="mt-2 text-6xl font-black tracking-tight text-slate-950">
+                    {active.year}
+                  </div>
+
+                  <div className="mt-2 text-xl font-semibold text-slate-300">{yearAt(idx + 1)}</div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={next}
+                  disabled={!canNext}
+                  className={cn(
+                    "mt-3 grid h-11 w-11 place-items-center rounded-2xl transition",
+                    canNext ? "hover:bg-slate-900/5 active:scale-[0.98]" : "opacity-30 cursor-not-allowed"
+                  )}
+                  aria-label="Next year"
+                >
+                  <ChevronDown className="h-7 w-7 text-slate-900" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* mobile polish: center year rail under text */}
+        <style>{`
+          @media (max-width: 1024px){
+            /* keep the same clean feel */
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
 
 function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
@@ -302,6 +514,60 @@ function Timeline({ items }: { items: Array<{ year: string; title: string; desc:
         </div>
       ))}
     </div>
+  );
+}
+
+/** ---------------------------------------------
+ * Typing title (type → pause → delete → loop)
+ * วางไว้ในไฟล์เดียวกัน (AboutPage.tsx) ได้เลย
+ * --------------------------------------------*/
+function TypingTitle({
+  text,
+  className,
+  pauseMs = 900,
+  deleteMs = 420,
+  typeSpeed = 70,
+  deleteSpeed = 45,
+}: {
+  text: string;
+  className?: string;
+  pauseMs?: number;
+  deleteMs?: number;
+  typeSpeed?: number;
+  deleteSpeed?: number;
+}) {
+  const [out, setOut] = React.useState("");
+  const [mode, setMode] = React.useState<"typing" | "pause" | "deleting" | "hold">("typing");
+
+  React.useEffect(() => {
+    let t: any;
+
+    if (mode === "typing") {
+      if (out.length < text.length) {
+        t = setTimeout(() => setOut(text.slice(0, out.length + 1)), typeSpeed);
+      } else {
+        setMode("pause");
+      }
+    } else if (mode === "pause") {
+      t = setTimeout(() => setMode("deleting"), pauseMs);
+    } else if (mode === "deleting") {
+      if (out.length > 0) {
+        t = setTimeout(() => setOut(text.slice(0, out.length - 1)), deleteSpeed);
+      } else {
+        setMode("hold");
+      }
+    } else if (mode === "hold") {
+      t = setTimeout(() => setMode("typing"), deleteMs);
+    }
+
+    return () => clearTimeout(t);
+  }, [mode, out, text, pauseMs, deleteMs, typeSpeed, deleteSpeed]);
+
+  return (
+    <h2 className={className}>
+      {out}
+      <span className="caret">|</span>
+    </h2>
   );
 }
 
@@ -647,26 +913,35 @@ useEffect(() => {
     return many;
   }, []);
 
-  const storyBlocks = useMemo(
-    () => [
-      {
-        title: "เริ่มต้นจากเซินเจิ้น สู่การสร้างรากฐานในอาเซียน",
-        body:
-          "บริษัทเทคโนโลยีเซินหงเตี้ยน (เซินเจิ้น) จำกัด ก่อตั้งขึ้นอย่างเป็นทางการในปี 2013 ที่เมืองเซินเจิ้น และดำเนินธุรกิจมากว่า 12 ปี เราเริ่มต้นด้วยเป้าหมายเดียว — ช่วยให้แบรนด์ปรับตัวให้เข้ากับท้องถิ่นได้จริง และเติบโตได้เร็วในตลาดใหม่",
-      },
-      {
-        title: "เห็นโอกาสทองของอาเซียน และลงทุนสร้างระบบครบวงจร",
-        body:
-          "เรามองเห็นโอกาสของตลาดอาเซียน จึงสร้างโครงสร้างพื้นฐานของตัวเองอย่างครบวงจร ทั้งเครือข่ายคลังสินค้าและโลจิสติกส์ท้องถิ่น ศูนย์บริการหลังการขาย ระบบ OMO และการตลาดดิจิทัล เพื่อช่วยให้แบรนด์บุกตลาดได้อย่างแม่นยำ",
-      },
-      {
-        title: "จาก 0→1 ไปสู่ 1→100 ด้วย 4 มิติการเติบโต",
-        body:
-          'ด้วยแนวทาง “Brand Positioning → Channel → Marketing → Operations” เราช่วยผลักดันแบรนด์อิเล็กทรอนิกส์ผู้บริโภคกว่า 20+ แบรนด์เข้าสู่ตลาดอาเซียน หลายแบรนด์เติบโตขึ้นเป็นอันดับ 1 ในหมวดหมู่บนแพลตฟอร์มภายในปีแรก',
-      },
-    ],
-    []
-  );
+const storyBlocks = useMemo(
+  () => [
+    {
+      no: "01",
+      title: "เริ่มจากเซินเจิ้น สู่ภารกิจในอาเซียน",
+      body:
+        "SHD ก่อตั้งขึ้นที่เมืองเซินเจิ้นในปี 2013 และเดินหน้าธุรกิจต่อเนื่องกว่า 12 ปี ด้วยเป้าหมายเดียวคือช่วยให้แบรนด์ “เข้าท้องถิ่นได้จริง” เรานำประสบการณ์เชิงลึกจากอุตสาหกรรมเทคโนโลยี ผสานทีมผู้เชี่ยวชาญข้ามพรมแดน เพื่อพาแบรนด์เริ่มต้นจาก 0→1 อย่างมั่นคง และต่อยอดสู่การเติบโตแบบทำซ้ำได้ในตลาดอาเซียน",
+      tag: "Start",
+      highlight: "2013 • 12+ ปี • ASEAN-first",
+    },
+    {
+      no: "02",
+      title: "ลงทุนโครงสร้างพื้นฐาน เพื่อให้สเกลได้จริง",
+      body:
+        "เราเชื่อว่าแบรนด์จะโตอย่างยั่งยืนได้ ต้องมี “ระบบหลังบ้าน” ที่แข็งแรง จึงลงทุนสร้างโครงสร้างพื้นฐานครบวงจรด้วยตนเอง ตั้งแต่เครือข่ายคลังสินค้าและโลจิสติกส์ท้องถิ่น ศูนย์บริการหลังการขาย ระบบปฏิบัติการ OMO แบบเต็มรูปแบบ ไปจนถึงการทำงานร่วมกับเครือข่าย KA มากกว่า 1,000 แห่ง และระบบการตลาดดิจิทัลที่สั่งสมประสบการณ์ยาวนาน เพื่อให้การขยายสเกลเกิดขึ้นได้จริงในหลายประเทศ",
+      tag: "Infrastructure",
+      highlight: "1,000+ KA • OMO • After-sales",
+    },
+    {
+      no: "03",
+      title: "เครื่องยนต์ 4 มิติ จาก 0–1 สู่ 1–100",
+      body:
+        "เราใช้กรอบการทำงาน 4 มิติ: การกำหนดตำแหน่งแบรนด์ → ช่องทาง → การตลาด → การดำเนินงาน เพื่อเร่งการเติบโตอย่างมีทิศทาง ช่วยสนับสนุนแบรนด์อิเล็กทรอนิกส์ผู้บริโภคกว่า 20+ แบรนด์เข้าสู่อาเซียน โดยหลายแบรนด์สามารถขึ้นเป็นอันดับ 1 ในหมวดหมู่บนแพลตฟอร์มภายในปีแรก เป้าหมายของเราไม่ใช่แค่ “ขายได้” แต่คือ “สร้างเครื่องยนต์เติบโต” ที่แบรนด์ใช้ต่อได้ระยะยาว",
+      tag: "4D Engine",
+      highlight: "20+ แบรนด์ • #1 ในปีแรก",
+    },
+  ],
+  []
+);
 
   const mission =
     "เชื่อมต่อเทคโนโลยีล้ำสมัยให้ชีวิตของผู้ใช้งานหลากหลายมากขึ้น เรามุ่งมั่นยกระดับคุณภาพชีวิตของผู้ใช้งานทั่วโลก ผ่านนวัตกรรมเทคโนโลยีและโซลูชันอัจฉริยะ เพื่อสร้างไลฟ์สไตล์ที่สะดวกสบาย สุขภาพดี และมีสีสันยิ่งขึ้น";
@@ -704,7 +979,7 @@ useEffect(() => {
         tag: "Start",
       },
       {
-        year: "2014–2017",
+        year: "2014",
         title: "Rooted in Thailand",
         desc: "เลือกกลยุทธ์หยั่งรากในประเทศไทย เริ่มจากออฟไลน์ในกรุงเทพฯ และขยายเครือข่ายช่องทางท้องถิ่น",
         tag: "Local",
@@ -716,13 +991,13 @@ useEffect(() => {
         tag: "Brand",
       },
       {
-        year: "2019–2021",
+        year: "2019",
         title: "Co-Brand Building Model",
         desc: "พัฒนาโมเดล “การสร้างแบรนด์ร่วมกัน” สนับสนุนตั้งแต่กำหนดตำแหน่งสินค้า ช่องทาง ไปจนถึงการตลาด",
         tag: "Co-build",
       },
       {
-        year: "2022–Now",
+        year: "Now",
         title: "Scale Across Regions",
         desc: "ขยายสเกลการดำเนินงาน สร้างระบบโลจิสติกส์ บริการหลังการขาย และการตลาดดิจิทัลให้แข็งแรงยิ่งขึ้น",
         tag: "Scale",
@@ -793,7 +1068,7 @@ useEffect(() => {
 
       <div className="min-h-screen bg-white text-slate-900">
         {/* HERO (✅ background pure, no overlay/blur/cover; ✅ colors updated; ✅ remove Global network) */}
-        <BgSection bgVideo="/videos/about/hero.mp4" poster="/images/about/hero.jpg" className="pb-4">
+        <BgSection bg="/videos/about/x50-ultra-banner.webp" className="pb-4">
           <section className="relative">
             <div
               ref={heroParallaxRef}
@@ -947,131 +1222,690 @@ useEffect(() => {
           <AppsWall title={appsTitle} desc={appsDesc} images={officeWallImages} />
         </BgSection>
 
-        {/* STORY (bg image) */}
-        <BgSection id="story" bg="/images/about/story.jpg" className="py-2">
-          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
-            <SectionHeader
-              kicker="OUR STORY"
-              icon={<Compass className="h-4 w-4" />}
-              title="เรื่องราวของ SHD"
-              desc="จากเซินเจิ้นสู่การสร้างเครื่องยนต์การเติบโตในอาเซียน — ที่ทำให้แบรนด์ไปได้ไกลและยั่งยืน"
+{/* STORY (bg image) */}
+<BgSection id="story" bg="/images/about/story.jpg" className="py-2">
+  <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+    <SectionHeader
+      kicker="OUR STORY"
+      icon={<Compass className="h-4 w-4" />}
+      title="เรื่องราวของ SHD"
+      desc="จากเซินเจิ้นสู่การสร้างเครื่องยนต์การเติบโตในอาเซียน — ที่ทำให้แบรนด์ไปได้ไกลและยั่งยืน"
+    />
+
+    {(() => {
+      // ========= Helpers (inline, keep it self-contained) =========
+      const FlipImage = ({
+        a,
+        b,
+        alt,
+        intervalMs = 4200,
+        className = "",
+      }: {
+        a: string;
+        b: string;
+        alt: string;
+        intervalMs?: number;
+        className?: string;
+      }) => {
+        const [onA, setOnA] = React.useState(true);
+        React.useEffect(() => {
+          const t = window.setInterval(() => setOnA((v) => !v), intervalMs);
+          return () => window.clearInterval(t);
+        }, [intervalMs]);
+        return (
+          <div className={"relative overflow-hidden border border-slate-200 bg-white " + className}>
+            <img
+              src={a}
+              alt={alt}
+              className={
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 " +
+                (onA ? "opacity-100" : "opacity-0")
+              }
+              draggable={false}
             />
-
-            <div className="mt-8 grid gap-4 lg:grid-cols-3">
-              {storyBlocks.map((b) => (
-                <div key={b.title} className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <div className="text-sm font-black text-slate-950">{b.title}</div>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{b.body}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <FeatureCard
-                icon={<Warehouse className="h-6 w-6 text-emerald-700" />}
-                title="โครงสร้างพื้นฐานครบวงจร"
-                desc="เครือข่ายคลังสินค้า + โลจิสติกส์ท้องถิ่น + ศูนย์บริการหลังการขาย เพื่อให้แบรนด์ส่งมอบประสบการณ์ที่ดีได้จริง"
-              />
-              <FeatureCard
-                icon={<Sparkles className="h-6 w-6 text-emerald-700" />}
-                title="ระบบ OMO + Digital Marketing"
-                desc="เชื่อมออนไลน์และออฟไลน์ พร้อมระบบการตลาดดิจิทัลที่สั่งสมมานานหลายปี เพื่อบุกตลาดได้แม่นยำ"
-              />
-            </div>
-          </div>
-        </BgSection>
-
-        {/* MISSION / VISION (bg image) */}
-        <BgSection bg="/images/about/mission.jpg" className="py-2">
-          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="p-7">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50/80 ring-1 ring-emerald-200 backdrop-blur">
-                    <HeartHandshake className="h-6 w-6 text-emerald-700" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-600">MISSION</div>
-                    <div className="mt-1 text-lg font-black text-slate-950">พันธกิจของเรา</div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{mission}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-7">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50/80 ring-1 ring-amber-200 backdrop-blur">
-                    <Globe2 className="h-6 w-6 text-amber-700" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-600">VISION</div>
-                    <div className="mt-1 text-lg font-black text-slate-950">วิสัยทัศน์ของเรา</div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{vision}</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </BgSection>
-
-        {/* WHO WE ARE (bg image) */}
-        <BgSection bg="/images/about/culture.jpg" className="py-2">
-          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
-            <SectionHeader
-              kicker="WHO WE ARE"
-              icon={<Users className="h-4 w-4" />}
-              title="ความเป็นเรา"
-              desc="นิยามว่าเราคือใคร — สื่อสารอย่างไร ทำงานอย่างไร และตอบสนองต่อสถานการณ์ต่าง ๆ อย่างไร"
-              align="center"
+            <img
+              src={b}
+              alt={alt}
+              className={
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 " +
+                (onA ? "opacity-0" : "opacity-100")
+              }
+              draggable={false}
             />
+            <div className="relative h-full w-full" />
+          </div>
+        );
+      };
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {whoWeAre.map((x) => (
-                <div key={x.title} className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 ring-1 ring-slate-200 backdrop-blur">
-                      {x.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-black text-slate-950">{x.title}</div>
-                      <div className="mt-1 text-sm leading-relaxed text-slate-700">{x.desc}</div>
-                    </div>
+      const StepPill = ({ n, active, onClick }: { n: string; active?: boolean; onClick?: () => void }) => (
+        <button
+          type="button"
+          onClick={onClick}
+          className={
+            "h-7 w-10 border text-[12px] font-black tracking-wide transition " +
+            (active
+              ? "border-pink-200 bg-pink-100 text-slate-950"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50")
+          }
+          aria-pressed={!!active}
+        >
+          {n}
+        </button>
+      );
+
+      const Tag = ({ children, tone = "pink" }: { children: React.ReactNode; tone?: "pink" | "amber" }) => (
+        <span
+          className={
+            "inline-flex items-center border px-2.5 py-1 text-[12px] font-black " +
+            (tone === "amber"
+              ? "border-amber-200 bg-amber-100 text-slate-950"
+              : "border-pink-200 bg-pink-100 text-slate-950")
+          }
+        >
+          {children}
+        </span>
+      );
+
+      const StepNo = ({ children }: { children: React.ReactNode }) => (
+        <span className="inline-flex h-7 w-7 items-center justify-center border border-pink-200 bg-pink-100 text-[12px] font-black text-slate-950">
+          {children}
+        </span>
+      );
+
+      // ========= Assets (replace with your real paths) =========
+      const HERO_VIDEO = "/videos/shd-story-hero.mp4";
+
+      const IMG_STEP1_A = "/images/about/story/s1a.jpg";
+      const IMG_STEP1_B = "/images/about/story/s1b.jpg";
+
+      const IMG_STEP2_A = "/images/about/story/s2a.jpg";
+      const IMG_STEP2_B = "/images/about/story/s2b.jpg";
+
+      const IMG_WIDE_A = "/images/about/story/s3wide-a.jpg";
+      const IMG_WIDE_B = "/images/about/story/s3wide-b.jpg";
+
+      const IMG_TOWER_A = "/images/about/story/tower-a.jpg";
+      const IMG_TOWER_B = "/images/about/story/tower-b.jpg";
+
+      // ========= Copy (tight, story-driven) =========
+      const flow = [
+        {
+          id: "01",
+          title: "เริ่มจากเซินเจิ้น สู่ภารกิจในอาเซียน",
+          meta: "2013 • 12+ ปี • ASEAN-first",
+          tag: { label: "Start", tone: "amber" as const },
+          body:
+            "SHD ก่อตั้งที่เซินเจิ้นในปี 2013 และมุ่งหน้าเข้าสู่อาเซียนด้วยเป้าหมายเดียว—ทำให้แบรนด์ “เข้าท้องถิ่นได้จริง” เราผสานความเชี่ยวชาญข้ามพรมแดนกับทีมท้องถิ่น เพื่อพาแบรนด์เริ่มต้นจาก 0→1 อย่างมั่นคง และต่อยอดสู่การเติบโตแบบยั่งยืน",
+        },
+        {
+          id: "02",
+          title: "ลงทุนโครงสร้างพื้นฐาน เพื่อให้สเกลได้จริง",
+          meta: "1,000+ KA • OMO • After-sales",
+          tag: { label: "Infrastructure", tone: "pink" as const },
+          body:
+            "การเติบโตต้องมี “ระบบรองรับ” เราจึงสร้างเครือข่ายคลังสินค้าและโลจิสติกส์ในประเทศ ศูนย์บริการหลังการขาย และระบบปฏิบัติการ OMO ที่เชื่อมออนไลน์–ออฟไลน์ พร้อมเครือข่ายช่องทาง KA กว่า 1,000 แห่ง เพื่อให้แบรนด์ขยายสเกลได้เร็ว แม่นยำ และมีคุณภาพ",
+        },
+        {
+          id: "03",
+          title: "เครื่องยนต์ 4 มิติ จาก 0–1 สู่ 1–100",
+          meta: "20+ แบรนด์ • #1 ในหมวดหมู่ • ปีแรก",
+          tag: { label: "4D Engine", tone: "amber" as const },
+          body:
+            "เราใช้กรอบทำงาน 4 มิติ: การกำหนดตำแหน่งแบรนด์ → ช่องทาง → การตลาด → การดำเนินงาน เพื่อขับเคลื่อนการเติบโตแบบเป็นระบบ ช่วยสนับสนุนแบรนด์อิเล็กทรอนิกส์ผู้บริโภคกว่า 20+ แบรนด์เข้าสู่อาเซียน โดยหลายแบรนด์ก้าวสู่อันดับ 1 ในหมวดหมู่บนแพลตฟอร์มภายในปีแรก",
+        },
+      ];
+
+      const [active, setActive] = React.useState<"01" | "02" | "03">("01");
+
+      // ✅ Mobile auto-scroll to the flow panel when user taps 01/02/03
+      const flowRef = React.useRef<HTMLDivElement | null>(null);
+      const onPickStep = (id: "01" | "02" | "03") => {
+        setActive(id);
+        // On mobile, scroll to flow panel so the change is visible immediately
+        if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 1023px)")?.matches) {
+          window.setTimeout(() => flowRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }
+      };
+
+      return (
+        <div className="mt-8 grid gap-6 lg:grid-cols-12">
+          {/* LEFT: Video hero + stats */}
+          <div className="lg:col-span-5">
+            <div className="overflow-hidden border border-slate-200 bg-white">
+              {/* ✅ responsive heights: mobile taller */}
+              <div className="relative w-full h-[360px] sm:h-[420px] lg:aspect-[4/3] lg:h-auto">
+                <video
+                  className="absolute inset-0 h-full w-full object-cover"
+                  src={HERO_VIDEO}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+
+                {/* ✅ responsive padding + type scale */}
+                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+                  <div className="inline-flex items-center gap-2 border border-white/25 bg-white/10 px-3 py-1 text-[12px] font-black text-white backdrop-blur">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                    From 0→1 to 1→100
+                  </div>
+
+                  <div className="mt-3 text-[28px] sm:text-[34px] font-black leading-[1.05] tracking-tight text-white">
+                    Build local. Scale fast.
+                    <br />
+                    Grow sustainable.
+                  </div>
+
+                  <div className="mt-2 max-w-[38ch] text-[12px] sm:text-[13px] leading-relaxed text-white/85">
+                    ระบบที่ทำให้แบรนด์ “เข้าท้องถิ่นได้จริง” และขยายสเกลได้แบบยาวๆ
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div className="mx-auto mt-8 max-w-[980px] rounded-[28px] border border-slate-200/80 bg-white/80 px-6 py-5 shadow-sm backdrop-blur">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50/80 ring-1 ring-emerald-200 backdrop-blur">
-                  <Sparkles className="h-5 w-5 text-emerald-700" />
+              {/* ✅ stats: same row on mobile but tighter padding */}
+              <div className="grid grid-cols-3 gap-0 border-t border-slate-200">
+                <div className="p-3 sm:p-4">
+                  <div className="text-[11px] font-semibold text-slate-500">Founded</div>
+                  <div className="mt-1 text-[14px] font-black text-slate-950">2013</div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-black text-slate-950">Core principle</div>
-                  <div className="mt-1 text-sm leading-relaxed text-slate-700">
-                    เราเชื่อใน “ชนะไปด้วยกันและเติบโตไปด้วยกัน” เพราะการสร้างคุณค่าที่ยั่งยืนต้องเกิดจากทีมที่ร่วมมือกันจริง
-                  </div>
+                <div className="p-3 sm:p-4 border-l border-slate-200">
+                  <div className="text-[11px] font-semibold text-slate-500">Countries</div>
+                  <div className="mt-1 text-[14px] font-black text-slate-950">9</div>
+                </div>
+                <div className="p-3 sm:p-4 border-l border-slate-200">
+                  <div className="text-[11px] font-semibold text-slate-500">Brands</div>
+                  <div className="mt-1 text-[14px] font-black text-slate-950">20+</div>
                 </div>
               </div>
             </div>
           </div>
-        </BgSection>
 
-        {/* JOURNEY (bg image) */}
-        <BgSection bg="/images/about/journey.jpg" className="py-2">
-          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
-            <SectionHeader
-              kicker="OUR JOURNEY"
-              icon={<Rocket className="h-4 w-4" />}
-              title="เส้นทางการเติบโต"
-              desc="จากการเริ่มต้น สู่การสร้างโมเดล Co-Brand Building และระบบที่พาแบรนด์โตในอาเซียน"
-              align="center"
-            />
-            <Timeline items={journey} />
+          {/* RIGHT: Story Flow */}
+          <div ref={flowRef} className="lg:col-span-7 scroll-mt-24">
+            <div className="border border-slate-200 bg-white">
+              {/* ✅ Mobile: chips go to next line, no overflow */}
+              <div className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:p-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2 border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-black text-slate-700">
+                    <span className="h-2 w-2 bg-slate-900" />
+                    SHD STORY FLOW
+                  </div>
+
+                  <div className="mt-3 text-[22px] sm:text-[28px] font-black leading-[1.12] tracking-tight text-slate-950">
+                    ความ”มุ่งมั่น” คือสิ่งที่เราเชื่อถือ
+                    <br className="hidden sm:block" />
+                    การลงมือทำ คือ บทพิสูจน์
+                  </div>
+
+                  <div className="mt-2 text-[12px] font-semibold text-slate-500">
+                    วิสัยทัศน์ • การลงมือทำ • การขยายสเกล
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <StepPill n="01" active={active === "01"} onClick={() => onPickStep("01")} />
+                  <div className="h-px w-6 bg-slate-200" />
+                  <StepPill n="02" active={active === "02"} onClick={() => onPickStep("02")} />
+                  <div className="h-px w-6 bg-slate-200" />
+                  <StepPill n="03" active={active === "03"} onClick={() => onPickStep("03")} />
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-5">
+                {/* ✅ STEP 01: stack on mobile */}
+                <div className="grid gap-4 sm:gap-5 lg:grid-cols-12">
+                  <div className="lg:col-span-7">
+                    <div className="flex items-start gap-3">
+                      <StepNo>01</StepNo>
+                      <div className="min-w-0">
+                        <div className="text-[16px] sm:text-[18px] font-black text-slate-950">{flow[0].title}</div>
+                        <div className="mt-0.5 text-[12px] font-semibold text-slate-500">{flow[0].meta}</div>
+                      </div>
+                      <div className="ml-auto">
+                        <Tag tone={flow[0].tag.tone}>{flow[0].tag.label}</Tag>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-[13px] leading-relaxed text-slate-700">{flow[0].body}</p>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <FlipImage
+                      a={IMG_STEP1_A}
+                      b={IMG_STEP1_B}
+                      alt="Story step 01"
+                      className="h-[200px] sm:h-[220px] lg:h-[190px]"
+                      intervalMs={4200}
+                    />
+                  </div>
+                </div>
+
+                {/* ✅ STEP 02: image becomes full width on mobile */}
+                <div className="mt-6 grid gap-4 sm:gap-5 lg:grid-cols-12">
+                  <div className="lg:col-span-4">
+                    <FlipImage
+                      a={IMG_TOWER_A}
+                      b={IMG_TOWER_B}
+                      alt="Story step 02 image"
+                      className="h-[200px] sm:h-[240px] lg:h-[210px]"
+                      intervalMs={4500}
+                    />
+                  </div>
+
+                  <div className="lg:col-span-8">
+                    <div className="flex items-start gap-3">
+                      <StepNo>02</StepNo>
+                      <div className="min-w-0">
+                        <div className="text-[16px] sm:text-[18px] font-black text-slate-950">{flow[1].title}</div>
+                        <div className="mt-0.5 text-[12px] font-semibold text-slate-500">{flow[1].meta}</div>
+                      </div>
+                      <div className="ml-auto">
+                        <Tag tone={flow[1].tag.tone}>{flow[1].tag.label}</Tag>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-[13px] leading-relaxed text-slate-700">{flow[1].body}</p>
+                  </div>
+                </div>
+
+                {/* ✅ Wide image */}
+                <div className="mt-6">
+                  <FlipImage
+                    a={IMG_WIDE_A}
+                    b={IMG_WIDE_B}
+                    alt="Wide story image"
+                    className="h-[140px] sm:h-[160px]"
+                    intervalMs={4800}
+                  />
+                </div>
+
+                {/* ✅ STEP 03 */}
+                <div className="mt-6 border-t border-slate-200 pt-5">
+                  <div className="flex items-start gap-3">
+                    <StepNo>03</StepNo>
+                    <div className="min-w-0">
+                      <div className="text-[16px] sm:text-[18px] font-black text-slate-950">{flow[2].title}</div>
+                      <div className="mt-0.5 text-[12px] font-semibold text-slate-500">{flow[2].meta}</div>
+                    </div>
+                    <div className="ml-auto">
+                      <Tag tone={flow[2].tag.tone}>{flow[2].tag.label}</Tag>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-[13px] leading-relaxed text-slate-700">{flow[2].body}</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </BgSection>
+        </div>
+      );
+    })()}
+  </div>
+</BgSection>
 
- {/* AWARDS (mosaic grid — clean, no gradients, Highlights supports VIDEO) */}
+{/* MISSION / VISION — Minimal white + orbit (no shadow/blur/gradient) */}
+<section className="bg-white py-14">
+  <style>{`
+    /* ---------- Typography ---------- */
+    .mv-kicker{
+      display:flex; align-items:center; gap:12px;
+      font-size:11px; font-weight:800; letter-spacing:.22em;
+      color:#0f172a;
+    }
+    .mv-kicker::before{
+      content:""; display:inline-block; width:44px; height:1px;
+      background: rgba(15,23,42,.22);
+    }
+    .mv-h{
+      color:#0f172a;
+      font-weight:900;
+      letter-spacing:-.02em;
+      line-height:1.05;
+      font-size:34px;
+    }
+    @media (min-width: 640px){ .mv-h{ font-size:42px; } }
+    .mv-p{
+      color: rgba(15,23,42,.72);
+      font-size:14px;
+      line-height:1.75;
+    }
+
+    /* ---------- Orbit Stage ---------- */
+    .orbitWrap{
+      position:relative;
+      width: clamp(320px, 42vw, 520px);
+      aspect-ratio: 1 / 1;
+      margin-left:auto;
+      margin-right:auto;
+      transform: translateX(-16px); /* ✅ keep your balance shift */
+      container-type: size;         /* ✅ enables cqw/cqh for perfect radius matching */
+    }
+    @media (max-width: 1024px){
+      .orbitWrap{ transform: translateX(0); }
+    }
+
+    /* ---------- Rings (SVG) ---------- */
+    .orbitSvg{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      pointer-events:none;
+    }
+    .ringStroke{
+      fill:none;
+      stroke: rgba(59,130,246,.28);
+      stroke-width: 0.78;                 /* ✅ thinner */
+      shape-rendering: geometricPrecision;
+    }
+    .ringDash{
+      stroke-dasharray: 1 8.6;            /* ✅ dot-ish */
+      stroke-linecap: round;              /* ✅ round dots */
+      opacity: .92;
+    }
+    .ringSolid{
+      stroke: rgba(59,130,246,.12);
+      opacity: .95;
+    }
+    @keyframes dashMove { to { stroke-dashoffset: -260; } }
+    .dashAnim{
+      animation: dashMove 88s linear infinite;
+    }
+
+    /* ---------- Orbit Rotators ---------- */
+    .rot{
+      position:absolute; inset:0;
+      will-change: transform;
+      animation: spin linear infinite;
+      transform: translateZ(0);
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ---------- Nodes ---------- */
+    .node{
+      position:absolute;
+      top:50%; left:50%;
+      width:44px; height:44px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.18);
+
+      /* ✅ place the NODE CENTER on the orbit center, then rotate + radius */
+      transform:
+        translate(-50%, -50%)
+        rotate(var(--a))
+        translateX(calc(var(--r) * 1cqw)); /* ✅ PERFECT match with SVG radius (r=44 => 44cqw) */
+
+      transform-origin: 0 0;
+    }
+    .node.sm{ width:38px; height:38px; }
+    .node.xs{ width:34px; height:34px; }
+
+    /* ✅ subtle self-rotation (optional) — rotates inside the bubble */
+    @keyframes faceSpin { to { transform: rotate(360deg); } }
+    .node img{
+      width:100%; height:100%;
+      object-fit:cover;
+      display:block;
+      transform-origin: 50% 50%;
+      animation: faceSpin var(--face, 0s) linear infinite; /* set per ring */
+    }
+
+    /* center */
+    .center{
+      position:absolute;
+      top:50%; left:50%;
+      width:92px; height:92px;
+      transform: translate(-50%,-50%);
+      border-radius:999px;
+      overflow:hidden;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.18);
+    }
+    .center img{
+      width:100%; height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    /* accent dots */
+    .dot{
+      position:absolute; top:50%; left:50%;
+      width:6px; height:6px; border-radius:999px;
+      background:#B7F000;
+      transform:
+        translate(-50%, -50%)
+        rotate(var(--a))
+        translateX(calc(var(--r) * 1cqw));
+      transform-origin: 0 0;
+      opacity:.95;
+    }
+
+    /* caption */
+    .orbitCap{
+      position:absolute;
+      left:50%; bottom:6%;
+      transform: translateX(-50%);
+      font-size:12px;
+      color: rgba(15,23,42,.45);
+      white-space:nowrap;
+      pointer-events:none;
+    }
+
+    /* Fallback if container units not supported */
+    @supports not (width: 1cqw){
+      .node, .dot{
+        transform:
+          translate(-50%, -50%)
+          rotate(var(--a))
+          translateX(calc(var(--rpx, 180px)));
+      }
+    }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .rot{ animation:none !important; }
+      .dashAnim{ animation:none !important; }
+      .node img{ animation:none !important; }
+    }
+  `}</style>
+
+  <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10">
+    <div className="grid items-center gap-10 lg:grid-cols-2">
+      {/* LEFT */}
+      <div>
+        <div className="mv-kicker">MISSION · VISION</div>
+
+        <h2 className="mv-h mt-4">
+          สร้างคุณค่าอย่างยั่งยืน
+          <br className="hidden sm:block" />
+          ด้วยทีมที่เติบโตไปด้วยกัน
+        </h2>
+
+        <div className="mt-8 space-y-8">
+          {/* Mission */}
+          <div className="border-t border-slate-900/10 pt-6">
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900/[0.03]">
+                <HeartHandshake className="h-5 w-5 text-slate-900" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-extrabold tracking-[0.22em] text-slate-900/70">
+                  MISSION
+                </div>
+                <div className="mt-1 text-lg font-black text-slate-900">
+                  พันธกิจของเรา
+                </div>
+                <p className="mv-p mt-2">{mission}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Vision */}
+          <div className="border-t border-slate-900/10 pt-6">
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900/[0.03]">
+                <Globe2 className="h-5 w-5 text-slate-900" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-extrabold tracking-[0.22em] text-slate-900/70">
+                  VISION
+                </div>
+                <div className="mt-1 text-lg font-black text-slate-900">
+                  วิสัยทัศน์ของเรา
+                </div>
+                <p className="mv-p mt-2">{vision}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT */}
+      <div className="lg:justify-self-end">
+        <div className="orbitWrap">
+          {/* Rings (SVG) */}
+          <svg className="orbitSvg" viewBox="0 0 100 100" aria-hidden="true">
+            <circle className="ringStroke ringDash dashAnim" cx="50" cy="50" r="44" strokeDashoffset="0" />
+            <circle className="ringStroke ringSolid" cx="50" cy="50" r="38" />
+            <circle
+              className="ringStroke ringDash dashAnim"
+              style={{ animationDuration: "112s" }}
+              cx="50" cy="50" r="32" strokeDashoffset="70"
+            />
+            <circle className="ringStroke ringSolid" cx="50" cy="50" r="24" />
+            <circle
+              className="ringStroke ringDash dashAnim"
+              style={{ animationDuration: "136s" }}
+              cx="50" cy="50" r="18" strokeDashoffset="120"
+            />
+          </svg>
+
+          {/* Center */}
+          <div className="center">
+            <img src="/images/about/team/center.jpg" alt="center" />
+          </div>
+
+          {/* Rotator A (outer) — ✅ faster +20% (208s -> ~173s) */}
+          <div className="rot" style={{ animationDuration: "173s" }}>
+            <div className="node" style={{ ["--a" as any]: "18deg",  ["--r" as any]: 40, ["--face" as any]: "28s", ["--rpx" as any]: "230px" }}>
+              <img src="/images/about/team/t1.jpg" alt="t1" />
+            </div>
+            <div className="node" style={{ ["--a" as any]: "142deg", ["--r" as any]: 40, ["--face" as any]: "30s", ["--rpx" as any]: "230px" }}>
+              <img src="/images/about/team/t2.jpg" alt="t2" />
+            </div>
+            <div className="node" style={{ ["--a" as any]: "262deg", ["--r" as any]: 40, ["--face" as any]: "26s", ["--rpx" as any]: "230px" }}>
+              <img src="/images/about/team/t3.jpg" alt="t3" />
+            </div>
+
+            <div className="dot" style={{ ["--a" as any]: "85deg",  ["--r" as any]: 40, ["--rpx" as any]: "230px" }} />
+            <div className="dot" style={{ ["--a" as any]: "310deg", ["--r" as any]: 40, ["--rpx" as any]: "230px" }} />
+          </div>
+
+          {/* Rotator B (mid, reverse) — ✅ faster +20% (256s -> ~213s) */}
+          <div className="rot" style={{ animationDuration: "213s", animationDirection: "reverse" as any }}>
+            <div className="node sm" style={{ ["--a" as any]: "40deg",  ["--r" as any]: 32, ["--face" as any]: "34s", ["--rpx" as any]: "170px" }}>
+              <img src="/images/about/team/t4.jpg" alt="t4" />
+            </div>
+            <div className="node sm" style={{ ["--a" as any]: "190deg", ["--r" as any]: 32, ["--face" as any]: "32s", ["--rpx" as any]: "170px" }}>
+              <img src="/images/about/team/t5.jpg" alt="t5" />
+            </div>
+            <div className="dot" style={{ ["--a" as any]: "120deg", ["--r" as any]: 32, ["--rpx" as any]: "170px" }} />
+          </div>
+
+          {/* Rotator C (inner) — ✅ faster +20% (312s -> ~260s) */}
+          <div className="rot" style={{ animationDuration: "260s" }}>
+            <div className="node xs" style={{ ["--a" as any]: "110deg", ["--r" as any]: 18, ["--face" as any]: "38s", ["--rpx" as any]: "120px" }}>
+              <img src="/images/about/team/t6.jpg" alt="t6" />
+            </div>
+            <div className="node xs" style={{ ["--a" as any]: "290deg", ["--r" as any]: 18, ["--face" as any]: "36s", ["--rpx" as any]: "120px" }}>
+              <img src="/images/about/team/t7.jpg" alt="t7" />
+            </div>
+            <div className="dot" style={{ ["--a" as any]: "18deg", ["--r" as any]: 18, ["--rpx" as any]: "120px" }} />
+          </div>
+
+          <div className="orbitCap">People move. Standards stay.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* WHO WE ARE (bg image) — Pure minimal (no outer border/shadow/gradient/blur) */}
+<BgSection bg="/images/about/culture.jpg" className="py-2">
+  <section className="relative">
+    <style>{`
+      @keyframes caretBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+      .caret{ display:inline-block; width:10px; margin-left:6px; animation: caretBlink 1s steps(1) infinite; }
+    `}</style>
+
+    <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+      {/* Header */}
+<div className="text-center">
+  <div className="inline-flex items-center gap-2 text-[11px] font-black tracking-[0.22em] text-slate-900">
+    <Users className="h-4 w-4 text-slate-900" />
+    <span>WHO WE ARE</span>
+  </div>
+
+  <TypingTitle
+    className="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-slate-900"
+    text="ความเป็นเรา"
+    pauseMs={900}
+    deleteMs={420}
+    typeSpeed={75}
+    deleteSpeed={45}
+  />
+
+  <p className="mx-auto mt-3 max-w-[820px] text-sm sm:text-base leading-relaxed text-slate-700">
+    SHD คือทีมที่เชื่อในมาตรฐานเดียวกันของการเป็นคนทำงานที่ไว้ใจได้
+  </p>
+</div>
+      {/* Cards */}
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        {whoWeAre.map((x) => (
+          <div
+            key={x.title}
+            className="rounded-2xl bg-white/95 p-6"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/5">
+                {x.icon}
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-sm font-black text-slate-950">{x.title}</div>
+                <div className="mt-1 text-sm leading-relaxed text-slate-700">{x.desc}</div>
+
+                {/* thin divider (no shadow) */}
+                <div className="mt-4 h-px w-16 bg-slate-200" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+</BgSection>
+
+
+{/* JOURNEY (bg image) */}
+<BgSection bg="/images/about/journey.jpg" className="py-2">
+  <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
+    <SectionHeader
+      kicker="OUR JOURNEY"
+      icon={<Rocket className="h-4 w-4" />}
+      title="เส้นทางการเติบโต"
+      desc="จากการเริ่มต้น สู่การสร้างโมเดล Co-Brand Building และระบบที่พาแบรนด์โตในอาเซียน"
+      align="center"
+    />
+
+    {/* ✅ NEW: journey design like your screenshot */}
+    <JourneyShowcase items={journey} defaultIndex={0} />
+  </div>
+</BgSection>
+
+{/* AWARDS (mosaic grid — clean, no overlays, Highlights supports VIDEO) */}
 <BgSection bg="/images/about/awards.jpg" className="py-2">
   <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-10 py-12">
     <SectionHeader
@@ -1082,11 +1916,19 @@ useEffect(() => {
     />
 
     {(() => {
-      // a1..a14
-      const getImg = (i: number) => `/images/about/awards/a${(i % 14) + 1}.jpg`;
+      // ------------------------------
+      // Image helpers (unique per tile)
+      // ------------------------------
+      const exts = ["jpg", "png", "webp", "gif"] as const;
+      const pickExt = (i: number) => exts[0];
+      const getMedia = (i: number) => `/images/about/awards/a${(i % 14) + 1}.${pickExt(i)}`;
 
-      // ✅ Highlights video path (put this file here)
-      const HIGHLIGHTS_VIDEO = "/images/about/awards/video.mp4";
+      // ------------------------------
+      // Video helpers (unique per tile)
+      // ------------------------------
+      const VIDEO_HIGHLIGHTS = "/images/about/awards/video-highlights.mp4"; // Tile #1
+      const VIDEO_RECOG_2024 = "/images/about/awards/video-2024.mp4";       // Tile #2
+      const VIDEO_DREAME_2024 = "/images/about/awards/video-dreame.mp4";    // Tile #3
 
       const total = awards?.length ?? 0;
 
@@ -1108,7 +1950,31 @@ useEffect(() => {
         </div>
       );
 
-      // ✅ Video tile (for Highlights only)
+      const YearPill = ({ year, tone = "dark" }: { year: string; tone?: "dark" | "light" }) => (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-black",
+            tone === "dark" ? "bg-black/35 text-white" : "bg-white/75 text-slate-900"
+          )}
+        >
+          {year}
+        </span>
+      );
+
+      // ✅ สำคัญ: กัน CSS global ที่ทำให้ video ไม่เต็ม tile (อาการเป็นเส้นบางๆ)
+      const FullBleedVideo = ({ src }: { src: string }) => (
+        <video
+          src={src}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 object-cover"
+          style={{ width: "100%", height: "100%", display: "block" }}
+        />
+      );
+
       const VideoTile = ({
         src,
         className,
@@ -1119,17 +1985,7 @@ useEffect(() => {
         label?: string;
       }) => (
         <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
-          <video
-            className="absolute inset-0 h-full w-full object-cover"
-            src={src}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-          />
-          {/* solid overlay only */}
-          <div className="absolute inset-0 bg-black/25" />
+          <FullBleedVideo src={src} />
           {label ? <CornerLabel icon={<Award className="h-3.5 w-3.5" />} text={label} /> : null}
         </Tile>
       );
@@ -1151,7 +2007,6 @@ useEffect(() => {
             loading="lazy"
             draggable={false}
           />
-          <div className="absolute inset-0 bg-black/25" />
           {label ? <CornerLabel icon={<Award className="h-3.5 w-3.5" />} text={label} /> : null}
         </Tile>
       );
@@ -1198,7 +2053,6 @@ useEffect(() => {
               loading="lazy"
               draggable={false}
             />
-            <div className="absolute inset-0 bg-black/25" />
             {label ? <CornerLabel icon={<Sparkles className="h-3.5 w-3.5" />} text={label} /> : null}
           </Tile>
         );
@@ -1208,10 +2062,14 @@ useEffect(() => {
         a,
         className,
         bgSrc,
+        textTone = "white",
+        titleClassName = "text-sm sm:text-base",
       }: {
         a: { year: string; title: string; org: string; note?: string };
         className: string;
         bgSrc: string;
+        textTone?: "white" | "black";
+        titleClassName?: string;
       }) => (
         <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
           <img
@@ -1221,80 +2079,116 @@ useEffect(() => {
             loading="lazy"
             draggable={false}
           />
-          <div className="absolute inset-0 bg-black/55" />
-
-          <div className="relative p-5 sm:p-6 text-white">
+          <div className={cn("relative p-5 sm:p-6", textTone === "white" ? "text-white" : "text-slate-900")}>
             <div className="flex items-start justify-between gap-3">
-              <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-black text-white">
-                {a.year}
-              </span>
-              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <YearPill year={a.year} tone={textTone === "white" ? "dark" : "light"} />
+              <CheckCircle2 className={cn("h-5 w-5", textTone === "white" ? "text-emerald-300" : "text-emerald-600")} />
             </div>
 
-            <div className="mt-3 text-sm font-black leading-snug">{a.title}</div>
-            <div className="mt-2 text-sm leading-relaxed text-white/85">{a.org}</div>
+            {/* ✅ ขยายตัวหนังสือรางวัล ใหญ่ขึ้นนิด */}
+            <div className={cn("mt-3 font-black leading-snug", titleClassName)}>{a.title}</div>
 
-            {a.note ? <div className="mt-3 text-xs text-white/70">{a.note}</div> : null}
+            <div className={cn("mt-2 text-sm leading-relaxed", textTone === "white" ? "text-white/90" : "text-slate-700")}>
+              {a.org}
+            </div>
+
+            {a.note ? (
+              <div className={cn("mt-3 text-xs", textTone === "white" ? "text-white/80" : "text-slate-600")}>
+                {a.note}
+              </div>
+            ) : null}
           </div>
         </Tile>
       );
 
-      const StatTile = ({ className, bgSrc }: { className: string; bgSrc: string }) => (
+      const VideoTextTile = ({
+        videoSrc,
+        a,
+        className,
+        year,
+        titleClassName = "text-base sm:text-lg",
+      }: {
+        videoSrc: string;
+        a: { title: string; org: string; note?: string };
+        className: string;
+        year: string;
+        titleClassName?: string;
+      }) => (
         <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
-          <img
-            src={bgSrc}
-            alt="stat-bg"
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
-            draggable={false}
-          />
-          <div className="absolute inset-0 bg-black/55" />
-
+          <FullBleedVideo src={videoSrc} />
           <div className="relative p-5 sm:p-6 text-white">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-black">
-              <Sparkles className="h-3.5 w-3.5" />
-              Recognition
+            <div className="flex items-start justify-between gap-3">
+              <YearPill year={year} tone="dark" />
+              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+            </div>
+
+            <div className={cn("mt-3 font-black leading-snug", titleClassName)}>{a.title}</div>
+            <div className="mt-2 text-sm leading-relaxed text-white/90">{a.org}</div>
+            {a.note ? <div className="mt-3 text-xs text-white/80">{a.note}</div> : null}
+          </div>
+        </Tile>
+      );
+
+      const StatTileVideo = ({ className, videoSrc }: { className: string; videoSrc: string }) => (
+        <Tile className={cn("min-h-[140px] sm:min-h-[170px]", className)}>
+          <FullBleedVideo src={videoSrc} />
+          <div className="relative p-5 sm:p-6 text-white">
+            <div className="flex items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1 text-[11px] font-black">
+                <Sparkles className="h-3.5 w-3.5" />
+                Recognition
+              </div>
+              <YearPill year="2024" tone="dark" />
             </div>
 
             <div className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
               {Math.max(1, total)}
-              <span className="text-white/60">+</span>
+              <span className="text-white/70">+</span>
             </div>
-            <div className="mt-2 text-sm font-semibold text-white/85">Awards across platforms & regions</div>
 
-            <div className="mt-4 text-sm leading-relaxed text-white/80">
+            <div className="mt-2 text-sm font-black text-white/95">Awards across platforms & regions</div>
+
+            <div className="mt-4 text-sm leading-relaxed text-white/85">
               จากการร่วมมืออย่างใกล้ชิดกับแบรนด์และแพลตฟอร์ม เราสร้างผลลัพธ์ที่ “วัดได้จริง” และ “ส่งมอบได้จริง”
             </div>
           </div>
         </Tile>
       );
 
-      // ✅ Unique image plan
-      const IMG_F1A = getImg(1);  // a2
-      const IMG_F1B = getImg(2);  // a3
-      const IMG_STAT = getImg(3); // a4
-      const IMG_T0 = getImg(4);   // a5
-      const IMG_6 = getImg(5);    // a6
-      const IMG_7 = getImg(6);    // a7
-      const IMG_8 = getImg(7);    // a8
-      const IMG_T1 = getImg(8);   // a9
-      const IMG_F2A = getImg(9);  // a10
-      const IMG_F2B = getImg(10); // a11
+      // ------------------------------
+      // Unique image assignment (NO DUPES)
+      // ------------------------------
+      // Flip #1 uses a2 + a3
+      const IMG_F1A = getMedia(1);  // a2.jpg
+      const IMG_F1B = getMedia(2);  // a3.jpg
 
-      const IMG_D2 = getImg(11);  // a12
-      const IMG_D3 = getImg(12);  // a13
-      const IMG_D4 = getImg(13);  // a14
+      // Img tiles use a6, a7, a8
+      const IMG_6 = getMedia(5);    // a6.jpg
+      const IMG_7 = getMedia(6);    // a7.jpg
+      const IMG_8 = getMedia(7);    // a8.jpg
 
-      const IMG_M5 = IMG_D2; // mobile-only
+      // Text tile (2021) background uses a9
+      const IMG_T1 = getMedia(8);   // a9.jpg
+
+      // Flip #2 uses a10 + a11
+      const IMG_F2A = getMedia(9);  // a10.jpg
+      const IMG_F2B = getMedia(10); // a11.jpg
+
+      // Desktop-only 3 tiles use a12, a13, a14
+      const IMG_D2 = getMedia(11);  // a12.jpg
+      const IMG_D3 = getMedia(12);  // a13.jpg
+      const IMG_D4 = getMedia(13);  // a14.jpg
+
+      // Mobile-only uses a1 (unique; not used elsewhere)
+      const IMG_MOBILE_ONLY = getMedia(0); // a1.jpg
 
       return (
         <div className="mt-8">
           <div className="grid grid-cols-12 gap-3">
             {/* Row 1 */}
-            {/* ✅ Highlights is VIDEO now */}
-            <VideoTile className="col-span-12 sm:col-span-4" src={HIGHLIGHTS_VIDEO} label="Highlights" />
+            {/* ✅ Video #1 (unique) */}
+            <VideoTile className="col-span-12 sm:col-span-4" src={VIDEO_HIGHLIGHTS} label="Highlights" />
 
-            {/* ✅ Flip tile #1 */}
             <FlipTile
               className="col-span-6 sm:col-span-4"
               aSrc={IMG_F1A}
@@ -1303,18 +2197,39 @@ useEffect(() => {
               intervalMs={2600}
             />
 
-            <StatTile className="col-span-6 sm:col-span-4" bgSrc={IMG_STAT} />
+            {/* ✅ Video #2 (unique) */}
+            <StatTileVideo className="col-span-6 sm:col-span-4" videoSrc={VIDEO_RECOG_2024} />
 
             {/* Row 2 */}
-            <TextTile className="col-span-12 lg:col-span-6" a={a0} bgSrc={IMG_T0} />
+            {/* ✅ Video #3 (unique) */}
+            <VideoTextTile
+              className="col-span-12 lg:col-span-6"
+              year="2024"
+              videoSrc={VIDEO_DREAME_2024}
+              a={{
+                title: "รางวัลแบรนด์ที่พึงพอใจสูงสุด",
+                org: "Dreame — Shopee ประเทศไทย",
+              }}
+            />
+
             <ImgTile className="col-span-6 lg:col-span-3" src={IMG_6} />
             <ImgTile className="col-span-6 lg:col-span-3" src={IMG_7} />
 
             {/* Row 3 */}
             <ImgTile className="col-span-6 lg:col-span-4" src={IMG_8} />
-            <TextTile className="col-span-6 lg:col-span-4" a={a1} bgSrc={IMG_T1} />
 
-            {/* ✅ Flip tile #2 */}
+            <TextTile
+              className="col-span-6 lg:col-span-4"
+              textTone="black"
+              titleClassName="text-base sm:text-lg"
+              a={{
+                year: "2021",
+                title: "รางวัลผู้จำหน่ายดาวรุ่งแห่งปี",
+                org: "SUNMOON168 — Shopee ประเทศไทย",
+              }}
+              bgSrc={IMG_T1}
+            />
+
             <FlipTile
               className="col-span-12 lg:col-span-4"
               aSrc={IMG_F2A}
@@ -1334,9 +2249,9 @@ useEffect(() => {
               <TextTile className="h-full" a={a4} bgSrc={IMG_D4} />
             </div>
 
-            {/* Mobile only */}
+            {/* Mobile only (✅ unique bg) */}
             <div className="lg:hidden col-span-12">
-              <TextTile className="" a={a5} bgSrc={IMG_M5} />
+              <TextTile className="" a={a5} bgSrc={IMG_MOBILE_ONLY} />
             </div>
           </div>
 
