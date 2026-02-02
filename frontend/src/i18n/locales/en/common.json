@@ -18,7 +18,6 @@
     "back": "Back",
     "loading": "Loading...",
     "notFound": "Not found",
-
     "optional": "optional",
     "select": "Select...",
     "preview": "Preview",
@@ -32,230 +31,282 @@
     "ctaSecondary": "Why SHD",
     "bannerNote": "* Replace banner images in /public/images with the required sizes."
   },
-"about": {
-  "title": "About SHD",
-  "kicker": "Company Story",
-  "subtitle": "Global • Localization • Growth",
-  "brand": "SHD Technology",
-  "headline": "Operational excellence—delivered, end to end.",
-  "p1": "SHD builds world-class teams across countries, powered by a results-driven culture and a long-term growth mindset. From sourcing to service, we uphold uncompromising standards so every customer experience feels clear, consistent, and confidently delivered.",
-
-  "cta": {
-    "primary": "View all open roles",
-    "secondary": "Read our story"
-  },
-
-  "cards": [
-    {
-      "title": "Vision",
-      "desc": "Set a new global benchmark for modern retail—warm, trusted, and user-first."
+  "about": {
+    "title": "About SHD",
+    "kicker": "Company Story",
+    "subtitle": "Global • Localization • Growth",
+    "brand": "SHD Technology",
+    "headline": "Operational excellence—delivered, end to end.",
+    "p1": "SHD builds world-class teams across countries, powered by a results-driven culture and a long-term growth mindset. From sourcing to service, we uphold uncompromising standards so every customer experience feels clear, consistent, and confidently delivered.",
+    "cta": {
+      "primary": "View all open roles",
+      "secondary": "Read our story"
     },
-    {
-      "title": "Mission",
-      "desc": "Elevate everyday life through smarter technology, better processes, and teams that grow together."
-    },
-    {
-      "title": "Footprint",
-      "desc": "Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico"
-    }
-  ],
-
-  "stats": [
-    { "label": "Years of experience", "value": "12", "unit": "years" },
-    { "label": "Brands supported", "value": "20+", "unit": "brands" },
-    { "label": "KA channels", "value": "1000+", "unit": "stores" }
-  ],
-
-  "capabilities": [
-    "Warehousing",
-    "Local logistics",
-    "After-sales service",
-    "OMO & Operations"
-  ],
-
-  "offices": {
-    "title": "Our Offices",
-    "desc": "A living wall of our offices.",
-    "items": [
-      "Office 1","Office 2","Office 3","Office 4","Office 5","Office 6","Office 7","Office 8","Office 9","Office 10",
-      "Office 11","Office 12","Office 13","Office 14","Office 15","Office 16","Office 17","Office 18","Office 19","Office 20",
-      "Office 21","Office 22","Office 23","Office 24","Office 25","Office 26","Office 27","Office 28","Office 29","Office 30",
-      "Office 31","Office 32","Office 33","Office 34","Office 35","Office 36","Office 37","Office 38","Office 39","Office 40",
-      "Office 41","Office 42","Office 43","Office 44","Office 45","Office 46","Office 47","Office 48","Office 49","Office 50",
-      "Office 51","Office 52","Office 53","Office 54","Office 55","Office 56","Office 57","Office 58","Office 59","Office 60",
-      "Office 61","Office 62","Office 63","Office 64","Office 65","Office 66","Office 67","Office 68","Office 69","Office 70",
-      "Office 71","Office 72","Office 73","Office 74","Office 75","Office 76","Office 77","Office 78","Office 79","Office 80"
-    ]
-  },
-
-  "story": {
-    "kicker": "OUR STORY",
-    "title": "The SHD Story",
-    "desc": "From Shenzhen to Southeast Asia—building a scalable growth engine that helps brands go further, faster, and last longer.",
-
-    "heroBadge": "From 0→1 to 1→100",
-    "heroTitle": "Build local. Scale fast.\nGrow sustainable.",
-    "heroSub": "A system designed to localize brands with precision—and scale with momentum, year after year.",
-
-    "heroStats": [
-      { "label": "Founded", "value": "2013" },
-      { "label": "Countries", "value": "9" },
-      { "label": "Brands", "value": "20+" }
+    "cards": [
+      {
+        "title": "Vision",
+        "desc": "Set a new global benchmark for modern retail—warm, trusted, and user-first."
+      },
+      {
+        "title": "Mission",
+        "desc": "Elevate everyday life through smarter technology, better processes, and teams that grow together."
+      },
+      {
+        "title": "Footprint",
+        "desc": "Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico"
+      }
     ],
-
-    "flow": {
-      "kicker": "SHD STORY FLOW",
-      "headline": "Commitment is what we stand for.\nExecution is our proof.",
-      "subline": "Vision • Action • Scale",
-      "steps": [
+    "stats": [
+      { "label": "Years of experience", "value": "12", "unit": "years" },
+      { "label": "Brands supported", "value": "20+", "unit": "brands" },
+      { "label": "KA channels", "value": "1000+", "unit": "stores" }
+    ],
+    "capabilities": ["Warehousing", "Local logistics", "After-sales service", "OMO & Operations"],
+    "offices": {
+      "title": "Our Offices",
+      "desc": "A living wall of our offices.",
+      "items": [
+        "Office 1",
+        "Office 2",
+        "Office 3",
+        "Office 4",
+        "Office 5",
+        "Office 6",
+        "Office 7",
+        "Office 8",
+        "Office 9",
+        "Office 10",
+        "Office 11",
+        "Office 12",
+        "Office 13",
+        "Office 14",
+        "Office 15",
+        "Office 16",
+        "Office 17",
+        "Office 18",
+        "Office 19",
+        "Office 20",
+        "Office 21",
+        "Office 22",
+        "Office 23",
+        "Office 24",
+        "Office 25",
+        "Office 26",
+        "Office 27",
+        "Office 28",
+        "Office 29",
+        "Office 30",
+        "Office 31",
+        "Office 32",
+        "Office 33",
+        "Office 34",
+        "Office 35",
+        "Office 36",
+        "Office 37",
+        "Office 38",
+        "Office 39",
+        "Office 40",
+        "Office 41",
+        "Office 42",
+        "Office 43",
+        "Office 44",
+        "Office 45",
+        "Office 46",
+        "Office 47",
+        "Office 48",
+        "Office 49",
+        "Office 50",
+        "Office 51",
+        "Office 52",
+        "Office 53",
+        "Office 54",
+        "Office 55",
+        "Office 56",
+        "Office 57",
+        "Office 58",
+        "Office 59",
+        "Office 60",
+        "Office 61",
+        "Office 62",
+        "Office 63",
+        "Office 64",
+        "Office 65",
+        "Office 66",
+        "Office 67",
+        "Office 68",
+        "Office 69",
+        "Office 70",
+        "Office 71",
+        "Office 72",
+        "Office 73",
+        "Office 74",
+        "Office 75",
+        "Office 76",
+        "Office 77",
+        "Office 78",
+        "Office 79",
+        "Office 80"
+      ]
+    },
+    "story": {
+      "kicker": "OUR STORY",
+      "title": "The SHD Story",
+      "desc": "From Shenzhen to Southeast Asia—building a scalable growth engine that helps brands go further, faster, and last longer.",
+      "heroBadge": "From 0→1 to 1→100",
+      "heroTitle": "Build local. Scale fast.\nGrow sustainable.",
+      "heroSub": "A system designed to localize brands with precision—and scale with momentum, year after year.",
+      "heroStats": [
+        { "label": "Founded", "value": "2013" },
+        { "label": "Countries", "value": "9" },
+        { "label": "Brands", "value": "20+" }
+      ],
+      "flow": {
+        "kicker": "SHD STORY FLOW",
+        "headline": "Commitment is what we stand for.\nExecution is our proof.",
+        "subline": "Vision • Action • Scale",
+        "steps": [
+          {
+            "id": "01",
+            "title": "Founded in Shenzhen, with an ASEAN mission",
+            "meta": "2013 • 12+ years • ASEAN-first",
+            "tag": "Start",
+            "body": "SHD was founded in Shenzhen in 2013 and set its sights on Southeast Asia with one clear purpose: helping brands truly win locally. We combine cross-border expertise with strong on-the-ground teams—guiding brands from 0→1 with clarity, then building the foundation for sustainable scale."
+          },
+          {
+            "id": "02",
+            "title": "Built the infrastructure to scale—properly",
+            "meta": "1,000+ KA • OMO • After-sales",
+            "tag": "Infrastructure",
+            "body": "Growth needs systems that can carry it. We invested in local warehousing, in-country logistics, and after-sales service—then connected online and offline through a full OMO operating model. With 1,000+ KA channel partners and a mature digital marketing engine, we help brands scale faster with quality intact."
+          },
+          {
+            "id": "03",
+            "title": "A 4D growth engine: from 0–1 to 1–100",
+            "meta": "20+ brands • #1 categories • within year one",
+            "tag": "4D Engine",
+            "body": "We run on a four-dimensional operating framework—Brand Positioning → Channel → Marketing → Operations—turning strategy into measurable growth. SHD has enabled 20+ consumer electronics brands to succeed across ASEAN, with several reaching #1 in their categories on major platforms within their first year."
+          }
+        ]
+      }
+    },
+    "missionVision": {
+      "kicker": "MISSION · VISION",
+      "headline": "Creating lasting value\nwith teams that grow together.",
+      "mission": {
+        "title": "MISSION",
+        "subtitle": "Our Mission",
+        "body": "Bring advanced technology closer to everyday life. We elevate quality of life worldwide through intelligent innovations and practical solutions—enabling lifestyles that are easier, healthier, and more vibrant."
+      },
+      "vision": {
+        "title": "VISION",
+        "subtitle": "Our Vision",
+        "body": "To become a new-generation global retail brand—valuable, warm, and trusted. We celebrate cultural diversity, deliver service with care, and build a truly user-centered operating system."
+      }
+    },
+    "whoWeAre": {
+      "tagline": "People move. Standards stay.",
+      "kicker": "WHO WE ARE",
+      "title": "Who We Are",
+      "desc": "SHD is a team that believes in one shared standard: being reliable, accountable, and worthy of trust.",
+      "values": [
         {
-          "id": "01",
-          "title": "Founded in Shenzhen, with an ASEAN mission",
-          "meta": "2013 • 12+ years • ASEAN-first",
-          "tag": "Start",
-          "body": "SHD was founded in Shenzhen in 2013 and set its sights on Southeast Asia with one clear purpose: helping brands truly win locally. We combine cross-border expertise with strong on-the-ground teams—guiding brands from 0→1 with clarity, then building the foundation for sustainable scale."
+          "title": "Simplicity",
+          "desc": "We value clarity and honesty—grounded, straightforward, and true to ourselves."
         },
         {
-          "id": "02",
-          "title": "Built the infrastructure to scale—properly",
-          "meta": "1,000+ KA • OMO • After-sales",
-          "tag": "Infrastructure",
-          "body": "Growth needs systems that can carry it. We invested in local warehousing, in-country logistics, and after-sales service—then connected online and offline through a full OMO operating model. With 1,000+ KA channel partners and a mature digital marketing engine, we help brands scale faster with quality intact."
+          "title": "Joy",
+          "desc": "We are friendly, energetic, and fun—spreading good spirit to the people around us."
         },
         {
-          "id": "03",
-          "title": "A 4D growth engine: from 0–1 to 1–100",
-          "meta": "20+ brands • #1 categories • within year one",
-          "tag": "4D Engine",
-          "body": "We run on a four-dimensional operating framework—Brand Positioning → Channel → Marketing → Operations—turning strategy into measurable growth. SHD has enabled 20+ consumer electronics brands to succeed across ASEAN, with several reaching #1 in their categories on major platforms within their first year."
+          "title": "Collaboration",
+          "desc": "We grow stronger together, and we cherish the time we share as a team."
         }
       ]
-    }
-  },
-
-  "missionVision": {
-    "kicker": "MISSION · VISION",
-    "headline": "Creating lasting value\nwith teams that grow together.",
-    "mission": {
-      "title": "MISSION",
-      "subtitle": "Our Mission",
-      "body": "Bring advanced technology closer to everyday life. We elevate quality of life worldwide through intelligent innovations and practical solutions—enabling lifestyles that are easier, healthier, and more vibrant."
     },
-    "vision": {
-      "title": "VISION",
-      "subtitle": "Our Vision",
-      "body": "To become a new-generation global retail brand—valuable, warm, and trusted. We celebrate cultural diversity, deliver service with care, and build a truly user-centered operating system."
-    }
-  },
-
-  "whoWeAre": {
-    "tagline": "People move. Standards stay.",
-    "kicker": "WHO WE ARE",
-    "title": "Who We Are",
-    "desc": "SHD is a team that believes in one shared standard: being reliable, accountable, and worthy of trust.",
-    "values": [
-      {
-        "title": "Simplicity",
-        "desc": "We value clarity and honesty—grounded, straightforward, and true to ourselves."
-      },
-      {
-        "title": "Joy",
-        "desc": "We are friendly, energetic, and fun—spreading good spirit to the people around us."
-      },
-      {
-        "title": "Collaboration",
-        "desc": "We grow stronger together, and we cherish the time we share as a team."
-      }
-    ]
-  },
-
-  "journey": {
-    "kicker": "OUR JOURNEY",
-    "title": "Our Growth Journey",
-    "desc": "From a bold beginning to the Co-Brand Building model—and the systems that scale brands across Southeast Asia.",
-    "tags": ["Start", "Local", "Brand", "Co-build", "Scale"],
-    "items": [
-      {
-        "year": "2013",
-        "title": "Founded in Shenzhen",
-        "desc": "Officially established in Shenzhen, grounded in deep experience across the consumer electronics industry.",
-        "tag": "Start"
-      },
-      {
-        "year": "2014–2017",
-        "title": "Rooted in Thailand",
-        "desc": "Chose Thailand as the launchpad—starting offline in Bangkok and expanding a strong local channel network.",
-        "tag": "Local"
-      },
-      {
-        "year": "2018",
-        "title": "Brand-first Operations",
-        "desc": "Shifted beyond traditional distribution—building local teams and partnering deeply with brands for long-term success.",
-        "tag": "Brand"
-      },
-      {
-        "year": "2019–2021",
-        "title": "Co-Brand Building Model",
-        "desc": "Developed a co-building model—from product positioning and channels to marketing strategy and execution.",
-        "tag": "Co-build"
-      },
-      {
-        "year": "2022–Now",
-        "title": "Scale Across Regions",
-        "desc": "Expanded operations with stronger logistics, after-sales capability, and a more powerful digital growth engine.",
-        "tag": "Scale"
-      }
-    ]
-  },
-
-  "awards": {
-    "kicker": "AWARDS & RECOGNITION",
-    "title": "Awards & Recognition",
-    "desc": "Proof of outcomes built through close collaboration with brands and platforms across multiple countries.",
-    "highlightsTitle": "Highlights",
-    "kpi": {
-      "year": "2024",
-      "count": "9+",
-      "label": "Awards across platforms & regions"
+    "journey": {
+      "kicker": "OUR JOURNEY",
+      "title": "Our Growth Journey",
+      "desc": "From a bold beginning to the Co-Brand Building model—and the systems that scale brands across Southeast Asia.",
+      "tags": ["Start", "Local", "Brand", "Co-build", "Scale"],
+      "items": [
+        {
+          "year": "2013",
+          "title": "Founded in Shenzhen",
+          "desc": "Officially established in Shenzhen, grounded in deep experience across the consumer electronics industry.",
+          "tag": "Start"
+        },
+        {
+          "year": "2014–2017",
+          "title": "Rooted in Thailand",
+          "desc": "Chose Thailand as the launchpad—starting offline in Bangkok and expanding a strong local channel network.",
+          "tag": "Local"
+        },
+        {
+          "year": "2018",
+          "title": "Brand-first Operations",
+          "desc": "Shifted beyond traditional distribution—building local teams and partnering deeply with brands for long-term success.",
+          "tag": "Brand"
+        },
+        {
+          "year": "2019–2021",
+          "title": "Co-Brand Building Model",
+          "desc": "Developed a co-building model—from product positioning and channels to marketing strategy and execution.",
+          "tag": "Co-build"
+        },
+        {
+          "year": "2022–Now",
+          "title": "Scale Across Regions",
+          "desc": "Expanded operations with stronger logistics, after-sales capability, and a more powerful digital growth engine.",
+          "tag": "Scale"
+        }
+      ]
     },
-    "note": "Through deep partnership with brands and platforms, we deliver results that are measurable—and consistently repeatable.",
-    "items": [
-      {
+    "awards": {
+      "kicker": "AWARDS & RECOGNITION",
+      "title": "Awards & Recognition",
+      "desc": "Proof of outcomes built through close collaboration with brands and platforms across multiple countries.",
+      "highlightsTitle": "Highlights",
+      "kpi": {
         "year": "2024",
-        "title": "Highest Customer Satisfaction Brand Award",
-        "brand": "Dreame — Shopee Thailand"
+        "count": "9+",
+        "label": "Awards across platforms & regions"
       },
-      {
-        "year": "2021",
-        "title": "Rising Star Distributor of the Year",
-        "brand": "SUNMOON168 — Shopee Thailand"
-      },
-      {
-        "year": "2023",
-        "title": "Best-Selling Product of the Year",
-        "brand": "Thaimall — Shopee Thailand"
-      },
-      {
-        "year": "2023",
-        "title": "Outstanding Seller of the Year",
-        "brand": "70mai — Shopee Thailand"
+      "note": "Through deep partnership with brands and platforms, we deliver results that are measurable—and consistently repeatable.",
+      "items": [
+        {
+          "year": "2024",
+          "title": "Highest Customer Satisfaction Brand Award",
+          "brand": "Dreame — Shopee Thailand"
+        },
+        {
+          "year": "2021",
+          "title": "Rising Star Distributor of the Year",
+          "brand": "SUNMOON168 — Shopee Thailand"
+        },
+        {
+          "year": "2023",
+          "title": "Best-Selling Product of the Year",
+          "brand": "Thaimall — Shopee Thailand"
+        },
+        {
+          "year": "2023",
+          "title": "Outstanding Seller of the Year",
+          "brand": "70mai — Shopee Thailand"
+        }
+      ],
+      "cta": {
+        "primary": "Explore open roles",
+        "secondary": "Back to top"
       }
-    ],
-    "cta": {
-      "primary": "Explore open roles",
-      "secondary": "Back to top"
+    },
+    "footer": {
+      "brand": "SHD Careers",
+      "desc": "A global recruitment experience with multi-language support.",
+      "nav": ["About", "Why SHD", "Jobs", "Partners", "Contact"],
+      "emailLabel": "Email: careers@shd-technology.co.th",
+      "copyright": "© 2026 SHD Technology"
     }
   },
-
-  "footer": {
-    "brand": "SHD Careers",
-    "desc": "A global recruitment experience with multi-language support.",
-    "nav": ["About", "Why SHD", "Jobs", "Partners", "Contact"],
-    "emailLabel": "Email: careers@shd-technology.co.th",
-    "copyright": "© 2026 SHD Technology"
-  }
-}
-,
   "why": {
     "title": "Why SHD",
     "p1": "We invest in people and long-term growth, with opportunities at a global scale.",
@@ -276,7 +327,103 @@
         "title": "Benefits",
         "desc": "Competitive benefits aligned with local needs."
       }
-    ]
+    ],
+
+    "seo": {
+      "description": "Why join SHD Technology — growth, people, resources, and the stories behind our culture."
+    },
+
+    "hero": {
+      "kicker": "WHY SHD",
+      "title": "Why join SHD Technology?",
+      "subtitle": "Faster growth, a bigger stage, and stronger resources—turn your capabilities into measurable outcomes.",
+      "ctaPrimary": "View open roles",
+      "ctaSecondary": "Explore the advantages",
+      "chips": {
+        "growth": "Infinite Growth",
+        "people": "Great People",
+        "resources": "Strong Resources"
+      }
+    },
+
+    "pillars": {
+      "kicker": "CORE ADVANTAGES",
+      "title": "Growth • People • Resources",
+      "subtitle": "Three reasons to move faster, stay stronger, and go further at SHD.",
+      "cards": {
+        "growth": {
+          "title": "Infinite growth",
+          "desc": "Real challenges with clear support—so you level up quickly on high-impact work."
+        },
+        "people": {
+          "title": "Great people",
+          "desc": "Collaborate across countries and build with teammates who get things done."
+        },
+        "resources": {
+          "title": "Strong resources",
+          "desc": "Tools, systems, and cross-team alignment—so you can focus on creating impact."
+        }
+      },
+      "foot": "High-impact teams • Real ownership"
+    },
+
+    "stories": {
+      "kicker": "TEAM STORIES",
+      "title": "Stories from our people",
+      "subtitle": "Real projects, real growth, real collaboration—straight from the team.",
+      "note": "* Auto-scrolls every 3 seconds (pauses on hover / drag / manual controls).",
+      "badges": {
+        "growth": "Growth",
+        "team": "Team",
+        "impact": "Impact"
+      },
+      "itemTitle": "Team story #{{index}}",
+      "itemDesc": "Day-to-day • Projects • Growth"
+    },
+
+    "life": {
+      "kicker": "LIFE AT SHD",
+      "title": "Activities & culture",
+      "subtitle": "We value collaboration and growth—and we celebrate moments worth remembering.",
+      "badges": {
+        "event": "Event",
+        "life": "Life"
+      },
+      "itemTitle": "Activity #{{index}}",
+      "itemDesc": "Culture • Collaboration • Moments that matter"
+    },
+
+    "cta": {
+      "kicker": "JOIN US",
+      "title": "Ready to grow with us?",
+      "subtitle": "If you want real challenges and real growth, we’d love to meet you at SHD Technology.",
+      "ctaPrimary": "View open roles",
+      "ctaSecondary": "Back to advantages",
+      "chips": {
+        "growthFirst": "Growth-first",
+        "greatTeams": "Great teams",
+        "realResources": "Real resources"
+      }
+    },
+
+    "carousel": {
+      "pause": "Pause",
+      "autoPlay": "Auto play",
+      "leftAria": "Scroll left",
+      "rightAria": "Scroll right"
+    },
+
+    "common": {
+      "expand": "Expand"
+    },
+
+    "modal": {
+      "brand": "SHD Careers",
+      "closeAria": "Close",
+      "tapToExplore": "Tap an image to explore",
+      "viewOpenRoles": "View open roles",
+      "hint": "Desktop: press ESC to close • Mobile: tap backdrop to close"
+    }
   },
   "jobs": {
     "title": "Open Positions",
@@ -308,33 +455,27 @@
       "submitting": "Submitting...",
       "success": "Application submitted!",
       "fail": "Submission failed. Please try again.",
-
       "phoneCode": "Country code",
       "phoneNumber": "Phone number",
       "phonePreview": "Preview",
-
       "currentAddressCountry": "Current Address (Country)",
       "addressDetail": "Address detail",
       "addressDetailPlaceholder": "Address detail (optional)",
       "addressSavedAs": "Saved as",
-
       "educationLevel": "Education Level",
       "educationSelectLevel": "Select level...",
       "educationSchool": "School / Institute",
       "educationFrom": "From",
       "educationTo": "To",
-
       "experienceCompany": "Company",
       "experienceTitle": "Title",
       "experienceFrom": "From",
       "experienceTo": "To",
-
       "availableStartDate": "Available Start Date",
       "skillsSelected": "Selected",
       "skillsSearchPlaceholder": "Search skills...",
       "skillsAddCustomPlaceholder": "Add custom skill (optional)",
       "skillsTip": "Tip: choose up to 8 skills to keep it clear for HR.",
-
       "tipsTitle": "Tips",
       "tipsResume": "Resume file must be PDF/DOC/DOCX and ≤ 2MB",
       "tipsAttachments": "Attachments total size ≤ 50MB",

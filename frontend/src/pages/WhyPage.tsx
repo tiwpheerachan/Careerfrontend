@@ -1,5 +1,5 @@
 // frontend/src/pages/WhyPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -113,6 +113,8 @@ function ImageModal({
   onClose: () => void;
   item: { src: string; title: string; desc?: string; badge?: string } | null;
 }) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -135,7 +137,6 @@ function ImageModal({
       aria-modal="true"
       className={cn(
         "fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6",
-        // ✅ light “veil” instead of black overlay
         "bg-white/65 backdrop-blur-md"
       )}
       onMouseDown={(e) => {
@@ -146,7 +147,6 @@ function ImageModal({
       <div
         className={cn(
           "relative w-full max-w-[1100px] overflow-hidden rounded-[28px]",
-          // ✅ light card surface
           "bg-white shadow-[0_50px_180px_rgba(15,23,42,0.35)]",
           "ring-1 ring-slate-200"
         )}
@@ -155,7 +155,7 @@ function ImageModal({
         <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-3 sm:p-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
-            SHD Careers
+            {t("why.modal.brand", { defaultValue: "SHD Careers" })}
           </div>
 
           <button
@@ -167,7 +167,7 @@ function ImageModal({
               "ring-1 ring-slate-200",
               "transition hover:bg-white active:scale-[0.98]"
             )}
-            aria-label="Close"
+            aria-label={t("why.modal.closeAria", { defaultValue: "Close" })}
           >
             <X className="h-5 w-5" />
           </button>
@@ -182,7 +182,6 @@ function ImageModal({
             draggable={false}
           />
 
-          {/* ✅ keep cinematic but lighter (no black heavy) */}
           <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/55" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(800px_420px_at_50%_30%,rgba(255,255,255,0.22),transparent_60%)]" />
 
@@ -202,7 +201,7 @@ function ImageModal({
                   </span>
                 ) : null}
                 <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-                  Tap image to explore
+                  {t("why.modal.tapToExplore", { defaultValue: "Tap image to explore" })}
                 </span>
               </div>
 
@@ -225,18 +224,20 @@ function ImageModal({
                     "transition hover:-translate-y-0.5 active:scale-[0.98]"
                   )}
                 >
-                  View open roles <ArrowRight className="h-4 w-4" />
+                  {t("why.modal.viewOpenRoles", { defaultValue: "View open roles" })}{" "}
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
 
                 <div className="text-[11px] text-slate-500">
-                  Desktop: กด ESC เพื่อปิด • Mobile: แตะพื้นหลังเพื่อปิด
+                  {t("why.modal.hint", {
+                    defaultValue: "Desktop: Press ESC to close • Mobile: Tap the background to close",
+                  })}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* small bottom padding edge */}
         <div className="h-2 bg-white" />
       </div>
     </div>
@@ -247,12 +248,13 @@ function PillarCard({
   icon,
   title,
   desc,
+  foot,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
+  foot: string;
 }) {
-  // ✅ light card: black text
   return (
     <div
       className={cn(
@@ -280,7 +282,7 @@ function PillarCard({
 
       <div className="relative mt-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-        <span>High-impact teams • Real ownership</span>
+        <span>{foot}</span>
       </div>
     </div>
   );
@@ -288,7 +290,6 @@ function PillarCard({
 
 /** -------------------------
  * 16:8 card (2:1)
- * - keep same layout, switch to light UI text black
  * ------------------------ */
 function PhotoCard16x8({
   src,
@@ -296,12 +297,14 @@ function PhotoCard16x8({
   desc,
   badge,
   onClick,
+  expandLabel,
 }: {
   src: string;
   title: string;
   desc?: string;
   badge?: string;
   onClick?: () => void;
+  expandLabel: string;
 }) {
   return (
     <button
@@ -324,7 +327,6 @@ function PhotoCard16x8({
           loading="lazy"
         />
 
-        {/* ✅ no black cover; only gentle bottom fade for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/40" />
 
         {/* sweep */}
@@ -336,7 +338,7 @@ function PhotoCard16x8({
         <div className="absolute left-3 right-3 top-3 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
             <Sparkles className="h-3.5 w-3.5" />
-            Expand
+            {expandLabel}
           </div>
 
           {badge ? (
@@ -350,7 +352,7 @@ function PhotoCard16x8({
           )}
         </div>
 
-        {/* bottom info panel (light glass) */}
+        {/* bottom info panel */}
         <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
           <div
             className={cn(
@@ -370,7 +372,6 @@ function PhotoCard16x8({
           </div>
         </div>
 
-        {/* soft glow */}
         <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
           <div className="absolute inset-0 bg-[radial-gradient(520px_220px_at_55%_15%,rgba(255,255,255,0.30),transparent_60%)]" />
         </div>
@@ -383,10 +384,14 @@ function CarouselControlsLight({
   onLeft,
   onRight,
   className,
+  leftAria,
+  rightAria,
 }: {
   onLeft: () => void;
   onRight: () => void;
   className?: string;
+  leftAria: string;
+  rightAria: string;
 }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -399,7 +404,7 @@ function CarouselControlsLight({
           "ring-1 ring-slate-200 shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
           "transition hover:-translate-y-0.5 active:scale-[0.98]"
         )}
-        aria-label="Scroll left"
+        aria-label={leftAria}
       >
         <ArrowLeft className="h-5 w-5" />
       </button>
@@ -412,7 +417,7 @@ function CarouselControlsLight({
           "ring-1 ring-slate-200 shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
           "transition hover:-translate-y-0.5 active:scale-[0.98]"
         )}
-        aria-label="Scroll right"
+        aria-label={rightAria}
       >
         <ArrowRight className="h-5 w-5" />
       </button>
@@ -430,28 +435,49 @@ export default function WhyPage() {
   const LIFE_BG = "/images/why/why-life.jpg";
   const CTA_BG = "/images/why/why-cta.jpg";
 
-  // 14 รูป: Employee Stories
+  // ===== Employee Stories (14) =====
   const employeePhotos = useMemo(
     () =>
-      Array.from({ length: 14 }).map((_, i) => ({
-        src: `/images/why/stories/s${i + 1}.jpg`,
-        title: `Employee story #${i + 1}`,
-        desc: "A day in the team • Real projects • Real growth",
-        badge: i % 3 === 0 ? "Growth" : i % 3 === 1 ? "Team" : "Impact",
-      })),
-    []
+      Array.from({ length: 14 }).map((_, i) => {
+        const idx = i + 1;
+        return {
+          src: `/images/why/stories/s${idx}.jpg`,
+          title: t("why.stories.itemTitle", {
+            index: idx,
+            defaultValue: `Employee story #${idx}`,
+          }),
+          desc: t("why.stories.itemDesc", {
+            defaultValue: "A day in the team • Real projects • Real growth",
+          }),
+          badge:
+            i % 3 === 0
+              ? t("why.stories.badges.growth", { defaultValue: "Growth" })
+              : i % 3 === 1
+              ? t("why.stories.badges.team", { defaultValue: "Team" })
+              : t("why.stories.badges.impact", { defaultValue: "Impact" }),
+        };
+      }),
+    [t]
   );
 
-  // Events
+  // ===== Events (10) =====
   const eventPhotos = useMemo(
     () =>
-      Array.from({ length: 10 }).map((_, i) => ({
-        src: `/images/why/events/e${i + 1}.jpg`,
-        title: `Event #${i + 1}`,
-        desc: "Culture • Collaboration • Moments that matter",
-        badge: i % 2 === 0 ? "Event" : "Life",
-      })),
-    []
+      Array.from({ length: 10 }).map((_, i) => {
+        const idx = i + 1;
+        return {
+          src: `/images/why/events/e${idx}.jpg`,
+          title: t("why.life.itemTitle", { index: idx, defaultValue: `Event #${idx}` }),
+          desc: t("why.life.itemDesc", {
+            defaultValue: "Culture • Collaboration • Moments that matter",
+          }),
+          badge:
+            i % 2 === 0
+              ? t("why.life.badges.event", { defaultValue: "Event" })
+              : t("why.life.badges.life", { defaultValue: "Life" }),
+        };
+      }),
+    [t]
   );
 
   // Auto sliders
@@ -494,10 +520,13 @@ export default function WhyPage() {
   return (
     <>
       <Helmet>
-        <title>{t("nav.why")} • SHD Careers</title>
+        <title>{t("nav.why")} • {t("brand", { defaultValue: "SHD Careers" })}</title>
         <meta
           name="description"
-          content="Why SHD Technology — growth, people, resources. Employee stories and life at SHD."
+          content={t("why.seo.description", {
+            defaultValue:
+              "Why SHD Technology — growth, people, resources. Employee stories and life at SHD.",
+          })}
         />
       </Helmet>
 
@@ -505,7 +534,6 @@ export default function WhyPage() {
 
       {/* =========================
           A) HERO (keep white text)
-          ✅ remove black cover on image
          ========================= */}
       <section
         ref={(n) => (sectionRef.current = n)}
@@ -550,15 +578,15 @@ export default function WhyPage() {
           <div className="mx-auto max-w-[1040px] text-center text-white">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/95 backdrop-blur">
               <Sparkles className="h-4 w-4" />
-              WHY SHD TECHNOLOGY
+              {t("why.hero.kicker", { defaultValue: "WHY SHD TECHNOLOGY" })}
             </div>
 
             <h1 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              ทำไมถึงต้องร่วมงาน SHD Technology ?
+              {t("why.hero.title", { defaultValue: "ทำไมถึงต้องร่วมงาน SHD Technology ?" })}
             </h1>
 
             <p className="mx-auto mt-4 max-w-[70ch] text-base leading-relaxed text-white/90 sm:text-lg">
-              โตได้มากกว่าที่คิด เป็นคุณได้เต็มศักยภาพที่ SHD Technology
+              {t("why.hero.subtitle", { defaultValue: "โตได้มากกว่าที่คิด เป็นคุณได้เต็มศักยภาพที่ SHD Technology" })}
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -570,7 +598,8 @@ export default function WhyPage() {
                   "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(0,0,0,0.40)] active:scale-[0.98]"
                 )}
               >
-                View open roles <ArrowRight className="h-4 w-4" />
+                {t("why.hero.ctaPrimary", { defaultValue: "View open roles" })}{" "}
+                <ArrowRight className="h-4 w-4" />
               </Link>
 
               <a
@@ -581,22 +610,22 @@ export default function WhyPage() {
                   "transition hover:bg-white/14 hover:-translate-y-0.5 active:scale-[0.98]"
                 )}
               >
-                Explore pillars
+                {t("why.hero.ctaSecondary", { defaultValue: "Explore pillars" })}
               </a>
             </div>
 
             <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-xs text-white/90">
               <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
                 <Rocket className="h-3.5 w-3.5" />
-                Limitless growth
+                {t("why.hero.chips.growth", { defaultValue: "Limitless growth" })}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
                 <Users className="h-3.5 w-3.5" />
-                Talented people
+                {t("why.hero.chips.people", { defaultValue: "Talented people" })}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
                 <Layers3 className="h-3.5 w-3.5" />
-                Powerful resources
+                {t("why.hero.chips.resources", { defaultValue: "Powerful resources" })}
               </span>
             </div>
           </div>
@@ -612,7 +641,6 @@ export default function WhyPage() {
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${PILLARS_BG})` }}
           />
-          {/* ✅ no black overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_18%,rgba(255,255,255,0.60),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(760px_420px_at_80%_50%,rgba(16,185,129,0.10),transparent_62%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -624,32 +652,45 @@ export default function WhyPage() {
               <div className="inline-flex justify-center">
                 <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  3 Pillars
+                  {t("why.pillars.kicker", { defaultValue: "3 Pillars" })}
                 </span>
               </div>
               <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-                โตไว • ทีมเก่ง • โอกาสไร้กรอบ
+                {t("why.pillars.title", { defaultValue: "โตไว • ทีมเก่ง • โอกาสไร้กรอบ" })}
               </h2>
               <p className="mx-auto max-w-[70ch] text-sm text-slate-700">
-                3 เหตุผลหลักที่ทำให้คุณ “เติบโตได้มากกว่าที่คิด” ที่ SHD Technology
+                {t("why.pillars.subtitle", {
+                  defaultValue: "3 เหตุผลหลักที่ทำให้คุณ “เติบโตได้มากกว่าที่คิด” ที่ SHD Technology",
+                })}
               </p>
             </div>
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               <PillarCard
                 icon={<Rocket className="h-6 w-6 text-emerald-600" />}
-                title="Limitless Growth"
-                desc="โตได้เกินคาด คว้าได้ทุกโกล ด้วยงานจริงที่ท้าทายและการสนับสนุนที่ชัดเจน"
+                title={t("why.pillars.cards.growth.title", { defaultValue: "Limitless Growth" })}
+                desc={t("why.pillars.cards.growth.desc", {
+                  defaultValue:
+                    "โตได้เกินคาด คว้าได้ทุกโกล ด้วยงานจริงที่ท้าทายและการสนับสนุนที่ชัดเจน",
+                })}
+                foot={t("why.pillars.foot", { defaultValue: "High-impact teams • Real ownership" })}
               />
               <PillarCard
                 icon={<Users className="h-6 w-6 text-emerald-600" />}
-                title="Talented People"
-                desc="ร่วมทีมที่ใช่ ชนะได้ทุกโอกาส ทำงานกับคนเก่งที่พร้อมช่วยกันให้สำเร็จ"
+                title={t("why.pillars.cards.people.title", { defaultValue: "Talented People" })}
+                desc={t("why.pillars.cards.people.desc", {
+                  defaultValue: "ร่วมทีมที่ใช่ ชนะได้ทุกโอกาส ทำงานกับคนเก่งที่พร้อมช่วยกันให้สำเร็จ",
+                })}
+                foot={t("why.pillars.foot", { defaultValue: "High-impact teams • Real ownership" })}
               />
               <PillarCard
                 icon={<Layers3 className="h-6 w-6 text-emerald-600" />}
-                title="Powerful Resources"
-                desc="โอกาสไร้กรอบ องค์กรไร้ขีดจำกัด เครื่องมือ ทีม และระบบพร้อมให้คุณพุ่งไปได้ไกล"
+                title={t("why.pillars.cards.resources.title", { defaultValue: "Powerful Resources" })}
+                desc={t("why.pillars.cards.resources.desc", {
+                  defaultValue:
+                    "โอกาสไร้กรอบ องค์กรไร้ขีดจำกัด เครื่องมือ ทีม และระบบพร้อมให้คุณพุ่งไปได้ไกล",
+                })}
+                foot={t("why.pillars.foot", { defaultValue: "High-impact teams • Real ownership" })}
               />
             </div>
           </div>
@@ -659,134 +700,140 @@ export default function WhyPage() {
       {/* =========================
           C) EMPLOYEE STORIES (LIGHT)
          ========================= */}
-<section className="relative isolate overflow-hidden bg-white">
-  <div className="absolute inset-0">
-    <div
-      className="absolute inset-0 bg-cover bg-center"
-      style={{ backgroundImage: `url(${STORIES_BG})` }}
-    />
-    {/* ✅ no black overlay */}
-    <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_20%_22%,rgba(255,255,255,0.62),transparent_60%)]" />
-    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-  </div>
-
-  <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16">
-    <div className="grid gap-8 lg:grid-cols-4 lg:items-start">
-      {/* left */}
-      <div className="lg:col-span-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
-          <Quote className="h-4 w-4" />
-          Employee Stories
-        </div>
-
-        <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
-          เรื่องเล่าจากทีมงาน
-        </h3>
-
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          มุมมองจริงจากคนทำงานจริง — โปรเจกต์จริง การเติบโตจริง และทีมที่ช่วยกันทำให้สำเร็จ
-        </p>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => stories.setUserPaused((v) => !v)}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
-              "bg-white text-slate-900 ring-1 ring-slate-200",
-              "shadow-none",
-              "transition hover:-translate-y-0.5 active:scale-[0.98]"
-            )}
-          >
-            {stories.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {stories.userPaused ? "Auto play" : "Pause"}
-          </button>
-
-          <CarouselControlsLight
-            onLeft={() => stories.scrollByDir(-1)}
-            onRight={() => stories.scrollByDir(1)}
+      <section className="relative isolate overflow-hidden bg-white">
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${STORIES_BG})` }}
           />
+          <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_20%_22%,rgba(255,255,255,0.62),transparent_60%)]" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
 
-        <div className="mt-4 text-[11px] text-slate-500">
-          * เลื่อนอัตโนมัติทุก 3 วิ (หยุดเมื่อเอาเมาส์วาง / แตะเลื่อน / กดปุ่ม)
-        </div>
-      </div>
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16">
+          <div className="grid gap-8 lg:grid-cols-4 lg:items-start">
+            {/* left */}
+            <div className="lg:col-span-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
+                <Quote className="h-4 w-4" />
+                {t("why.stories.kicker", { defaultValue: "Employee Stories" })}
+              </div>
 
-      {/* right */}
-      <div className="lg:col-span-3">
-        <div
-          ref={stories.ref}
-          className={cn(
-            "no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3",
-            "snap-x snap-mandatory"
-          )}
-          onMouseEnter={() => stories.setHovered(true)}
-          onMouseLeave={() => stories.setHovered(false)}
-          onPointerDown={() => stories.markUserAction()}
-          onWheel={() => stories.markUserAction()}
-          onTouchStart={() => stories.markUserAction()}
-        >
-          {employeePhotos.map((p, idx) => (
-            <div key={`${p.src}-${idx}`} className="snap-start">
-              {/* ✅ bigger card, ✅ no shadow, ✅ NO title bar on first page */}
-              <button
-                type="button"
-                onClick={() => openModal(p)}
-                className={cn(
-                  "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
-                  "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
-                  "shadow-none",
-                  "ring-0",
-                  "transition hover:-translate-y-0.5 active:scale-[0.99]"
-                )}
-              >
-                <div className="relative aspect-[2/1] w-full">
-                  <img
-                    src={p.src}
-                    alt={p.title}
-                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                    draggable={false}
-                    loading="lazy"
-                  />
+              <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
+                {t("why.stories.title", { defaultValue: "เรื่องเล่าจากทีมงาน" })}
+              </h3>
 
-                  {/* ✅ no bottom bar / no gradient shadow */}
-                  {/* top chips (still keep) */}
-                  <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Expand
-                    </div>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                {t("why.stories.subtitle", {
+                  defaultValue:
+                    "มุมมองจริงจากคนทำงานจริง — โปรเจกต์จริง การเติบโตจริง และทีมที่ช่วยกันทำให้สำเร็จ",
+                })}
+              </p>
 
-                    {p.badge ? (
-                      <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
-                        {p.badge}
-                      </div>
-                    ) : (
-                      <div className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-                        SHD
-                      </div>
-                    )}
-                  </div>
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => stories.setUserPaused((v) => !v)}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
+                    "bg-white text-slate-900 ring-1 ring-slate-200",
+                    "shadow-none",
+                    "transition hover:-translate-y-0.5 active:scale-[0.98]"
+                  )}
+                >
+                  {stories.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                  {stories.userPaused
+                    ? t("why.carousel.autoPlay", { defaultValue: "Auto play" })
+                    : t("why.carousel.pause", { defaultValue: "Pause" })}
+                </button>
 
-                  {/* soft glow (not shadow) */}
-                  <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-                    <div className="absolute inset-0 bg-[radial-gradient(560px_240px_at_55%_15%,rgba(255,255,255,0.28),transparent_60%)]" />
-                  </div>
-                </div>
-              </button>
+                <CarouselControlsLight
+                  onLeft={() => stories.scrollByDir(-1)}
+                  onRight={() => stories.scrollByDir(1)}
+                  leftAria={t("why.carousel.leftAria", { defaultValue: "Scroll left" })}
+                  rightAria={t("why.carousel.rightAria", { defaultValue: "Scroll right" })}
+                />
+              </div>
+
+              <div className="mt-4 text-[11px] text-slate-500">
+                {t("why.stories.note", {
+                  defaultValue:
+                    "* เลื่อนอัตโนมัติทุก 3 วิ (หยุดเมื่อเอาเมาส์วาง / แตะเลื่อน / กดปุ่ม)",
+                })}
+              </div>
             </div>
-          ))}
-        </div>
 
-        <style>{`
-          .no-scrollbar::-webkit-scrollbar{display:none;}
-          .no-scrollbar{-ms-overflow-style:none; scrollbar-width:none;}
-        `}</style>
-      </div>
-    </div>
-  </div>
-</section>
+            {/* right */}
+            <div className="lg:col-span-3">
+              <div
+                ref={stories.ref}
+                className={cn(
+                  "no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3",
+                  "snap-x snap-mandatory"
+                )}
+                onMouseEnter={() => stories.setHovered(true)}
+                onMouseLeave={() => stories.setHovered(false)}
+                onPointerDown={() => stories.markUserAction()}
+                onWheel={() => stories.markUserAction()}
+                onTouchStart={() => stories.markUserAction()}
+              >
+                {employeePhotos.map((p, idx) => (
+                  <div key={`${p.src}-${idx}`} className="snap-start">
+                    <button
+                      type="button"
+                      onClick={() => openModal(p)}
+                      className={cn(
+                        "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
+                        "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
+                        "shadow-none",
+                        "ring-0",
+                        "transition hover:-translate-y-0.5 active:scale-[0.99]"
+                      )}
+                    >
+                      <div className="relative aspect-[2/1] w-full">
+                        <img
+                          src={p.src}
+                          alt={p.title}
+                          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                          draggable={false}
+                          loading="lazy"
+                        />
+
+                        {/* top chips */}
+                        <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+                          <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            {t("why.common.expand", { defaultValue: "Expand" })}
+                          </div>
+
+                          {p.badge ? (
+                            <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                              {p.badge}
+                            </div>
+                          ) : (
+                            <div className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+                              SHD
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+                          <div className="absolute inset-0 bg-[radial-gradient(560px_240px_at_55%_15%,rgba(255,255,255,0.28),transparent_60%)]" />
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <style>{`
+                .no-scrollbar::-webkit-scrollbar{display:none;}
+                .no-scrollbar{-ms-overflow-style:none; scrollbar-width:none;}
+              `}</style>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* =========================
           E) LIFE AT SHD (LIGHT)
@@ -797,7 +844,6 @@ export default function WhyPage() {
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${LIFE_BG})` }}
           />
-          {/* ✅ no black overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_70%_30%,rgba(255,255,255,0.58),transparent_60%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
@@ -808,13 +854,16 @@ export default function WhyPage() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
                   <CalendarHeart className="h-4 w-4" />
-                  Life at SHD
+                  {t("why.life.kicker", { defaultValue: "Life at SHD" })}
                 </div>
                 <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
-                  อีเวนต์ & วัฒนธรรมทีม
+                  {t("why.life.title", { defaultValue: "อีเวนต์ & วัฒนธรรมทีม" })}
                 </h3>
                 <p className="mt-2 max-w-[70ch] text-sm text-slate-700">
-                  ทำงานเก่งอย่างเดียวไม่พอ — เราให้ความสำคัญกับการเติบโตของทีม ความสัมพันธ์ และช่วงเวลาที่มีความหมาย
+                  {t("why.life.subtitle", {
+                    defaultValue:
+                      "ทำงานเก่งอย่างเดียวไม่พอ — เราให้ความสำคัญกับการเติบโตของทีม ความสัมพันธ์ และช่วงเวลาที่มีความหมาย",
+                  })}
                 </p>
               </div>
 
@@ -830,12 +879,16 @@ export default function WhyPage() {
                   )}
                 >
                   {life.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                  {life.userPaused ? "Auto play" : "Pause"}
+                  {life.userPaused
+                    ? t("why.carousel.autoPlay", { defaultValue: "Auto play" })
+                    : t("why.carousel.pause", { defaultValue: "Pause" })}
                 </button>
 
                 <CarouselControlsLight
                   onLeft={() => life.scrollByDir(-1)}
                   onRight={() => life.scrollByDir(1)}
+                  leftAria={t("why.carousel.leftAria", { defaultValue: "Scroll left" })}
+                  rightAria={t("why.carousel.rightAria", { defaultValue: "Scroll right" })}
                 />
               </div>
             </div>
@@ -860,6 +913,7 @@ export default function WhyPage() {
                     desc={p.desc}
                     badge={p.badge}
                     onClick={() => openModal(p)}
+                    expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
                   />
                 </div>
               ))}
@@ -874,12 +928,14 @@ export default function WhyPage() {
       </section>
 
       {/* =========================
-          CTA (LIGHT section, keep hero-like card but light)
+          CTA (LIGHT)
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${CTA_BG})` }} />
-          {/* ✅ no black overlay */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${CTA_BG})` }}
+          />
           <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_35%,rgba(255,255,255,0.62),transparent_62%)]" />
         </div>
 
@@ -887,14 +943,17 @@ export default function WhyPage() {
           <div className="mx-auto max-w-[1040px] overflow-hidden rounded-[28px] bg-white/82 p-8 text-center text-slate-950 backdrop-blur-xl shadow-[0_30px_140px_rgba(15,23,42,0.18)] ring-1 ring-slate-200 sm:p-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-900">
               <Sparkles className="h-4 w-4" />
-              Join us
+              {t("why.cta.kicker", { defaultValue: "Join us" })}
             </div>
 
             <h3 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-              Ready to grow with us?
+              {t("why.cta.title", { defaultValue: "Ready to grow with us?" })}
             </h3>
             <p className="mx-auto mt-3 max-w-[70ch] text-sm text-slate-700 sm:text-base">
-              ถ้าคุณอยากทำงานที่ “ท้าทายจริง” และ “เติบโตจริง” มาร่วมสร้างอนาคตไปด้วยกันที่ SHD Technology
+              {t("why.cta.subtitle", {
+                defaultValue:
+                  "ถ้าคุณอยากทำงานที่ “ท้าทายจริง” และ “เติบโตจริง” มาร่วมสร้างอนาคตไปด้วยกันที่ SHD Technology",
+              })}
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -907,7 +966,8 @@ export default function WhyPage() {
                   "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(15,23,42,0.30)] active:scale-[0.98]"
                 )}
               >
-                View open roles <ArrowRight className="h-4 w-4" />
+                {t("why.cta.ctaPrimary", { defaultValue: "View open roles" })}{" "}
+                <ArrowRight className="h-4 w-4" />
               </Link>
 
               <a
@@ -918,22 +978,22 @@ export default function WhyPage() {
                   "transition hover:-translate-y-0.5 active:scale-[0.98]"
                 )}
               >
-                Explore pillars
+                {t("why.cta.ctaSecondary", { defaultValue: "Explore pillars" })}
               </a>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-700">
               <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5">
                 <Rocket className="h-3.5 w-3.5" />
-                Growth first
+                {t("why.cta.chips.growthFirst", { defaultValue: "Growth first" })}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5">
                 <Users className="h-3.5 w-3.5" />
-                Great teams
+                {t("why.cta.chips.greatTeams", { defaultValue: "Great teams" })}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5">
                 <Layers3 className="h-3.5 w-3.5" />
-                Real resources
+                {t("why.cta.chips.realResources", { defaultValue: "Real resources" })}
               </span>
             </div>
           </div>
