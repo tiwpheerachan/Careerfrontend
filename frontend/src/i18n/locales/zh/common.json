@@ -427,63 +427,228 @@
     }
   },
 
-  "jobs": {
+"jobs": {
+  "title": "在招职位",
+  "openings": "个职位开放",
+  "filters": "筛选",
+  "empty": "没有符合筛选条件的职位。",
+  "applyTitle": "申请",
+
+  "pagination": {
+    "prev": "上一页",
+    "next": "下一页",
+    "goTo": "跳转到第 {{page}} 页"
+  },
+
+  "hero": {
+    "badge": "正在招聘",
+    "title": "寻找你的理想工作",
+    "subtitle": "按关键词 • 国家 • 部门 • 级别搜索 —— 简洁界面，快速体验",
+    "searchPlaceholder": "输入关键词搜索",
+    "searchAria": "搜索职位",
+    "openCount": "共 {{count}} 个职位",
+    "clearFilters": "清除筛选条件",
+    "tip": "提示：选择国家 / 部门 / 级别后，结果将立即更新。"
+  },
+
+  "filtersLabel": {
+    "country": "国家",
+    "department": "部门",
+    "level": "级别"
+  },
+
+  "list": {
     "title": "在招职位",
-    "openings": "个职位开放",
-    "filters": "筛选",
-    "empty": "没有符合筛选条件的职位。",
-    "applyTitle": "申请",
-    "form": {
-      "personal": "个人信息",
-      "resume": "简历 (DOC/DOCX/PDF ≤ 2MB)",
-      "firstName": "名*",
-      "lastName": "姓*",
-      "email": "邮箱*",
-      "phone": "电话*",
-      "address": "现居地址*",
-      "education": "教育经历（最多 5 条）",
-      "addEducation": "添加教育经历",
-      "experience": "工作经历（最多 20 条）",
-      "addExperience": "添加工作经历",
-      "skills": "技能（最多 8 项）",
-      "other": "其他信息",
-      "visa": "是否需要签证/移民支持（现在或未来）？*",
-      "availability": "可入职时间（仅实习）",
-      "url": "个人网站（LinkedIn/Github）",
-      "source": "你通过什么渠道了解到该职位？*",
-      "attachments": "附件（≤ 50MB）",
-      "agree": "我已阅读并同意服务条款与隐私政策",
-      "submit": "提交申请",
-      "submitting": "提交中...",
-      "success": "提交成功！",
-      "fail": "提交失败，请重试。",
-      "phoneCode": "国家/地区区号",
-      "phoneNumber": "电话号码",
-      "phonePreview": "预览",
-      "currentAddressCountry": "现居国家/地区",
-      "addressDetail": "地址详情",
-      "addressDetailPlaceholder": "地址详情（可选）",
-      "addressSavedAs": "将保存为",
-      "educationLevel": "学历",
-      "educationSelectLevel": "请选择学历...",
-      "educationSchool": "学校 / 机构",
-      "educationFrom": "开始时间",
-      "educationTo": "结束时间",
-      "experienceCompany": "公司",
-      "experienceTitle": "职位名称",
-      "experienceFrom": "开始时间",
-      "experienceTo": "结束时间",
-      "availableStartDate": "可入职日期",
-      "skillsSelected": "已选择",
-      "skillsSearchPlaceholder": "搜索技能...",
-      "skillsAddCustomPlaceholder": "添加自定义技能（可选）",
-      "skillsTip": "建议：最多选择 8 项技能，便于 HR 快速了解。",
-      "tipsTitle": "提示",
-      "tipsResume": "简历必须为 PDF/DOC/DOCX，且 ≤ 2MB",
-      "tipsAttachments": "附件总大小 ≤ 50MB",
-      "tipsSkills": "建议最多选择 8 项技能"
+    "subtitle": "{{count}} 个职位 • 每页 {{perPage}} 个",
+    "pageLabel": "页码",
+    "empty": "没有符合筛选条件的职位。"
+  },
+
+  "hiring": {
+    "title": "招聘流程",
+    "subtitle": "点击或悬停以查看每个步骤的详细信息",
+    "ariaStep": "第 {{n}} 步",
+    "stepLabel": "步骤 {{n}}",
+    "hoverHint": "悬停查看详情",
+    "detail": "详情",
+    "tip": "小提示",
+    "footerNote": "* 实际流程可能因职位和级别而有所不同。",
+
+    "steps": {
+      "1": {
+        "frontTitle": "发现新的机会",
+        "frontDesc": "寻找最适合你能力的职位",
+        "bullets": [
+          "选择感兴趣的团队或方向",
+          "认真阅读职位描述",
+          "确认工作地点和形式"
+        ],
+        "backTitle": "步骤 1：选择职位",
+        "backDesc": "从与你的技能、目标和期望工作方式相匹配的职位开始。"
+      },
+      "2": {
+        "frontTitle": "准备你的简历",
+        "frontDesc": "让内容更清晰、更有重点",
+        "bullets": [
+          "用数据量化你的成果",
+          "突出关键项目经验",
+          "附上作品或项目链接"
+        ],
+        "backTitle": "步骤 2：准备简历",
+        "backDesc": "优秀的简历应当清晰易读，突出成果，并与所申请职位高度相关。"
+      },
+      "3": {
+        "frontTitle": "电话面试",
+        "frontDesc": "了解背景与职业动机",
+        "bullets": [
+          "简要介绍你的背景",
+          "清楚表达你的兴趣",
+          "了解后续流程"
+        ],
+        "backTitle": "步骤 3：电话面试",
+        "backDesc": "招聘人员将与您沟通，了解您的经验、目标以及与岗位的匹配度。"
+      },
+      "4": {
+        "frontTitle": "深入面试 / 测评",
+        "frontDesc": "视岗位与级别而定",
+        "bullets": [
+          "准备案例或作品集",
+          "练习结构化表达",
+          "复习基础知识"
+        ],
+        "backTitle": "步骤 4：深入面试",
+        "backDesc": "可能包含测试或与团队负责人的面试，以评估专业能力和思维方式。"
+      },
+      "5": {
+        "frontTitle": "发放 Offer",
+        "frontDesc": "确认细节，开启新旅程",
+        "bullets": [
+          "确认 Offer 细节",
+          "确定入职时间",
+          "准备相关文件"
+        ],
+        "backTitle": "步骤 5：Offer",
+        "backDesc": "通过所有流程后，我们将向你发出正式录用通知，并说明入职相关事项。"
+      }
     }
   },
+
+  "faq": {
+    "title": "常见问题",
+    "subtitle": "选择分类并点击查看答案",
+    "tabs": {
+      "fulltime": "全职",
+      "internship": "实习",
+      "tech": "技术岗位"
+    },
+    "data": {
+      "fulltime": [
+        {
+          "q": "我想补充更多简历信息，是否需要重新申请？",
+          "a": "你可以联系与你沟通的招聘人员，请求更新你的简历。\n\n如果你是近期提交的申请，也可以重新提交一份更新后的申请。"
+        },
+        {
+          "q": "我可以同时申请多个职位吗？",
+          "a": "可以。你可以申请多个职位，招聘人员会协助判断最合适的岗位。\n\n但请注意：同一时间只能参与一个职位的面试流程。"
+        },
+        {
+          "q": "如果之前没有收到回复，可以再次申请同一职位吗？",
+          "a": "可以。如果该职位仍在招聘中，你可以再次申请。\n\n不过我们建议在再次申请前提升相关技能或经验。"
+        },
+        {
+          "q": "我如何得知申请进度？",
+          "a": "招聘团队会通过电子邮件告知你的申请状态和后续流程，请耐心等待我们的回复。"
+        },
+        {
+          "q": "电话面试中，招聘人员主要关注什么？",
+          "a": "招聘人员希望了解你的技能、经验以及加入公司的动机，同时也会评估文化契合度。\n\n请保持真实，并展现你对公司的兴趣。"
+        }
+      ],
+      "internship": [
+        {
+          "q": "我已毕业几个月，还可以申请实习吗？",
+          "a": "我们通常建议已毕业的候选人关注全职岗位，以便承担更有挑战性的工作并获得更快成长。"
+        },
+        {
+          "q": "实习时间是什么时候？我应该何时申请？",
+          "a": "我们全年招聘实习生，没有固定的申请周期，请随时关注职位列表。"
+        },
+        {
+          "q": "实习期限是多久？可以自行选择吗？",
+          "a": "我们建议至少实习 3 个月，以便你参与有意义的项目。\n\n在业务允许的情况下，实习期可能可以延长。"
+        }
+      ],
+      "tech": [
+        {
+          "q": "申请技术岗位一定需要计算机相关专业背景吗？",
+          "a": "不需要。我们欢迎不同专业背景的候选人申请技术岗位。\n\n但计算机相关专业背景会是加分项。"
+        },
+        {
+          "q": "技术面试一般会考察什么？",
+          "a": "你可能会被考察编程能力、逻辑思维以及计算机基础知识，请提前做好准备。"
+        }
+      ]
+    }
+  },
+
+  "form": {
+    "personal": "个人信息",
+    "resume": "简历 (DOC/DOCX/PDF ≤ 2MB)",
+    "firstName": "名*",
+    "lastName": "姓*",
+    "email": "邮箱*",
+    "phone": "电话*",
+    "address": "现居地址*",
+    "education": "教育经历（最多 5 条）",
+    "addEducation": "添加教育经历",
+    "experience": "工作经历（最多 20 条）",
+    "addExperience": "添加工作经历",
+    "skills": "技能（最多 8 项）",
+    "other": "其他信息",
+    "visa": "是否需要签证/移民支持（现在或未来）？*",
+    "availability": "可入职时间（仅实习）",
+    "url": "个人网站（LinkedIn/Github）",
+    "source": "你通过什么渠道了解到该职位？*",
+    "attachments": "附件（≤ 50MB）",
+    "agree": "我已阅读并同意服务条款与隐私政策",
+    "submit": "提交申请",
+    "submitting": "提交中...",
+    "success": "提交成功！",
+    "fail": "提交失败，请重试。",
+
+    "phoneCode": "国家/地区区号",
+    "phoneNumber": "电话号码",
+    "phonePreview": "预览",
+
+    "currentAddressCountry": "现居国家/地区",
+    "addressDetail": "地址详情",
+    "addressDetailPlaceholder": "地址详情（可选）",
+    "addressSavedAs": "将保存为",
+
+    "educationLevel": "学历",
+    "educationSelectLevel": "请选择学历...",
+    "educationSchool": "学校 / 机构",
+    "educationFrom": "开始时间",
+    "educationTo": "结束时间",
+
+    "experienceCompany": "公司",
+    "experienceTitle": "职位名称",
+    "experienceFrom": "开始时间",
+    "experienceTo": "结束时间",
+
+    "availableStartDate": "可入职日期",
+    "skillsSelected": "已选择",
+    "skillsSearchPlaceholder": "搜索技能...",
+    "skillsAddCustomPlaceholder": "添加自定义技能（可选）",
+    "skillsTip": "建议：最多选择 8 项技能，便于 HR 快速了解。",
+
+    "tipsTitle": "提示",
+    "tipsResume": "简历必须为 PDF/DOC/DOCX，且 ≤ 2MB",
+    "tipsAttachments": "附件总大小 ≤ 50MB",
+    "tipsSkills": "建议最多选择 8 项技能"
+  }
+}
+,
 
   "partners": {
     "title": "合作伙伴",

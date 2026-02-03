@@ -1,941 +1,906 @@
-// frontend/src/pages/WhyPage.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+// frontend/src/pages/JobsPage.tsx
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Helmet } from "react-helmet-async";
-import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarHeart,
-  CheckCircle2,
-  Layers3,
-  Pause,
-  Play,
-  Quote,
-  Rocket,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
-  Users,
+  FileText,
+  PhoneCall,
+  Code2,
+  Briefcase,
+  CheckCircle2,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import JobCard from "@/components/JobCard";
+import { listJobs } from "@/lib/api";
+import type { Job, Language } from "@/lib/types";
+
+const PAGE_SIZE = 15;
 
 function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
 }
 
-/** ---------------------------------------
- * Auto carousel (hover pause + user pause)
- * + supports left/right buttons
- * -------------------------------------- */
-function useAutoScrollCarousel(opts: {
-  enabled: boolean;
-  intervalMs?: number;
-  stepPx?: number;
-  idleResumeMs?: number;
-}) {
-  const { enabled, intervalMs = 3000, stepPx = 520, idleResumeMs = 3000 } = opts;
-
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [hovered, setHovered] = useState(false);
-  const [userPaused, setUserPaused] = useState(false);
-  const lastUserAction = useRef<number>(0);
-
-  const paused = hovered || userPaused;
-
-  useEffect(() => {
-    if (!enabled) return;
-    const el = ref.current;
-    if (!el) return;
-
-    let tick: number | undefined;
-
-    const run = () => {
-      // resume after user idle
-      if (userPaused && idleResumeMs > 0) {
-        const dt = Date.now() - lastUserAction.current;
-        if (dt > idleResumeMs) setUserPaused(false);
-      }
-
-      if (!paused) {
-        const max = el.scrollWidth - el.clientWidth;
-        const next = Math.min(el.scrollLeft + stepPx, max);
-
-        if (next >= max - 2) {
-          el.scrollTo({ left: 0, behavior: "smooth" });
-        } else {
-          el.scrollTo({ left: next, behavior: "smooth" });
-        }
-      }
-
-      tick = window.setTimeout(run, intervalMs);
-    };
-
-    tick = window.setTimeout(run, intervalMs);
-    return () => {
-      if (tick) window.clearTimeout(tick);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, intervalMs, stepPx, paused, userPaused, idleResumeMs]);
-
-  function markUserAction() {
-    lastUserAction.current = Date.now();
-    setUserPaused(true);
-  }
-
-  function scrollByDir(dir: -1 | 1) {
-    const el = ref.current;
-    if (!el) return;
-    markUserAction();
-    el.scrollBy({ left: dir * stepPx, behavior: "smooth" });
-  }
-
-  return {
-    ref,
-    paused,
-    userPaused,
-    setUserPaused,
-    setHovered,
-    markUserAction,
-    scrollByDir,
-  };
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
 }
 
-/** -------------------------
- * Modal (image popup)
- * - closes on overlay click, X button, ESC
- * - LIGHT mode: no dark fullscreen overlay
- * ------------------------ */
-function ImageModal({
-  open,
-  onClose,
-  item,
-}: {
-  open: boolean;
-  onClose: () => void;
-  item: { src: string; title: string; desc?: string; badge?: string } | null;
-}) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onClose]);
+function buildPaginationItems(page: number, totalPages: number) {
+  if (totalPages <= 1) return [];
+  const p = clamp(page, 1, totalPages);
 
-  if (!open || !item) return null;
+  const items: Array<number | "..."> = [];
+  const push = (v: number | "...") => items.push(v);
+
+  push(1);
+
+  const left = Math.max(2, p - 1);
+  const right = Math.min(totalPages - 1, p + 1);
+
+  if (left > 2) push("...");
+  for (let i = left; i <= right; i++) push(i);
+  if (right < totalPages - 1) push("...");
+  if (totalPages > 1) push(totalPages);
+
+  const cleaned: Array<number | "..."> = [];
+  for (const it of items) {
+    const last = cleaned[cleaned.length - 1];
+    if (it === "..." && last === "...") continue;
+    if (typeof it === "number" && typeof last === "number" && it === last) continue;
+    cleaned.push(it);
+  }
+  return cleaned;
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (p: number) => void;
+}) {
+  const items = useMemo(() => buildPaginationItems(page, totalPages), [page, totalPages]);
+  if (totalPages <= 1) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className={cn(
-        "fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6",
-        // ✅ light “veil” instead of black overlay
-        "bg-white/65 backdrop-blur-md"
-      )}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      {/* content */}
-      <div
-        className={cn(
-          "relative w-full max-w-[1100px] overflow-hidden rounded-[28px]",
-          // ✅ light card surface
-          "bg-white shadow-[0_50px_180px_rgba(15,23,42,0.35)]",
-          "ring-1 ring-slate-200"
-        )}
+    <div className="mt-8 flex items-center justify-center gap-2">
+      <button
+        type="button"
+        className="btn btn-ghost"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+        aria-label="Previous page"
       >
-        {/* top actions */}
-        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-3 sm:p-4">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5" />
-            SHD Careers
-          </div>
+        <ChevronLeft className="h-4 w-4" />
+      </button>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className={cn(
-              "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
-              "bg-white/85 text-slate-900 backdrop-blur",
-              "ring-1 ring-slate-200",
-              "transition hover:bg-white active:scale-[0.98]"
-            )}
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* 16:8 media */}
-        <div className="relative aspect-[2/1] w-full">
-          <img
-            src={item.src}
-            alt={item.title}
-            className="absolute inset-0 h-full w-full object-cover"
-            draggable={false}
-          />
-
-          {/* ✅ keep cinematic but lighter (no black heavy) */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/55" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(800px_420px_at_50%_30%,rgba(255,255,255,0.22),transparent_60%)]" />
-
-          {/* bottom info bar */}
-          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
-            <div
+      <div className="flex items-center gap-1">
+        {items.map((it, idx) => {
+          if (it === "...") {
+            return (
+              <span key={`dots-${idx}`} className="px-2 text-sm text-slate-500">
+                …
+              </span>
+            );
+          }
+          const active = it === page;
+          return (
+            <button
+              key={it}
+              type="button"
               className={cn(
-                "rounded-3xl bg-white/82 p-4 sm:p-5 text-slate-950 backdrop-blur-xl",
-                "shadow-[0_24px_120px_rgba(15,23,42,0.25)]",
-                "ring-1 ring-slate-200"
+                "h-9 min-w-[38px] rounded-xl border px-3 text-sm font-semibold transition",
+                active
+                  ? "border-orange-200 bg-orange-50 text-orange-700"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               )}
+              onClick={() => onChange(it)}
             >
-              <div className="flex flex-wrap items-center gap-2">
-                {item.badge ? (
-                  <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
-                    {item.badge}
-                  </span>
-                ) : null}
-                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-                  Tap image to explore
-                </span>
-              </div>
-
-              <div className="mt-3 text-lg font-black tracking-tight sm:text-xl">
-                {item.title}
-              </div>
-              {item.desc ? (
-                <div className="mt-2 text-sm leading-relaxed text-slate-700">
-                  {item.desc}
-                </div>
-              ) : null}
-
-              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <Link
-                  to="/jobs"
-                  className={cn(
-                    "inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
-                    "bg-slate-950 text-white",
-                    "shadow-[0_18px_70px_rgba(15,23,42,0.25)]",
-                    "transition hover:-translate-y-0.5 active:scale-[0.98]"
-                  )}
-                >
-                  View open roles <ArrowRight className="h-4 w-4" />
-                </Link>
-
-                <div className="text-[11px] text-slate-500">
-                  Desktop: กด ESC เพื่อปิด • Mobile: แตะพื้นหลังเพื่อปิด
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* small bottom padding edge */}
-        <div className="h-2 bg-white" />
+              {it}
+            </button>
+          );
+        })}
       </div>
+
+      <button
+        type="button"
+        className="btn btn-ghost"
+        disabled={page >= totalPages}
+        onClick={() => onChange(page + 1)}
+        aria-label="Next page"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }
 
-function PillarCard({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  // ✅ light card: black text
-  return (
-    <div
-      className={cn(
-        "group relative overflow-hidden rounded-3xl p-6",
-        "border border-slate-200 bg-white text-slate-950",
-        "shadow-[0_18px_70px_rgba(15,23,42,0.10)]",
-        "transition hover:-translate-y-1 hover:shadow-[0_22px_90px_rgba(15,23,42,0.14)]"
-      )}
-    >
-      <div className="pointer-events-none absolute -inset-24 opacity-0 transition duration-500 group-hover:opacity-100">
-        <div className="absolute inset-0 rotate-12 bg-[radial-gradient(60%_40%_at_50%_50%,rgba(15,23,42,0.08),transparent_60%)]" />
-      </div>
+/** ========= Inline JobFilters (ใช้ options จาก jobs จริง) ========= */
+type FilterOptions = {
+  countries: string[];
+  departments: string[];
+  levels: string[];
+};
 
-      <div className="relative flex items-start gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950/5 ring-1 ring-slate-200">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-black tracking-wide">{title}</div>
-          <div className="mt-1 text-sm leading-relaxed text-slate-700">{desc}</div>
-        </div>
-      </div>
-
-      <div className="relative mt-5 h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-      <div className="relative mt-4 inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
-        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-        <span>High-impact teams • Real ownership</span>
-      </div>
-    </div>
-  );
+function normalizeOpt(v: any) {
+  const s = String(v ?? "").trim();
+  return s;
 }
 
-/** -------------------------
- * 16:8 card (2:1)
- * - keep same layout, switch to light UI text black
- * ------------------------ */
-function PhotoCard16x8({
-  src,
-  title,
-  desc,
-  badge,
-  onClick,
+function JobFilters({
+  country,
+  department,
+  level,
+  options,
+  onChange,
 }: {
-  src: string;
-  title: string;
-  desc?: string;
-  badge?: string;
-  onClick?: () => void;
+  country: string;
+  department: string;
+  level: string;
+  options: FilterOptions;
+  onChange: (next: { country?: string; department?: string; level?: string }) => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "group relative shrink-0 overflow-hidden rounded-[26px] text-left",
-        "w-[min(86vw,560px)]",
-        "transition hover:-translate-y-1 active:scale-[0.99]",
-        "shadow-[0_18px_70px_-28px_rgba(15,23,42,0.35)]",
-        "ring-1 ring-slate-200 bg-white"
-      )}
-    >
-      <div className="relative aspect-[2/1] w-full">
-        <img
-          src={src}
-          alt={title}
-          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
-          draggable={false}
-          loading="lazy"
-        />
+  // UI polish: sticky / mobile drawer-ish feel (แต่ยังอยู่ใน layout เดิม)
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-        {/* ✅ no black cover; only gentle bottom fade for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/40" />
+  const hasAny =
+    (country && country !== "ALL") || (department && department !== "ALL") || (level && level !== "ALL");
 
-        {/* sweep */}
-        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-          <div className="absolute -left-1/2 top-0 h-full w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/26 to-transparent" />
-        </div>
+  const DeptRadio = (
+    <div className="mt-3">
+      <div className="text-sm font-black text-slate-900">แผนก</div>
 
-        {/* top chips */}
-        <div className="absolute left-3 right-3 top-3 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-            <Sparkles className="h-3.5 w-3.5" />
-            Expand
-          </div>
+      <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
+        <div className="max-h-[300px] overflow-auto pr-2">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2 hover:bg-white">
+            <input
+              type="radio"
+              name="department"
+              checked={department === "ALL"}
+              onChange={() => onChange({ department: "ALL" })}
+              className="mt-1"
+            />
+            <div className="text-sm font-semibold text-slate-900">ทั้งหมด</div>
+          </label>
 
-          {badge ? (
-            <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white backdrop-blur">
-              {badge}
-            </div>
-          ) : (
-            <div className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-              SHD
-            </div>
+          {options.departments.map((d) => (
+            <label
+              key={d}
+              className="flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2 hover:bg-white"
+              title={d}
+            >
+              <input
+                type="radio"
+                name="department"
+                checked={department === d}
+                onChange={() => onChange({ department: d })}
+                className="mt-1"
+              />
+              <div className="text-sm font-medium text-slate-800">{d}</div>
+            </label>
+          ))}
+
+          {options.departments.length === 0 && (
+            <div className="px-3 py-2 text-sm text-slate-600">ยังไม่มีข้อมูลแผนกจากประกาศงาน</div>
           )}
         </div>
-
-        {/* bottom info panel (light glass) */}
-        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-          <div
-            className={cn(
-              "rounded-3xl bg-white/82 p-3 sm:p-4 text-slate-950 backdrop-blur-xl",
-              "shadow-[0_18px_90px_rgba(15,23,42,0.18)]",
-              "ring-1 ring-slate-200"
-            )}
-          >
-            <div className="text-sm font-black leading-snug sm:text-base line-clamp-1">
-              {title}
-            </div>
-            {desc ? (
-              <div className="mt-1 text-xs leading-relaxed text-slate-700 sm:text-sm line-clamp-2">
-                {desc}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* soft glow */}
-        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-          <div className="absolute inset-0 bg-[radial-gradient(520px_220px_at_55%_15%,rgba(255,255,255,0.30),transparent_60%)]" />
-        </div>
       </div>
-    </button>
-  );
-}
-
-function CarouselControlsLight({
-  onLeft,
-  onRight,
-  className,
-}: {
-  onLeft: () => void;
-  onRight: () => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <button
-        type="button"
-        onClick={onLeft}
-        className={cn(
-          "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
-          "bg-white text-slate-900",
-          "ring-1 ring-slate-200 shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-          "transition hover:-translate-y-0.5 active:scale-[0.98]"
-        )}
-        aria-label="Scroll left"
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        onClick={onRight}
-        className={cn(
-          "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
-          "bg-white text-slate-900",
-          "ring-1 ring-slate-200 shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-          "transition hover:-translate-y-0.5 active:scale-[0.98]"
-        )}
-        aria-label="Scroll right"
-      >
-        <ArrowRight className="h-5 w-5" />
-      </button>
     </div>
   );
-}
 
-export default function WhyPage() {
-  const { t } = useTranslation();
+  const Body = (
+    <div className="card p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-black text-slate-900">ตัวกรอง</div>
 
-  // ✅ ใส่รูปใน: frontend/public/images/why/*
-  const HERO_BG = "/images/why/why-hero.jpg";
-  const PILLARS_BG = "/images/why/why-pillars.jpg";
-  const STORIES_BG = "/images/why/why-stories.jpg";
-  const LIFE_BG = "/images/why/why-life.jpg";
-  const CTA_BG = "/images/why/why-cta.jpg";
+        <div className="flex items-center gap-2">
+          {hasAny && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={() => onChange({ country: "ALL", department: "ALL", level: "ALL" })}
+            >
+              <X className="h-4 w-4" />
+              ล้างตัวกรอง
+            </button>
+          )}
 
-  // 14 รูป: Employee Stories
-  const employeePhotos = useMemo(
-    () =>
-      Array.from({ length: 14 }).map((_, i) => ({
-        src: `/images/why/stories/s${i + 1}.jpg`,
-        title: `Employee story #${i + 1}`,
-        desc: "A day in the team • Real projects • Real growth",
-        badge: i % 3 === 0 ? "Growth" : i % 3 === 1 ? "Team" : "Impact",
-      })),
-    []
+          {/* mobile toggle */}
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          >
+            ปิด
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        {/* Country */}
+        <div>
+          <div className="text-sm font-black text-slate-900">ประเทศ</div>
+          <select
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-orange-200 focus:ring-4 focus:ring-orange-200/30"
+            value={country}
+            onChange={(e) => onChange({ country: e.target.value })}
+          >
+            <option value="ALL">ทั้งหมด</option>
+            {options.countries.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          {options.countries.length === 0 && <div className="mt-2 text-xs text-slate-500">—</div>}
+        </div>
+
+        {/* Dept (radio list) */}
+        {DeptRadio}
+
+        {/* Level */}
+        <div>
+          <div className="text-sm font-black text-slate-900">ระดับ</div>
+          <select
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-orange-200 focus:ring-4 focus:ring-orange-200/30"
+            value={level}
+            onChange={(e) => onChange({ level: e.target.value })}
+          >
+            <option value="ALL">ทั้งหมด</option>
+            {options.levels.map((lv) => (
+              <option key={lv} value={lv}>
+                {lv}
+              </option>
+            ))}
+          </select>
+          {options.levels.length === 0 && <div className="mt-2 text-xs text-slate-500">—</div>}
+        </div>
+      </div>
+    </div>
   );
-
-  // Events
-  const eventPhotos = useMemo(
-    () =>
-      Array.from({ length: 10 }).map((_, i) => ({
-        src: `/images/why/events/e${i + 1}.jpg`,
-        title: `Event #${i + 1}`,
-        desc: "Culture • Collaboration • Moments that matter",
-        badge: i % 2 === 0 ? "Event" : "Life",
-      })),
-    []
-  );
-
-  // Auto sliders
-  const stories = useAutoScrollCarousel({
-    enabled: true,
-    intervalMs: 3000,
-    stepPx: 560,
-    idleResumeMs: 3000,
-  });
-
-  const life = useAutoScrollCarousel({
-    enabled: true,
-    intervalMs: 3200,
-    stepPx: 560,
-    idleResumeMs: 3000,
-  });
-
-  // mouse spotlight
-  const sectionRef = useRef<HTMLElement | null>(null);
-
-  // modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalItem, setModalItem] = useState<{
-    src: string;
-    title: string;
-    desc?: string;
-    badge?: string;
-  } | null>(null);
-
-  function openModal(item: { src: string; title: string; desc?: string; badge?: string }) {
-    setModalItem(item);
-    setModalOpen(true);
-  }
-
-  function closeModal() {
-    setModalOpen(false);
-    setModalItem(null);
-  }
 
   return (
     <>
-      <Helmet>
-        <title>{t("nav.why")} • SHD Careers</title>
-        <meta
-          name="description"
-          content="Why SHD Technology — growth, people, resources. Employee stories and life at SHD."
-        />
-      </Helmet>
+      {/* Desktop sidebar */}
+      <div className="hidden md:block">{Body}</div>
 
-      <ImageModal open={modalOpen} onClose={closeModal} item={modalItem} />
-
-      {/* =========================
-          A) HERO (keep white text)
-          ✅ remove black cover on image
-         ========================= */}
-      <section
-        ref={(n) => (sectionRef.current = n)}
-        className="group relative isolate overflow-hidden bg-white"
-        onMouseMove={(e) => {
-          const el = sectionRef.current;
-          if (!el) return;
-          const r = el.getBoundingClientRect();
-          const x = ((e.clientX - r.left) / r.width) * 100;
-          const y = ((e.clientY - r.top) / r.height) * 100;
-          el.style.setProperty("--mx", `${x}%`);
-          el.style.setProperty("--my", `${y}%`);
-        }}
-      >
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center scale-[1.03] will-change-transform"
-            style={{ backgroundImage: `url(${HERO_BG})` }}
-          />
-
-          {/* ✅ no black overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_25%_18%,rgba(255,255,255,0.24),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(800px_420px_at_75%_28%,rgba(16,185,129,0.14),transparent_62%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_70%_78%,rgba(168,85,247,0.14),transparent_62%)]" />
-
-          {/* mouse spotlight */}
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300",
-              "group-hover:opacity-100"
-            )}
-            style={{
-              background:
-                "radial-gradient(560px 380px at var(--mx, 50%) var(--my, 35%), rgba(255,255,255,0.20), rgba(255,255,255,0.08) 42%, transparent 72%)",
-            }}
-          />
-
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-        </div>
-
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16 sm:py-20 lg:py-24">
-          <div className="mx-auto max-w-[1040px] text-center text-white">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/95 backdrop-blur">
-              <Sparkles className="h-4 w-4" />
-              WHY SHD TECHNOLOGY
-            </div>
-
-            <h1 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              ทำไมถึงต้องร่วมงาน SHD Technology ?
-            </h1>
-
-            <p className="mx-auto mt-4 max-w-[70ch] text-base leading-relaxed text-white/90 sm:text-lg">
-              โตได้มากกว่าที่คิด เป็นคุณได้เต็มศักยภาพที่ SHD Technology
-            </p>
-
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                to="/jobs"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                  "bg-white text-slate-950 shadow-[0_24px_80px_rgba(0,0,0,0.35)]",
-                  "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(0,0,0,0.40)] active:scale-[0.98]"
-                )}
-              >
-                View open roles <ArrowRight className="h-4 w-4" />
-              </Link>
-
-              <a
-                href="#pillars"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
-                  "border border-white/25 bg-white/10 text-white backdrop-blur",
-                  "transition hover:bg-white/14 hover:-translate-y-0.5 active:scale-[0.98]"
-                )}
-              >
-                Explore pillars
-              </a>
-            </div>
-
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-xs text-white/90">
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Rocket className="h-3.5 w-3.5" />
-                Limitless growth
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Users className="h-3.5 w-3.5" />
-                Talented people
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
-                <Layers3 className="h-3.5 w-3.5" />
-                Powerful resources
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================
-          B) 3 PILLARS (LIGHT)
-         ========================= */}
-      <section id="pillars" className="relative isolate overflow-hidden bg-white">
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${PILLARS_BG})` }}
-          />
-          {/* ✅ no black overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_18%,rgba(255,255,255,0.60),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(760px_420px_at_80%_50%,rgba(16,185,129,0.10),transparent_62%)]" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-        </div>
-
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-14 sm:py-16">
-          <div className="mx-auto max-w-[1160px]">
-            <div className="flex flex-col gap-3 text-center">
-              <div className="inline-flex justify-center">
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  3 Pillars
-                </span>
-              </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-                โตไว • ทีมเก่ง • โอกาสไร้กรอบ
-              </h2>
-              <p className="mx-auto max-w-[70ch] text-sm text-slate-700">
-                3 เหตุผลหลักที่ทำให้คุณ “เติบโตได้มากกว่าที่คิด” ที่ SHD Technology
-              </p>
-            </div>
-
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              <PillarCard
-                icon={<Rocket className="h-6 w-6 text-emerald-600" />}
-                title="Limitless Growth"
-                desc="โตได้เกินคาด คว้าได้ทุกโกล ด้วยงานจริงที่ท้าทายและการสนับสนุนที่ชัดเจน"
-              />
-              <PillarCard
-                icon={<Users className="h-6 w-6 text-emerald-600" />}
-                title="Talented People"
-                desc="ร่วมทีมที่ใช่ ชนะได้ทุกโอกาส ทำงานกับคนเก่งที่พร้อมช่วยกันให้สำเร็จ"
-              />
-              <PillarCard
-                icon={<Layers3 className="h-6 w-6 text-emerald-600" />}
-                title="Powerful Resources"
-                desc="โอกาสไร้กรอบ องค์กรไร้ขีดจำกัด เครื่องมือ ทีม และระบบพร้อมให้คุณพุ่งไปได้ไกล"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================
-          C) EMPLOYEE STORIES (LIGHT)
-         ========================= */}
-<section className="relative isolate overflow-hidden bg-white">
-  <div className="absolute inset-0">
-    <div
-      className="absolute inset-0 bg-cover bg-center"
-      style={{ backgroundImage: `url(${STORIES_BG})` }}
-    />
-    {/* ✅ no black overlay */}
-    <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_20%_22%,rgba(255,255,255,0.62),transparent_60%)]" />
-    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-  </div>
-
-  <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16">
-    <div className="grid gap-8 lg:grid-cols-4 lg:items-start">
-      {/* left */}
-      <div className="lg:col-span-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
-          <Quote className="h-4 w-4" />
-          Employee Stories
-        </div>
-
-        <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
-          เรื่องเล่าจากทีมงาน
-        </h3>
-
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
-          มุมมองจริงจากคนทำงานจริง — โปรเจกต์จริง การเติบโตจริง และทีมที่ช่วยกันทำให้สำเร็จ
-        </p>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => stories.setUserPaused((v) => !v)}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
-              "bg-white text-slate-900 ring-1 ring-slate-200",
-              "shadow-none",
-              "transition hover:-translate-y-0.5 active:scale-[0.98]"
-            )}
-          >
-            {stories.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {stories.userPaused ? "Auto play" : "Pause"}
-          </button>
-
-          <CarouselControlsLight
-            onLeft={() => stories.scrollByDir(-1)}
-            onRight={() => stories.scrollByDir(1)}
-          />
-        </div>
-
-        <div className="mt-4 text-[11px] text-slate-500">
-          * เลื่อนอัตโนมัติทุก 3 วิ (หยุดเมื่อเอาเมาส์วาง / แตะเลื่อน / กดปุ่ม)
-        </div>
-      </div>
-
-      {/* right */}
-      <div className="lg:col-span-3">
-        <div
-          ref={stories.ref}
-          className={cn(
-            "no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3",
-            "snap-x snap-mandatory"
-          )}
-          onMouseEnter={() => stories.setHovered(true)}
-          onMouseLeave={() => stories.setHovered(false)}
-          onPointerDown={() => stories.markUserAction()}
-          onWheel={() => stories.markUserAction()}
-          onTouchStart={() => stories.markUserAction()}
+      {/* Mobile compact trigger */}
+      <div className="md:hidden">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800"
+          onClick={() => setMobileOpen(true)}
         >
-          {employeePhotos.map((p, idx) => (
-            <div key={`${p.src}-${idx}`} className="snap-start">
-              {/* ✅ bigger card, ✅ no shadow, ✅ NO title bar on first page */}
-              <button
-                type="button"
-                onClick={() => openModal(p)}
-                className={cn(
-                  "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
-                  "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
-                  "shadow-none",
-                  "ring-0",
-                  "transition hover:-translate-y-0.5 active:scale-[0.99]"
-                )}
-              >
-                <div className="relative aspect-[2/1] w-full">
-                  <img
-                    src={p.src}
-                    alt={p.title}
-                    className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                    draggable={false}
-                    loading="lazy"
-                  />
+          <span className="inline-flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4" />
+            ตัวกรอง
+            {hasAny && <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">มี</span>}
+          </span>
+          <ChevronDown className="h-4 w-4 text-slate-500" />
+        </button>
 
-                  {/* ✅ no bottom bar / no gradient shadow */}
-                  {/* top chips (still keep) */}
-                  <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Expand
-                    </div>
-
-                    {p.badge ? (
-                      <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
-                        {p.badge}
-                      </div>
-                    ) : (
-                      <div className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-                        SHD
-                      </div>
-                    )}
-                  </div>
-
-                  {/* soft glow (not shadow) */}
-                  <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-                    <div className="absolute inset-0 bg-[radial-gradient(560px_240px_at_55%_15%,rgba(255,255,255,0.28),transparent_60%)]" />
-                  </div>
-                </div>
-              </button>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/20" onClick={() => setMobileOpen(false)} />
+            <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-auto rounded-t-3xl bg-white p-4">
+              {Body}
             </div>
-          ))}
-        </div>
-
-        <style>{`
-          .no-scrollbar::-webkit-scrollbar{display:none;}
-          .no-scrollbar{-ms-overflow-style:none; scrollbar-width:none;}
-        `}</style>
+          </div>
+        )}
       </div>
-    </div>
-  </div>
-</section>
+    </>
+  );
+}
 
-      {/* =========================
-          E) LIFE AT SHD (LIGHT)
-         ========================= */}
-      <section className="relative isolate overflow-hidden bg-white">
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${LIFE_BG})` }}
-          />
-          {/* ✅ no black overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_70%_30%,rgba(255,255,255,0.58),transparent_60%)]" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-        </div>
+/** ========= Hiring Process (flip cards) ========= */
+type Step = {
+  n: number;
+  icon: ReactNode;
+  frontTitle: string;
+  frontDesc: string;
+  bullets: string[];
+  backTitle: string;
+  backDesc: string;
+};
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16">
-          <div className="mx-auto max-w-[1160px]">
-            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
-                  <CalendarHeart className="h-4 w-4" />
-                  Life at SHD
-                </div>
-                <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
-                  อีเวนต์ & วัฒนธรรมทีม
-                </h3>
-                <p className="mt-2 max-w-[70ch] text-sm text-slate-700">
-                  ทำงานเก่งอย่างเดียวไม่พอ — เราให้ความสำคัญกับการเติบโตของทีม ความสัมพันธ์ และช่วงเวลาที่มีความหมาย
-                </p>
-              </div>
+function HiringProcessCards() {
+  const steps: Step[] = [
+    {
+      n: 1,
+      icon: <Sparkles className="h-5 w-5" />,
+      frontTitle: "ค้นพบโอกาสใหม่ ๆ",
+      frontDesc: "หางานที่เหมาะกับความสามารถของคุณ",
+      bullets: ["เลือกทีม/สายงานที่สนใจ", "อ่าน JD ให้เข้าใจ", "เช็คสถานที่/รูปแบบงาน"],
+      backTitle: "ขั้นตอนที่ 1: เลือกตำแหน่ง",
+      backDesc: "เริ่มจากการค้นหาตำแหน่งที่ตรงกับความสามารถ เป้าหมาย และรูปแบบการทำงานที่คุณต้องการ",
+    },
+    {
+      n: 2,
+      icon: <FileText className="h-5 w-5" />,
+      frontTitle: "เตรียมประวัติการทำงานของคุณ",
+      frontDesc: "อัปเดตให้ชัดเจนและตรงจุด",
+      bullets: ["สรุป impact เป็นตัวเลข", "ใส่โปรเจคเด่น", "แนบลิงก์ผลงาน"],
+      backTitle: "ขั้นตอนที่ 2: เตรียมเรซูเม่",
+      backDesc: "เรซูเม่ที่ดีควรอ่านง่าย เห็นผลลัพธ์ชัด และมีข้อมูลที่เกี่ยวข้องกับตำแหน่งที่สมัคร",
+    },
+    {
+      n: 3,
+      icon: <PhoneCall className="h-5 w-5" />,
+      frontTitle: "สัมภาษณ์ทางโทรศัพท์",
+      frontDesc: "คุยภาพรวมและความสนใจ",
+      bullets: ["เล่า background แบบกระชับ", "ชัดเจนเรื่องความสนใจ", "ถามขั้นตอนถัดไป"],
+      backTitle: "ขั้นตอนที่ 3: Phone Interview",
+      backDesc: "เจ้าหน้าที่สรรหาจะพูดคุยเพื่อทำความเข้าใจประสบการณ์ เป้าหมาย และความเหมาะสมกับบทบาท",
+    },
+    {
+      n: 4,
+      icon: <Code2 className="h-5 w-5" />,
+      frontTitle: "ทดสอบ/สัมภาษณ์เชิงลึก",
+      frontDesc: "ตามสายงานและระดับตำแหน่ง",
+      bullets: ["เตรียม case / portfolio", "ฝึกตอบเชิงเหตุผล", "ทบทวน fundamentals"],
+      backTitle: "ขั้นตอนที่ 4: Deep Interview",
+      backDesc: "อาจมีแบบทดสอบหรือการสัมภาษณ์กับผู้จัดการทีม เพื่อประเมินทักษะเชิงลึกและวิธีคิด",
+    },
+    {
+      n: 5,
+      icon: <Briefcase className="h-5 w-5" />,
+      frontTitle: "ยื่นข้อเสนอ",
+      frontDesc: "สรุปรายละเอียดและเริ่มเส้นทางใหม่",
+      bullets: ["ตรวจสอบรายละเอียดข้อเสนอ", "ยืนยันวันเริ่มงาน", "เตรียมเอกสาร"],
+      backTitle: "ขั้นตอนที่ 5: Offer",
+      backDesc: "เมื่อผ่านทุกขั้นตอน เราจะส่งข้อเสนอให้คุณ พร้อมรายละเอียดการเริ่มงานและเอกสารที่เกี่ยวข้อง",
+    },
+  ];
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => life.setUserPaused((v) => !v)}
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <div className="card p-6 md:p-8">
+      <div className="text-center">
+        <h2 className="text-xl font-black tracking-tight md:text-2xl">กระบวนการว่าจ้างของเรา</h2>
+        <p className="mt-2 text-sm text-slate-600">แตะ/เลื่อนเมาส์เพื่อดูรายละเอียดในแต่ละขั้นตอน</p>
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-5">
+        {steps.map((s) => {
+          const isOpen = open === s.n;
+
+          return (
+            <button
+              key={s.n}
+              type="button"
+              onClick={() => setOpen((p) => (p === s.n ? null : s.n))}
+              className="group relative text-left"
+              aria-label={`Step ${s.n}`}
+            >
+              <div className="relative h-[280px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-200/60">
+                {/* FRONT */}
+                <div
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
-                    "bg-white text-slate-900 ring-1 ring-slate-200",
-                    "shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-                    "transition hover:-translate-y-0.5 active:scale-[0.98]"
+                    "absolute inset-0 p-5 transition duration-300",
+                    "md:group-hover:opacity-0 md:group-hover:translate-y-2 md:group-hover:pointer-events-none",
+                    isOpen ? "opacity-0 translate-y-2 pointer-events-none" : "opacity-100 translate-y-0 pointer-events-auto"
                   )}
                 >
-                  {life.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                  {life.userPaused ? "Auto play" : "Pause"}
-                </button>
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm">
+                        {s.icon}
+                      </span>
+                      Step {s.n}
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-slate-400 md:hidden" />
+                  </div>
 
-                <CarouselControlsLight
-                  onLeft={() => life.scrollByDir(-1)}
-                  onRight={() => life.scrollByDir(1)}
-                />
+                  <div className="mt-4">
+                    <div className="text-base font-black leading-snug text-slate-900">{s.frontTitle}</div>
+                    <div className="mt-1 text-sm text-slate-600">{s.frontDesc}</div>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {s.bullets.slice(0, 3).map((b) => (
+                      <div key={b} className="flex items-start gap-2 text-sm text-slate-700">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
+                        <span className="leading-snug">{b}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 text-xs font-semibold text-slate-500">เลื่อนเมาส์เพื่อดูรายละเอียด</div>
+                </div>
+
+                {/* BACK */}
+                <div
+                  className={cn(
+                    "absolute inset-0 p-5 transition duration-300",
+                    "opacity-0 -translate-y-2 pointer-events-none",
+                    "md:group-hover:opacity-100 md:group-hover:translate-y-0 md:group-hover:pointer-events-auto",
+                    isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "md:opacity-0 md:-translate-y-2"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700">
+                      รายละเอียด
+                    </div>
+                    <ChevronUp className="h-4 w-4 text-orange-400 md:hidden" />
+                  </div>
+
+                  {/* IMPORTANT: กันซ้อนทับ ด้วย overflow-auto + spacing */}
+                  <div className="mt-4 h-[210px] overflow-auto pr-1">
+                    <div className="text-base font-black leading-snug text-slate-900">{s.backTitle}</div>
+                    <div className="mt-2 text-sm leading-relaxed text-slate-700">{s.backDesc}</div>
+
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <div className="text-xs font-bold text-slate-600">Tip</div>
+                      <div className="mt-1 leading-relaxed">{s.bullets[0]}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 text-center text-xs text-slate-500">
+        * ขั้นตอนอาจแตกต่างกันตามตำแหน่งและความอาวุโสของบทบาท
+      </div>
+    </div>
+  );
+}
+
+/** ========= FAQ ========= */
+type FaqItem = { q: string; a: string };
+
+function FaqTabs() {
+  const tabs = [
+    { key: "fulltime", label: "Full time" },
+    { key: "internship", label: "Internship" },
+    { key: "tech", label: "Tech" },
+  ] as const;
+
+  const [tab, setTab] = useState<(typeof tabs)[number]["key"]>("fulltime");
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
+
+  const fulltime: FaqItem[] = [
+    {
+      q: "ฉันต้องการเพิ่มรายละเอียดเพิ่มเติมในเรซูเม่ของฉัน ฉันควรส่งใบสมัครอีกครั้งหรือไม่",
+      a: "คุณสามารถส่งอีเมลถึงเจ้าหน้าที่สรรหาที่ติดต่อคุณเพื่อขอให้อัปเดตประวัติส่วนตัวของคุณ\n\nอย่างไรก็ตาม คุณสามารถส่งใบสมัครของคุณอีกครั้งพร้อมกับประวัติส่วนตัวที่อัปเดตแล้ว หากคุณเพิ่งส่งใบสมัครไปก่อนหน้านี้ไม่นาน",
+    },
+    {
+      q: "ฉันสามารถสมัครงานมากกว่าหนึ่งตำแหน่งพร้อมกันได้หรือไม่",
+      a: "ได้ คุณสามารถสมัครได้หลายตำแหน่ง แต่เจ้าหน้าที่สรรหาของเราจะนำเสนอตำแหน่งงานที่มีความเหมาะสมที่สุดให้กับคุณ!\n\nโปรดทราบว่า คุณสามารถสัมภาษณ์งานได้เพียงหนึ่งตำแหน่งในแต่ละครั้งเท่านั้น",
+    },
+    {
+      q: "ฉันสามารถใช้สมัครตำแหน่งงานเดิมได้อีกหรือไม่ หากฉันไม่ได้รับการติดต่อก่อนหน้านี้",
+      a: "ได้ หากตำแหน่งงานยังไม่ได้ผู้สมัคร คุณสามารถสมัครในตำแหน่งนั้นอีกครั้งได้\n\nอย่างไรก็ตาม เราแนะนำให้คุณเพิ่มทักษะให้กับตัวเองก่อนที่จะสมัครรับตำแหน่งเดิมอีกครั้ง",
+    },
+    {
+      q: "ฉันจะรู้สถานะการสมัครของฉันได้อย่างไร",
+      a: "เจ้าหน้าที่สรรหาของเราจะแจ้งสถานะการสมัครและขั้นตอนต่อไปของกระบวนการว่าจ้างให้คุณทราบทางอีเมล กรุณาเผื่อเวลาให้เราสำหรับการติดต่อกลับหาคุณ",
+    },
+    {
+      q: "เจ้าหน้าที่สรรหามองหาอะไรในระหว่างการสัมภาษณ์ทางโทรศัพท์",
+      a: "เจ้าหน้าที่สรรหาต้องการทราบเกี่ยวกับทักษะและประสบการณ์ของคุณ รวมทั้งความสนใจในการเข้าทำงานกับบริษัท และยังมองหาความกระตือรือร้นและความเหมาะสมของวัฒนธรรม\n\nดังนั้นจงเป็นตัวของตัวเอง! ที่สำคัญที่สุด แสดงความสนใจที่คุณมีเกี่ยวกับบริษัทด้วย",
+    },
+  ];
+
+  const internship: FaqItem[] = [
+    {
+      q: "ฉันสนใจที่จะสมัครฝึกงาน แต่ฉันเพิ่งจบการศึกษาเมื่อไม่กี่เดือนที่ผ่านมา ฉันสามารถสมัครได้หรือไม่",
+      a: "คุณได้รับการสนับสนุนให้มีบทบาทในการทำงานอย่างเต็มที่ เมื่อสำเร็จการศึกษาจะสามารถทำงานที่มีความหมายมากขึ้นและมีโอกาสในการเรียนรู้มากขึ้น",
+    },
+    {
+      q: "ระยะเวลาการฝึกงานคือเมื่อใด และฉันควรเริ่มสมัครเมื่อใด",
+      a: "เราจ้างนักศึกษาฝึกงานตลอดทั้งปี! ไม่จำกัดช่วงเวลาที่ในการสมัครฝึกงาน และคุณสามารถตรวจสอบตำแหน่งงานเพื่อดูโอกาสฝึกงานกับเราได้",
+    },
+    {
+      q: "มีระยะเวลาการฝึกงานนานแค่ไหน ฉันสามารถกำหนดช่วงเวลาฝึกงานของฉันเองได้หรือไม่",
+      a: "ระยะเวลาที่แนะนำของการฝึกงานอย่างน้อย 3 เดือน เพื่อให้คุณสามารถเรียนรู้โครงการที่มีความหมาย\n\nมีโอกาสในการการขยายระยะเวลาการฝึกงาน ซึ่งอาจจะได้รับอนุญาตภายใต้ความต้องการทางธุรกิจและหัวหน้างาน",
+    },
+  ];
+
+  const tech: FaqItem[] = [
+    {
+      q: "ฉันต้องเรียนจบในสายวิทยาศาสตร์คอมพิวเตอร์หรือวิศวกรรมคอมพิวเตอร์ถึงจะสามารถสมัครงานในสายงานเทคโนโลยีได้หรือไม่",
+      a: "ไม่ เราเปิดรับทุกสาขาวิชาสำหรับตำแหน่งสายงานเทคโนโลยี\n\nแต่อย่างไรก็ดี หากผู้สมัครจบสาขาวิทยาศาสตร์คอมพิวเตอร์ หรือวิศวกรรมคอมพิวเตอร์ จะได้รับการพิจารณาเป็นพิเศษ",
+    },
+    {
+      q: "ฉันควรคาดหวังอะไรจากการสัมภาษณ์ทางเทคนิค",
+      a: "เราจะมีการทดสอบทักษะของคุณ กรุณาเตรียมตัวสำหรับแบบทดสอบในเรื่องการเขียนโค้ด ทดสอบทางด้านตรรกะ และหัวข้อ CS fundamentals",
+    },
+  ];
+
+  const data = tab === "fulltime" ? fulltime : tab === "internship" ? internship : tech;
+
+  return (
+    <div className="card p-6 md:p-8">
+      <div className="text-center">
+        <h2 className="text-xl font-black tracking-tight md:text-2xl">คำถามที่พบบ่อย</h2>
+        <p className="mt-2 text-sm text-slate-600">เลือกหมวด แล้วกดเพื่อเปิดคำตอบ</p>
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        <div className="inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
+          {tabs.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => {
+                  setTab(t.key);
+                  setOpenIdx(0);
+                }}
+                className={cn(
+                  "rounded-xl px-5 py-2 text-sm font-semibold transition",
+                  active ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-3">
+        {data.map((it, idx) => {
+          const open = openIdx === idx;
+          return (
+            <div key={idx} className="rounded-2xl border border-slate-200 bg-white">
+              <button
+                type="button"
+                className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left"
+                onClick={() => setOpenIdx((p) => (p === idx ? null : idx))}
+              >
+                <div className="text-sm font-semibold text-slate-900">{it.q}</div>
+                <div className="mt-0.5 shrink-0 text-slate-500">
+                  {open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </div>
+              </button>
+
+              {open && (
+                <div className="border-t border-slate-100 px-5 py-4">
+                  <div className="whitespace-pre-line text-sm leading-relaxed text-slate-700">{it.a}</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function JobsPage() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language as Language;
+
+  const [sp, setSp] = useSearchParams();
+  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [total, setTotal] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // URL params
+  const q = sp.get("q") ?? "";
+  const country = sp.get("country") ?? "ALL";
+  const department = sp.get("department") ?? "ALL";
+  const level = sp.get("level") ?? "ALL";
+  const pageParam = Number(sp.get("page") || "1") || 1;
+
+  // local input state (debounce for faster UX)
+  const [qDraft, setQDraft] = useState(q);
+  const qDebounceRef = useRef<number | null>(null);
+
+  // hero hover image
+  const [heroHover, setHeroHover] = useState(false);
+
+  const title = useMemo(() => `${t("nav.jobs")} • SHD Careers`, [t]);
+
+  function updateParams(next: Record<string, string>) {
+    const merged = new URLSearchParams(sp);
+    Object.entries(next).forEach(([k, v]) => {
+      if (!v || v === "ALL") merged.delete(k);
+      else merged.set(k, v);
+    });
+    setSp(merged, { replace: true });
+  }
+
+  // Keep qDraft synced when user navigates/back
+  useEffect(() => {
+    setQDraft(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, lang]);
+
+  // Scroll fix: when open this page (SPA) always go to top once
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
+  // Fetch jobs (คงโครงสร้างเดิม)
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setError(null);
+
+    listJobs({ lang, q, country, department, level })
+      .then((r: any) => {
+        if (!alive) return;
+        const list = Array.isArray(r?.jobs) ? (r.jobs as Job[]) : [];
+        const totalCount = Number(r?.total ?? list.length) || list.length;
+        setJobs(list);
+        setTotal(totalCount);
+      })
+      .catch((e: any) => {
+        if (!alive) return;
+        setError(e?.message ?? "Error");
+        setJobs([]);
+        setTotal(0);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [lang, q, country, department, level]);
+
+  /** ✅ NEW: สร้าง options ของ Country/Department/Level จาก jobs ที่โหลดมาจริง */
+  const filterOptions: FilterOptions = useMemo(() => {
+    const uniq = (xs: string[]) =>
+      Array.from(new Set(xs.map((x) => normalizeOpt(x)).filter((x) => x && x !== "null" && x !== "undefined")));
+
+    // NOTE: ใช้ field จาก job ที่คุณมีอยู่จริง: country / department / level
+    const countries = uniq(jobs.map((j: any) => j?.country)).sort((a, b) => a.localeCompare(b));
+    const departments = uniq(jobs.map((j: any) => j?.department)).sort((a, b) => a.localeCompare(b));
+    const levels = uniq(jobs.map((j: any) => j?.level)).sort((a, b) => a.localeCompare(b));
+
+    return { countries, departments, levels };
+  }, [jobs]);
+
+  // Client-side pagination (15 per page)
+  const totalCount = useMemo(() => (total > 0 ? total : jobs.length), [total, jobs.length]);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(totalCount / PAGE_SIZE)), [totalCount]);
+  const page = useMemo(() => clamp(pageParam, 1, totalPages), [pageParam, totalPages]);
+
+  const pagedJobs = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return jobs.slice(start, start + PAGE_SIZE);
+  }, [jobs, page]);
+
+  // Clamp URL page silently
+  useEffect(() => {
+    if (pageParam !== page) {
+      const merged = new URLSearchParams(sp);
+      if (page <= 1) merged.delete("page");
+      else merged.set("page", String(page));
+      setSp(merged, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageParam, totalPages]);
+
+  // When page changes -> scroll to top of list
+  const listTopRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!listTopRef.current) return;
+    const y = listTopRef.current.getBoundingClientRect().top + window.scrollY - 16;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }, [page]);
+
+  // Debounce qDraft -> updateParams(q) (reset page)
+  useEffect(() => {
+    if (qDraft === q) return;
+    if (qDebounceRef.current) window.clearTimeout(qDebounceRef.current);
+    qDebounceRef.current = window.setTimeout(() => {
+      updateParams({ q: qDraft, page: "1" });
+    }, 250);
+    return () => {
+      if (qDebounceRef.current) window.clearTimeout(qDebounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qDraft]);
+
+  function onFiltersChange(next: { country?: string; department?: string; level?: string }) {
+    updateParams({
+      country: next.country ?? country,
+      department: next.department ?? department,
+      level: next.level ?? level,
+      page: "1",
+    });
+  }
+
+  function onChangePage(p: number) {
+    const next = clamp(p, 1, totalPages);
+    updateParams({ page: next <= 1 ? "ALL" : String(next) }); // delete when <=1
+  }
+
+return (
+  <>
+    <Helmet>
+      <title>{title}</title>
+    </Helmet>
+
+    <section className="bg-white">
+      {/* HERO
+          ✅ ไม่มีเงาดำคลุมภาพ (เอา black overlay ออก) แต่ยังมีไล่ขาวด้านล่าง
+          ✅ ปรับสูงให้พอดีกับกรอบแดง (คุมด้วย height ไม่ใช้ pt ratio)
+          - Mobile: 1:1 (square) แต่ไม่เกินจอ
+          - Desktop: feel 1920x800 แต่คุมให้ไม่สูงเกินด้วย clamp
+      */}
+      <div
+        className="relative overflow-hidden border-b border-slate-200"
+        onMouseEnter={() => setHeroHover(true)}
+        onMouseLeave={() => setHeroHover(false)}
+        onTouchStart={() => setHeroHover((v) => !v)}
+      >
+        {/* Height controller */}
+        <div
+          className={cn(
+            "relative overflow-hidden",
+            // Desktop height = clamp(min, preferred, max) -> พอดีกรอบแดง / ไม่สูงเกิน
+            "md:h-[clamp(260px,22vw,380px)]",
+            // Mobile เป็น square และคุมไม่ให้สูงเกิน
+            "aspect-square max-h-[520px] md:aspect-auto"
+          )}
+        >
+          {/* Background layers */}
+          <div className="absolute inset-0">
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
+              style={{ backgroundImage: `url(/images/jobs-hero.jpg)` }}
+            />
+            <div
+              className={cn(
+                "absolute inset-0 bg-cover bg-center transition-opacity duration-500",
+                heroHover ? "opacity-100" : "opacity-0"
+              )}
+              style={{ backgroundImage: `url(/images/jobs-hero-hover.jpg)` }}
+            />
+
+            {/* ✅ White-only readability (no dark mask) */}
+            <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_18%,rgba(255,255,255,0.65),transparent_62%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(55%_55%_at_85%_22%,rgba(255,255,255,0.35),transparent_60%)]" />
+            {/* white fade from bottom */}
+
+          </div>
+
+          {/* Content */}
+          <div className="absolute inset-0">
+            <div className="mx-auto h-full w-full max-w-[1240px] px-4">
+              <div className="flex h-full items-center py-6 md:py-8">
+                <div className="w-full max-w-3xl">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/25 px-3 py-1 text-xs font-semibold text-slate-900 backdrop-blur">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    ตำแหน่งที่ว่างอยู่
+                  </div>
+
+                  <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-900 md:text-4xl">
+                    ตำแหน่งที่เปิดรับ
+                  </h1>
+
+                  <p className="mt-2 text-xs text-slate-700 md:text-sm">
+                    พิมพ์คำค้นหา • ค้นหางานที่เหมาะกับความสามารถของคุณ
+                  </p>
+
+                  {/* Search box in hero (ยาวเต็มจอใน desktop ภายใต้ container) */}
+                  <div className="mt-4 w-full rounded-3xl border border-white/45 bg-white/25 p-3 backdrop-blur md:p-3.5">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                      <div className="relative flex-1">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+                        <input
+                          className={cn(
+                            "w-full rounded-2xl border border-white/55 bg-white/35 px-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-500",
+                            "outline-none transition focus:border-orange-200 focus:ring-4 focus:ring-orange-200/30"
+                          )}
+                          value={qDraft}
+                          placeholder={t("common.search")}
+                          onChange={(e) => setQDraft(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 md:justify-end">
+                        <div className="text-sm font-semibold text-slate-900">
+                          {loading ? t("common.loading") : `${totalCount} ${t("jobs.openings")}`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div
-              ref={life.ref}
-              className={cn(
-                "mt-8 no-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2",
-                "snap-x snap-mandatory"
-              )}
-              onMouseEnter={() => life.setHovered(true)}
-              onMouseLeave={() => life.setHovered(false)}
-              onPointerDown={() => life.markUserAction()}
-              onWheel={() => life.markUserAction()}
-              onTouchStart={() => life.markUserAction()}
-            >
-              {eventPhotos.map((p, idx) => (
-                <div key={`${p.src}-${idx}`} className="snap-start">
-                  <PhotoCard16x8
-                    src={p.src}
-                    title={p.title}
-                    desc={p.desc}
-                    badge={p.badge}
-                    onClick={() => openModal(p)}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <style>{`
-              .no-scrollbar::-webkit-scrollbar{display:none;}
-              .no-scrollbar{-ms-overflow-style:none; scrollbar-width:none;}
-            `}</style>
+            {/* fade to white (extra soft) */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-white/0 to-white" />
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* =========================
-          CTA (LIGHT section, keep hero-like card but light)
-         ========================= */}
-      <section className="relative isolate overflow-hidden bg-white">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${CTA_BG})` }} />
-          {/* ✅ no black overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_35%,rgba(255,255,255,0.62),transparent_62%)]" />
+      <div className="container-page py-10">
+        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+          <div>
+            {/* ✅ ส่ง options จาก jobs จริงเข้า JobFilters */}
+            <JobFilters
+              country={country}
+              department={department}
+              level={level}
+              options={filterOptions}
+              onChange={onFiltersChange}
+            />
+          </div>
+
+          <div>
+            <div ref={listTopRef} className="flex flex-col gap-2">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">{t("jobs.title")}</h2>
+                  <div className="mt-1 text-sm text-slate-600">
+                    {loading ? t("common.loading") : `${totalCount} ${t("jobs.openings")} • ${PAGE_SIZE}/หน้า`}
+                  </div>
+                </div>
+
+                <div className="hidden md:block">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
+                    หน้า <span className="font-bold">{page}</span> / {totalPages}
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  {error}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4">
+              {loading ? (
+                <div className="rounded-3xl border border-slate-200 bg-white p-6">
+                  <div className="text-sm text-slate-600">{t("common.loading")}</div>
+                  <div className="mt-4 grid gap-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+                    ))}
+                  </div>
+                </div>
+              ) : jobs.length === 0 ? (
+                <div className="card p-6 text-sm text-slate-600">{t("jobs.empty")}</div>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    {pagedJobs.map((j) => (
+                      <JobCard key={j.job_id} job={j} />
+                    ))}
+                  </div>
+
+                  <Pagination page={page} totalPages={totalPages} onChange={onChangePage} />
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16 sm:py-18">
-          <div className="mx-auto max-w-[1040px] overflow-hidden rounded-[28px] bg-white/82 p-8 text-center text-slate-950 backdrop-blur-xl shadow-[0_30px_140px_rgba(15,23,42,0.18)] ring-1 ring-slate-200 sm:p-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-900">
-              <Sparkles className="h-4 w-4" />
-              Join us
-            </div>
 
-            <h3 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-              Ready to grow with us?
-            </h3>
-            <p className="mx-auto mt-3 max-w-[70ch] text-sm text-slate-700 sm:text-base">
-              ถ้าคุณอยากทำงานที่ “ท้าทายจริง” และ “เติบโตจริง” มาร่วมสร้างอนาคตไปด้วยกันที่ SHD Technology
-            </p>
+          {/* Hiring process */}
+          <div className="mt-10">
+            <HiringProcessCards />
+          </div>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                to="/jobs"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
-                  "bg-slate-950 text-white",
-                  "shadow-[0_24px_80px_rgba(15,23,42,0.25)]",
-                  "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(15,23,42,0.30)] active:scale-[0.98]"
-                )}
-              >
-                View open roles <ArrowRight className="h-4 w-4" />
-              </Link>
-
-              <a
-                href="#pillars"
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
-                  "border border-slate-200 bg-white text-slate-900",
-                  "transition hover:-translate-y-0.5 active:scale-[0.98]"
-                )}
-              >
-                Explore pillars
-              </a>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-700">
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-                <Rocket className="h-3.5 w-3.5" />
-                Growth first
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-                <Users className="h-3.5 w-3.5" />
-                Great teams
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-                <Layers3 className="h-3.5 w-3.5" />
-                Real resources
-              </span>
-            </div>
+          {/* FAQ */}
+          <div className="mt-8">
+            <FaqTabs />
           </div>
         </div>
       </section>

@@ -425,63 +425,228 @@
       "hint": "Desktop: press ESC to close • Mobile: tap backdrop to close"
     }
   },
-  "jobs": {
+"jobs": {
+  "title": "Open Positions",
+  "openings": "openings",
+  "filters": "Filters",
+  "empty": "No jobs match your filters.",
+  "applyTitle": "Application",
+
+  "pagination": {
+    "prev": "Previous page",
+    "next": "Next page",
+    "goTo": "Go to page {{page}}"
+  },
+
+  "hero": {
+    "badge": "Open positions",
+    "title": "Find your dream job",
+    "subtitle": "Search by keyword • country • department • level — clean UI, fast experience",
+    "searchPlaceholder": "Type to search",
+    "searchAria": "Search jobs",
+    "openCount": "{{count}} openings",
+    "clearFilters": "Clear filters",
+    "tip": "Tip: Choose country/department/level and results will update instantly."
+  },
+
+  "filtersLabel": {
+    "country": "Country",
+    "department": "Department",
+    "level": "Level"
+  },
+
+  "list": {
     "title": "Open Positions",
-    "openings": "openings",
-    "filters": "Filters",
-    "empty": "No jobs match your filters.",
-    "applyTitle": "Application",
-    "form": {
-      "personal": "Personal information",
-      "resume": "Resume (DOC/DOCX/PDF ≤ 2MB)",
-      "firstName": "First name*",
-      "lastName": "Last name*",
-      "email": "Email*",
-      "phone": "Phone*",
-      "address": "Current address*",
-      "education": "Education (up to 5 entries)",
-      "addEducation": "Add education",
-      "experience": "Experience (up to 20 entries)",
-      "addExperience": "Add experience",
-      "skills": "Skills (up to 8)",
-      "other": "Other information",
-      "visa": "Do you require immigration/visa support now or in the future?*",
-      "availability": "Availability (internship only)",
-      "url": "Website URL (LinkedIn/Github)",
-      "source": "How did you hear about this role?*",
-      "attachments": "Attachments (≤ 50MB)",
-      "agree": "I have read and agree to the Terms of Service and Privacy Policy",
-      "submit": "Submit application",
-      "submitting": "Submitting...",
-      "success": "Application submitted!",
-      "fail": "Submission failed. Please try again.",
-      "phoneCode": "Country code",
-      "phoneNumber": "Phone number",
-      "phonePreview": "Preview",
-      "currentAddressCountry": "Current Address (Country)",
-      "addressDetail": "Address detail",
-      "addressDetailPlaceholder": "Address detail (optional)",
-      "addressSavedAs": "Saved as",
-      "educationLevel": "Education Level",
-      "educationSelectLevel": "Select level...",
-      "educationSchool": "School / Institute",
-      "educationFrom": "From",
-      "educationTo": "To",
-      "experienceCompany": "Company",
-      "experienceTitle": "Title",
-      "experienceFrom": "From",
-      "experienceTo": "To",
-      "availableStartDate": "Available Start Date",
-      "skillsSelected": "Selected",
-      "skillsSearchPlaceholder": "Search skills...",
-      "skillsAddCustomPlaceholder": "Add custom skill (optional)",
-      "skillsTip": "Tip: choose up to 8 skills to keep it clear for HR.",
-      "tipsTitle": "Tips",
-      "tipsResume": "Resume file must be PDF/DOC/DOCX and ≤ 2MB",
-      "tipsAttachments": "Attachments total size ≤ 50MB",
-      "tipsSkills": "Choose up to 8 skills for clarity"
+    "subtitle": "{{count}} openings • {{perPage}}/page",
+    "pageLabel": "Page",
+    "empty": "No jobs match your filters."
+  },
+
+  "hiring": {
+    "title": "Our hiring process",
+    "subtitle": "Tap / hover to view details for each step",
+    "ariaStep": "Step {{n}}",
+    "stepLabel": "Step {{n}}",
+    "hoverHint": "Hover to view details",
+    "detail": "Details",
+    "tip": "Tip",
+    "footerNote": "* Steps may vary depending on role and seniority.",
+
+    "steps": {
+      "1": {
+        "frontTitle": "Discover new opportunities",
+        "frontDesc": "Find a role that matches your strengths",
+        "bullets": [
+          "Choose the team/track you’re interested in",
+          "Read the job description carefully",
+          "Check location/work arrangement"
+        ],
+        "backTitle": "Step 1: Choose a role",
+        "backDesc": "Start by finding a position that matches your skills, goals, and preferred working style."
+      },
+      "2": {
+        "frontTitle": "Prepare your resume",
+        "frontDesc": "Update it to be clear and focused",
+        "bullets": [
+          "Quantify impact with numbers",
+          "Highlight key projects",
+          "Attach portfolio links"
+        ],
+        "backTitle": "Step 2: Prepare your resume",
+        "backDesc": "A great resume is easy to read, shows outcomes clearly, and stays relevant to the role."
+      },
+      "3": {
+        "frontTitle": "Phone interview",
+        "frontDesc": "Align on goals and fit",
+        "bullets": [
+          "Share your background concisely",
+          "Be clear about your interests",
+          "Ask about next steps"
+        ],
+        "backTitle": "Step 3: Phone interview",
+        "backDesc": "Our recruiter will learn about your experience, goals, and overall fit for the role."
+      },
+      "4": {
+        "frontTitle": "Assessment / deep interview",
+        "frontDesc": "Depends on track and seniority",
+        "bullets": [
+          "Prepare cases / portfolio",
+          "Practice structured reasoning",
+          "Review fundamentals"
+        ],
+        "backTitle": "Step 4: Deep interview",
+        "backDesc": "You may have an assessment or interview with the hiring team to evaluate depth of skills and thinking."
+      },
+      "5": {
+        "frontTitle": "Offer",
+        "frontDesc": "Confirm details and start your next chapter",
+        "bullets": [
+          "Review offer details",
+          "Confirm start date",
+          "Prepare required documents"
+        ],
+        "backTitle": "Step 5: Offer",
+        "backDesc": "If you pass all steps, we’ll send you an offer with start date details and required documentation."
+      }
     }
   },
+
+  "faq": {
+    "title": "Frequently asked questions",
+    "subtitle": "Choose a category and click to expand",
+    "tabs": {
+      "fulltime": "Full time",
+      "internship": "Internship",
+      "tech": "Tech"
+    },
+    "data": {
+      "fulltime": [
+        {
+          "q": "I want to add more details to my resume. Should I resubmit my application?",
+          "a": "You can email the recruiter who contacted you and request an update to your profile.\n\nAlternatively, you may submit a new application with your updated resume if you applied recently."
+        },
+        {
+          "q": "Can I apply for more than one role at the same time?",
+          "a": "Yes, you can apply to multiple roles. Our recruiters will help identify the best fit for you.\n\nPlease note: you can only be in one interview process at a time."
+        },
+        {
+          "q": "Can I reapply for the same role if I didn’t hear back previously?",
+          "a": "Yes. If the role is still open, you may reapply.\n\nHowever, we recommend improving your skills/experience before applying again."
+        },
+        {
+          "q": "How can I check my application status?",
+          "a": "Our recruiting team will update you via email regarding your status and next steps. Please allow some time for us to get back to you."
+        },
+        {
+          "q": "What do recruiters look for during a phone interview?",
+          "a": "Recruiters want to understand your skills, experience, and motivation to join the company. They also look for enthusiasm and culture fit.\n\nBe yourself—and show genuine interest in the company."
+        }
+      ],
+      "internship": [
+        {
+          "q": "I’m interested in an internship, but I graduated a few months ago. Can I apply?",
+          "a": "We encourage recent graduates to explore full-time roles, where you can take on more meaningful work and learn faster."
+        },
+        {
+          "q": "When is the internship period, and when should I apply?",
+          "a": "We hire interns year-round. There’s no fixed internship season—check job listings for current internship opportunities."
+        },
+        {
+          "q": "How long is the internship? Can I choose my own duration?",
+          "a": "We recommend a minimum of 3 months so you can contribute to meaningful projects.\n\nExtensions may be possible depending on business needs and manager approval."
+        }
+      ],
+      "tech": [
+        {
+          "q": "Do I need a CS/CE degree to apply for tech roles?",
+          "a": "No. We welcome applicants from all backgrounds for tech roles.\n\nHowever, a CS/CE degree can be an advantage."
+        },
+        {
+          "q": "What should I expect from a technical interview?",
+          "a": "You may be assessed on coding skills, logical reasoning, and CS fundamentals. Please prepare accordingly."
+        }
+      ]
+    }
+  },
+
+  "form": {
+    "personal": "Personal information",
+    "resume": "Resume (DOC/DOCX/PDF ≤ 2MB)",
+    "firstName": "First name*",
+    "lastName": "Last name*",
+    "email": "Email*",
+    "phone": "Phone*",
+    "address": "Current address*",
+    "education": "Education (up to 5 entries)",
+    "addEducation": "Add education",
+    "experience": "Experience (up to 20 entries)",
+    "addExperience": "Add experience",
+    "skills": "Skills (up to 8)",
+    "other": "Other information",
+    "visa": "Do you require immigration/visa support now or in the future?*",
+    "availability": "Availability (internship only)",
+    "url": "Website URL (LinkedIn/Github)",
+    "source": "How did you hear about this role?*",
+    "attachments": "Attachments (≤ 50MB)",
+    "agree": "I have read and agree to the Terms of Service and Privacy Policy",
+    "submit": "Submit application",
+    "submitting": "Submitting...",
+    "success": "Application submitted!",
+    "fail": "Submission failed. Please try again.",
+
+    "phoneCode": "Country code",
+    "phoneNumber": "Phone number",
+    "phonePreview": "Preview",
+
+    "currentAddressCountry": "Current Address (Country)",
+    "addressDetail": "Address detail",
+    "addressDetailPlaceholder": "Address detail (optional)",
+    "addressSavedAs": "Saved as",
+
+    "educationLevel": "Education Level",
+    "educationSelectLevel": "Select level...",
+    "educationSchool": "School / Institute",
+    "educationFrom": "From",
+    "educationTo": "To",
+
+    "experienceCompany": "Company",
+    "experienceTitle": "Title",
+    "experienceFrom": "From",
+    "experienceTo": "To",
+
+    "availableStartDate": "Available Start Date",
+    "skillsSelected": "Selected",
+    "skillsSearchPlaceholder": "Search skills...",
+    "skillsAddCustomPlaceholder": "Add custom skill (optional)",
+    "skillsTip": "Tip: choose up to 8 skills to keep it clear for HR.",
+
+    "tipsTitle": "Tips",
+    "tipsResume": "Resume file must be PDF/DOC/DOCX and ≤ 2MB",
+    "tipsAttachments": "Attachments total size ≤ 50MB",
+    "tipsSkills": "Choose up to 8 skills for clarity"
+  }
+}
+,
   "partners": {
     "title": "Partners",
     "p1": "Our partners help us scale and deliver value across markets.",
