@@ -24,13 +24,114 @@
     "remove": "Remove",
     "add": "Add"
   },
+
   "home": {
-    "headline": "Global Recruitment for SHD",
-    "subhead": "Official careers website. Multi-country, multi-language, fully responsive.",
-    "ctaPrimary": "Find jobs",
-    "ctaSecondary": "Why SHD",
-    "bannerNote": "* Replace banner images in /public/images with the required sizes."
-  },
+    "meta": {
+      "title": "SHD Careers",
+      "description": "SHD global recruitment — multi-country, multi-language, responsive."
+    },
+
+    "brandBadge": "SHD TECHNOLOGY",
+
+    "headline": "Global • Localization • Growth",
+    "subhead": "We scale brands with local excellence — from OMO & operations to retail and marketplaces, across regions.",
+
+    "ctaPrimary": "View open roles",
+    "ctaSecondary": "Read our story",
+
+    "chips": {
+      "jobsLoading": "Loading jobs…",
+      "openings": "{{count}} openings",
+      "regions": "SEA → Asia → LATAM",
+      "experience": "Premium hiring experience"
+    },
+
+    "bannerNote": "It only takes a few minutes to find the right role for you.",
+
+    "features": {
+      "multiCountry": {
+        "title": "Multi-country",
+        "desc": "Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico."
+      },
+      "languages": {
+        "title": "3 languages",
+        "desc": "Thai, English, Chinese — instant switching."
+      },
+      "professional": {
+        "title": "Professional",
+        "desc": "A clean, premium career-site experience."
+      },
+      "structured": {
+        "title": "Structured jobs",
+        "desc": "Filter by Country / Department / Level."
+      }
+    },
+
+    "offices": {
+      "kicker": "Local and global",
+      "title": "Grow around the world",
+      "subtitle": "Choose a country to explore roles there (4 cards per page).",
+
+      "dropdownAria": "Select office",
+      "openingsLoading": "Loading…",
+      "openings": "{{count}} openings",
+
+      "badges": {
+        "office": "Office",
+        "taglineFallback": "Local excellence to global scale",
+        "openings": "{{count}} openings"
+      },
+
+      "cardTitle": "Our offices",
+      "cardSubtitle": "Select a country to explore open roles in that location.",
+
+      "jobsSkeleton": "Loading roles…",
+      "jobCard": {
+        "deptLevelSep": " • "
+      },
+
+      "pagination": {
+        "prev": "Prev",
+        "next": "Next",
+        "page": "Page {{page}} / {{total}}"
+      },
+
+      "actions": {
+        "viewAllInOffice": "View all roles in {{office}}",
+        "goAllJobs": "Go to all jobs"
+      }
+    },
+
+    "findYourFit": {
+      "badge": "Find your fit",
+      "title": "Find what fits you",
+      "desc": "Based on real openings — pick a department and see how many roles are open.",
+
+      "ctaAllJobs": "Go to all jobs",
+
+      "errorPrefix": "Error:",
+      "noJobs": "No jobs in the system yet.",
+
+      "card": {
+        "hiring": "Hiring",
+        "roleUnit": "roles",
+        "teamChip": "Team",
+        "openingsChip": "Openings"
+      },
+
+      "footnote": "* Click a card to open Jobs with the department filter applied."
+    },
+
+    "gallery": {
+      "badge": "Partners",
+      "title": "Authorized distributor",
+      "desc": "Authorized distributor of the following trademarks",
+
+      "imageAltTop": "Gallery top {{n}}",
+      "imageAltBottom": "Gallery bottom {{n}}"
+    }
+  }
+, 
   "about": {
     "title": "About SHD",
     "kicker": "Company Story",

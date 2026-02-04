@@ -24,13 +24,114 @@
     "remove": "删除",
     "add": "添加"
   },
+
   "home": {
-    "headline": "SHD 全球招聘",
-    "subhead": "官方招聘网站，多国家、多语言，移动端/电脑端自适应。",
-    "ctaPrimary": "查看职位",
-    "ctaSecondary": "为什么选择 SHD",
-    "bannerNote": "* 可在 /public/images 替换指定尺寸的 Banner 图片。"
-  },
+    "meta": {
+      "title": "SHD Careers",
+      "description": "SHD global recruitment — multi-country, multi-language, responsive."
+    },
+
+    "brandBadge": "SHD TECHNOLOGY",
+
+    "headline": "全球化 • 本地化 • 增长",
+    "subhead": "我们以本地卓越驱动品牌增长——从 OMO 与运营到零售与电商平台，覆盖多区域扩张。",
+
+    "ctaPrimary": "查看所有在招职位",
+    "ctaSecondary": "了解公司故事",
+
+    "chips": {
+      "jobsLoading": "正在加载职位…",
+      "openings": "{{count}} 个职位开放",
+      "regions": "东南亚 → 亚洲 → 拉美",
+      "experience": "高端招聘体验"
+    },
+
+    "bannerNote": "只需几分钟，即可找到适合你的岗位。",
+
+    "features": {
+      "multiCountry": {
+        "title": "多国家布局",
+        "desc": "泰国、中国、印尼、菲律宾、越南、巴西、墨西哥。"
+      },
+      "languages": {
+        "title": "3 种语言",
+        "desc": "泰语 / 英语 / 中文，一键切换。"
+      },
+      "professional": {
+        "title": "专业体验",
+        "desc": "简洁高级的全球化招聘网站体验。"
+      },
+      "structured": {
+        "title": "职位结构清晰",
+        "desc": "可按国家 / 部门 / 级别筛选。"
+      }
+    },
+
+    "offices": {
+      "kicker": "Local and global",
+      "title": "在全球范围成长",
+      "subtitle": "选择国家，查看该国家开放岗位（每页显示 4 个）。",
+
+      "dropdownAria": "选择办公室",
+      "openingsLoading": "加载中…",
+      "openings": "{{count}} 个职位开放",
+
+      "badges": {
+        "office": "办公室",
+        "taglineFallback": "本地卓越，规模化走向全球",
+        "openings": "{{count}} 个职位开放"
+      },
+
+      "cardTitle": "我们的办公室",
+      "cardSubtitle": "选择国家，探索该地区正在招聘的岗位。",
+
+      "jobsSkeleton": "正在加载岗位…",
+      "jobCard": {
+        "deptLevelSep": " • "
+      },
+
+      "pagination": {
+        "prev": "上一页",
+        "next": "下一页",
+        "page": "第 {{page}} 页 / 共 {{total}} 页"
+      },
+
+      "actions": {
+        "viewAllInOffice": "查看 {{office}} 的全部岗位",
+        "goAllJobs": "前往全部职位"
+      }
+    },
+
+    "findYourFit": {
+      "badge": "Find your fit",
+      "title": "找到适合你的方向",
+      "desc": "基于真实招聘岗位——选择部门，查看当前开放岗位数量。",
+
+      "ctaAllJobs": "前往全部职位",
+
+      "errorPrefix": "错误：",
+      "noJobs": "系统中暂无职位。",
+
+      "card": {
+        "hiring": "正在招聘",
+        "roleUnit": "个岗位",
+        "teamChip": "团队",
+        "openingsChip": "岗位"
+      },
+
+      "footnote": "* 点击卡片将进入 Jobs 页面并自动应用部门筛选。"
+    },
+
+    "gallery": {
+      "badge": "Partners",
+      "title": "官方授权经销商",
+      "desc": "以下品牌的官方授权经销商",
+
+      "imageAltTop": "画廊 上排 {{n}}",
+      "imageAltBottom": "画廊 下排 {{n}}"
+    }
+  }
+,
   "about": {
     "title": "关于 SHD",
     "kicker": "公司故事",
@@ -337,7 +438,7 @@
     "hero": {
       "kicker": "为什么选择 SHD",
       "title": "为什么要加入 SHD Technology？",
-      "subtitle": "更快成长、更大舞台、更强资源，在这里把能力变成可衡量的结果。",
+      "subtitle": "更快成长、更大舞台、更强资源，把能力转化为看得见的成果。",
       "ctaPrimary": "查看在招职位",
       "ctaSecondary": "了解核心优势",
       "chips": {
@@ -354,15 +455,15 @@
       "cards": {
         "growth": {
           "title": "无限成长",
-          "desc": "真实挑战与清晰支持并行，推动你在关键项目中快速进阶。"
+          "desc": "真实挑战与明确支持，助你在关键项目中快速成长。"
         },
         "people": {
           "title": "优秀人才",
-          "desc": "与多国同事协作，和优秀的人一起把事情做成。"
+          "desc": "与多国同事协同合作，汇聚优秀人才，共同成就卓越事业。"
         },
         "resources": {
           "title": "强大资源",
-          "desc": "工具、系统与跨团队协同到位，让你专注创造影响力。"
+          "desc": "具备完备的工具、系统与跨团队协作支持，让您全心专注于创造和提升影响力。"
         }
       },
       "foot": "高影响力团队 • 真正的主人翁精神"
@@ -426,7 +527,7 @@
       "hint": "电脑：按 ESC 关闭 • 手机：点击背景关闭"
     }
   },
-
+  
 "jobs": {
   "title": "在招职位",
   "openings": "个职位开放",
