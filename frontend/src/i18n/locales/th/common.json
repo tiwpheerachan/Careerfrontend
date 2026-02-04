@@ -22,7 +22,14 @@
     "select": "เลือก...",
     "preview": "ตัวอย่าง",
     "remove": "ลบ",
-    "add": "เพิ่ม"
+    "add": "เพิ่ม",
+    "language": "ภาษา",
+    "lang": {
+      "th": "ภาษาไทย",
+      "en": "English",
+      "zh": "中文"
+    },
+    "findJobs": "Find jobs"
   },
 
   "home": {
@@ -30,13 +37,11 @@
       "title": "SHD Careers",
       "description": "SHD global recruitment — multi-country, multi-language, responsive."
     },
-
     "headline": "SHD Global Career Opportunities",
     "subhead": "ศูนย์กลางการรับสมัครงานของ SHD เพื่อเชื่อมโยงโอกาสทางอาชีพทั่วโลก",
     "ctaPrimary": "สำรวจโอกาสทางอาชีพ",
     "ctaSecondary": "เกี่ยวกับการทำงานที่ SHD",
     "bannerNote": "เรามุ่งมั่นที่จะเป็นผู้จัดจำหน่ายเครื่องใช้ไฟฟ้าอัจฉริยะแถวหน้า\nพร้อมสร้างองค์กรที่เปิดโอกาสให้บุคลากรได้พัฒนา เติบโต และประสบความสำเร็จไปพร้อมกัน",
-
     "hero": {
       "pill": "SHD TECHNOLOGY",
       "chips": {
@@ -48,7 +53,6 @@
         "experience": "Premium hiring experience"
       }
     },
-
     "features": {
       "items": [
         {
@@ -69,60 +73,46 @@
         }
       ]
     },
-
     "offices": {
       "kicker": "Local and global",
       "title": "Grow around the world",
       "subtitle": "เลือกประเทศ แล้วดูตำแหน่งงานในประเทศนั้น (แสดง 4 ช่องต่อหน้า)",
-
       "selectPlaceholder": "เลือกประเทศ...",
       "openings": "{{count}} openings",
       "loading": "กำลังโหลด...",
-
       "sectionTitle": "สำนักงานของเรา",
       "sectionDesc": "เลือกประเทศ แล้วสำรวจตำแหน่งงานที่เปิดรับในประเทศนั้น",
-
       "taglineFallback": "Local excellence to global scale",
-
       "badges": {
         "office": "สำนักงาน",
         "location": "สถานที่",
         "openings": "ตำแหน่งที่เปิดรับ"
       },
-
       "pagination": {
         "prev": "Prev",
         "next": "Next",
         "page": "Page {{current}} / {{total}}"
       },
-
       "cta": {
         "viewOfficeJobs": "ดูงานทั้งหมดของ {{office}}",
         "viewAllJobs": "ไปหน้าตำแหน่งงานทั้งหมด"
       },
-
       "hint": ""
     },
-
     "findYourFit": {
       "badge": "Find your fit",
       "title": "ค้นหาความชอบของคุณ",
       "desc": "อิงจากตำแหน่งที่ประกาศจริง เลือกแผนก แล้วดูว่ามีกี่ตำแหน่งที่กำลังเปิดรับ",
-
       "ctaAllJobs": "ไปหน้าตำแหน่งงานทั้งหมด",
-
       "error": "เกิดข้อผิดพลาด: {{message}}",
       "empty": "ยังไม่มีตำแหน่งงานในระบบ",
-
       "card": {
         "hiringCount": "รับสมัคร {{count}} ตำแหน่ง",
         "team": "Team",
         "openings": "Openings"
       },
-
       "footnote": "* คลิกการ์ดเพื่อไปหน้า Jobs พร้อม filter ตามแผนก"
     },
-
     "gallery": {
       "badge": "Partners",
       "title": "ผู้จัดจำหน่ายอย่างเป็นทางการ",
@@ -161,6 +151,32 @@
       { "label": "KA channels", "value": "1000+", "unit": "stores" }
     ],
     "capabilities": ["Warehousing", "Local logistics", "After-sales service", "OMO & Operations"],
+
+    "hero": {
+      "badges": {
+        "companyStory": "Company Story",
+        "globalLocalizationGrowth": "Global • Localization • Growth",
+        "omoOperations": "OMO & Operations"
+      },
+      "companyName": "SHD",
+      "headline": "ความเป็นเลิศที่ส่งมอบได้จริง",
+      "subheadline": "เรามุ่งเน้นคุณภาพตั้งแต่ต้นทางถึงปลายทาง เพื่อให้ทุกประสบการณ์ของลูกค้า “ชัดเจนและมั่นใจ”",
+      "cta": {
+        "viewJobs": "ดูตำแหน่งงานทั้งหมด",
+        "readStory": "อ่านเรื่องราวบริษัท"
+      },
+      "stats": {
+        "years": { "label": "Years of experience", "suffix": "years" },
+        "brands": { "label": "Brands supported", "suffix": "brands" },
+        "ka": { "label": "KA channels", "suffix": "stores" }
+      },
+      "chips": {
+        "warehousing": "Warehousing",
+        "localLogistics": "Local logistics",
+        "afterSales": "After-sales service"
+      }
+    },
+
     "offices": {
       "title": "Our Offices",
       "desc": "A living wall of our offices.",
@@ -247,7 +263,13 @@
         "Office 80"
       ]
     },
+
     "story": {
+      "header": {
+        "kicker": "OUR STORY",
+        "title": "เรื่องราวของ SHD",
+        "desc": "จากเซินเจิ้นสู่การสร้างเครื่องยนต์การเติบโตในอาเซียน — ที่ทำให้แบรนด์ไปได้ไกลและยั่งยืน"
+      },
       "kicker": "OUR STORY",
       "title": "เรื่องราวของ SHD",
       "desc": "จากเซินเจิ้นสู่การสร้างเครื่องยนต์การเติบโตในอาเซียน — ที่ทำให้แบรนด์ไปได้ไกลและยั่งยืน",
@@ -259,17 +281,20 @@
         { "label": "Countries", "value": "9" },
         { "label": "Brands", "value": "20+" }
       ],
-      "flow": {
-        "kicker": "SHD STORY FLOW",
-        "headline": "ความ”มุ่งมั่น” คือสิ่งที่เราเชื่อถือ\nการลงมือทำ คือ บทพิสูจน์",
-        "subline": "วิสัยทัศน์ • การลงมือทำ • การขยายสเกล",
+"flow": {
+  "header": {
+    "kicker": "SHD STORY FLOW",
+    "titleLine1": "ความ”มุ่งมั่น” คือสิ่งที่เราเชื่อ",
+    "titleLine2": "การลงมือทำ คือ บทพิสูจน์",
+    "subtitle": "วิสัยทัศน์ • การลงมือทำ • การขยายสเกล"
+  },
         "steps": [
           {
             "id": "01",
             "title": "เริ่มจากเซินเจิ้น สู่ภารกิจในอาเซียน",
             "meta": "2013 • 12+ ปี • ASEAN-first",
             "tag": "Start",
-            "body": "SHD ก่อตั้งที่เซินเจิ้นในปี 2013 และมุ่งหน้าเข้าสู่อาเซียนด้วยเป้าหมายเดียว—ทำให้แบรนด์ “เข้าท้องถิ่นได้จริง” เราผสานความเชี่ยวชาญข้ามพรมแดนกับทีมท้องถิ่น เพื่อพาแบรนด์เริ่มต้นจาก 0→1 อย่างมั่นคง และต่อยอดสู่การเติบโตแบบยั่งยืน"
+            "body": "SHD ก่อตั้งที่เซินเจิ้นในปี 2013 และมุ่งหน้าเข้าสู่อาเซียนด้วยเป้าหมายเดียว—ทำให้แบรนด์ “เข้าท้องถิ่นได้จริง” เราสานความเชี่ยวชาญข้ามพรมแดนกับทีมท้องถิ่น เพื่อพาแบรนด์เริ่มต้นจาก 0→1 อย่างมั่นคง และต่อยอดสู่การเติบโตแบบยั่งยืน"
           },
           {
             "id": "02",
@@ -288,20 +313,29 @@
         ]
       }
     },
-    "missionVision": {
-      "kicker": "MISSION · VISION",
-      "headline": "สร้างคุณค่าอย่างยั่งยืน\nด้วยทีมที่เติบโตไปด้วยกัน",
-      "mission": {
-        "title": "MISSION",
-        "subtitle": "พันธกิจของเรา",
-        "body": "เชื่อมต่อเทคโนโลยีล้ำสมัยให้ชีวิตของผู้ใช้งานหลากหลายมากขึ้น เรามุ่งมั่นยกระดับคุณภาพชีวิตของผู้ใช้งานทั่วโลก ผ่านนวัตกรรมเทคโนโลยีและโซลูชันอัจฉริยะ เพื่อสร้างไลฟ์สไตล์ที่สะดวกสบาย สุขภาพดี และมีสีสันยิ่งขึ้น"
-      },
-      "vision": {
-        "title": "VISION",
-        "subtitle": "วิสัยทัศน์ของเรา",
-        "body": "เป็นแบรนด์ค้าปลีกใหม่ระดับโลกที่มีคุณค่าและอบอุ่น เราใส่ใจกับความหลากหลายทางวัฒนธรรม เติมเต็มความอบอุ่นในการบริการ และสร้างระบบที่มีผู้ใช้เป็นศูนย์กลาง"
-      }
-    },
+
+"missionVision": {
+  "kicker": "MISSION · VISION",
+  "headline": {
+    "line1": "สร้างคุณค่าอย่างยั่งยืน",
+    "line2": "ด้วยทีมที่เติบโตไปด้วยกัน"
+  },
+  "mission": {
+    "kicker": "พันธกิจของเรา",
+    "title": "MISSION",
+    "subtitle": "พันธกิจของเรา",
+    "body": "เชื่อมต่อเทคโนโลยีล้ำสมัยให้ชีวิตของผู้ใช้งานหลากหลายมากขึ้น เรามุ่งมั่นยกระดับคุณภาพชีวิตของผู้ใช้งานทั่วโลก ผ่านนวัตกรรมเทคโนโลยีและโซลูชันอัจฉริยะ เพื่อสร้างไลฟ์สไตล์ที่สะดวกสบาย สุขภาพดี และมีสีสันยิ่งขึ้น"
+  },
+  "vision": {
+    "kicker": "วิสัยทัศน์ของเรา",
+    "title": "VISION",
+    "subtitle": "วิสัยทัศน์ของเรา",
+    "body": "เป็นแบรนด์ค้าปลีกใหม่ระดับโลกที่มีคุณค่าและอบอุ่น เราใส่ใจกับความหลากหลายทางวัฒนธรรม เติมเต็มความอบอุ่นในการบริการ และสร้างระบบที่มีผู้ใช้เป็นศูนย์กลาง"
+  },
+  "orbitCaption": "People move. Standards stay."
+}
+,
+
     "whoWeAre": {
       "tagline": "People move. Standards stay.",
       "kicker": "WHO WE ARE",
@@ -322,7 +356,13 @@
         }
       ]
     },
+
     "journey": {
+      "header": {
+        "kicker": "OUR JOURNEY",
+        "title": "เส้นทางการเติบโต",
+        "desc": "จากการเริ่มต้น สู่การสร้างโมเดล Co-Brand Building และระบบที่พาแบรนด์โตในอาเซียน"
+      },
       "kicker": "OUR JOURNEY",
       "title": "เส้นทางการเติบโต",
       "desc": "จากการเริ่มต้น สู่การสร้างโมเดล Co-Brand Building และระบบที่พาแบรนด์โตในอาเซียน",
@@ -360,7 +400,13 @@
         }
       ]
     },
+
     "awards": {
+      "header": {
+        "kicker": "AWARDS & RECOGNITION",
+        "title": "รางวัลและเกียรติยศของแบรนด์",
+        "desc": "บทพิสูจน์จากการทำงานร่วมกับพาร์ทเนอร์และแพลตฟอร์มในหลายประเทศ"
+      },
       "kicker": "AWARDS & RECOGNITION",
       "title": "รางวัลและเกียรติยศของแบรนด์",
       "desc": "บทพิสูจน์จากการทำงานร่วมกับพาร์ทเนอร์และแพลตฟอร์มในหลายประเทศ",
@@ -371,6 +417,27 @@
         "label": "Awards across platforms & regions"
       },
       "note": "จากการร่วมมืออย่างใกล้ชิดกับแบรนด์และแพลตฟอร์ม เราสร้างผลลัพธ์ที่ “วัดได้จริง” และ “ส่งมอบได้จริง”",
+      "grid": {
+        "labels": {
+          "highlights": "Highlights",
+          "moments": "Award Moments",
+          "trusted": "Trusted by partners"
+        },
+        "statPill": "Recognition",
+        "statYear": "2024",
+        "statTitle": "9+",
+        "statDesc": "Awards across platforms & regions",
+        "feature": {
+          "year": "Year",
+          "title": "Award",
+          "org": "Organization"
+        },
+        "textTile": {
+          "year": "Year",
+          "title": "Award",
+          "org": "Organization"
+        }
+      },
       "items": [
         {
           "year": "2024",
@@ -393,11 +460,16 @@
           "brand": "70mai — Shopee ประเทศไทย"
         }
       ],
+      "actions": {
+        "explore": "Explore open roles",
+        "backToTop": "Back to top"
+      },
       "cta": {
         "primary": "Explore open roles",
         "secondary": "Back to top"
       }
     },
+
     "footer": {
       "brand": "SHD Careers",
       "desc": "Global recruitment experience with multi-language support.",

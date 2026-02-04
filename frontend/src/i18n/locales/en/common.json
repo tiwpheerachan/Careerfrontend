@@ -146,11 +146,11 @@
     "cards": [
       {
         "title": "Vision",
-        "desc": "Set a new global benchmark for modern retail—warm, trusted, and user-first."
+        "desc": "Build systems and services that raise working standards across countries."
       },
       {
         "title": "Mission",
-        "desc": "Elevate everyday life through smarter technology, better processes, and teams that grow together."
+        "desc": "Develop people, processes, and technology for sustainable growth."
       },
       {
         "title": "Footprint",
@@ -163,6 +163,32 @@
       { "label": "KA channels", "value": "1000+", "unit": "stores" }
     ],
     "capabilities": ["Warehousing", "Local logistics", "After-sales service", "OMO & Operations"],
+
+    "hero": {
+      "badges": {
+        "companyStory": "Company Story",
+        "globalLocalizationGrowth": "Global • Localization • Growth",
+        "omoOperations": "OMO & Operations"
+      },
+      "companyName": "SHD",
+      "headline": "Operational excellence—delivered, end to end.",
+      "subheadline": "We hold quality from start to finish—so every customer experience is clear and confident.",
+      "cta": {
+        "viewJobs": "View all open roles",
+        "readStory": "Read our story"
+      },
+      "stats": {
+        "years": { "label": "Years of experience", "suffix": "years" },
+        "brands": { "label": "Brands supported", "suffix": "brands" },
+        "ka": { "label": "KA channels", "suffix": "stores" }
+      },
+      "chips": {
+        "warehousing": "Warehousing",
+        "localLogistics": "Local logistics",
+        "afterSales": "After-sales service"
+      }
+    },
+
     "offices": {
       "title": "Our Offices",
       "desc": "A living wall of our offices.",
@@ -249,7 +275,13 @@
         "Office 80"
       ]
     },
+
     "story": {
+      "header": {
+        "kicker": "OUR STORY",
+        "title": "The SHD Story",
+        "desc": "From Shenzhen to Southeast Asia—building a scalable growth engine that helps brands go further, faster, and last longer."
+      },
       "kicker": "OUR STORY",
       "title": "The SHD Story",
       "desc": "From Shenzhen to Southeast Asia—building a scalable growth engine that helps brands go further, faster, and last longer.",
@@ -262,9 +294,12 @@
         { "label": "Brands", "value": "20+" }
       ],
       "flow": {
-        "kicker": "SHD STORY FLOW",
-        "headline": "Commitment is what we stand for.\nExecution is our proof.",
-        "subline": "Vision • Action • Scale",
+        "header": {
+          "kicker": "SHD STORY FLOW",
+          "titleLine1": "Commitment is what we stand for.",
+          "titleLine2": "Execution is our proof.",
+          "subtitle": "Vision • Action • Scale"
+        },
         "steps": [
           {
             "id": "01",
@@ -290,20 +325,28 @@
         ]
       }
     },
+
     "missionVision": {
       "kicker": "MISSION · VISION",
-      "headline": "Creating lasting value\nwith teams that grow together.",
+      "headline": {
+        "line1": "Creating lasting value",
+        "line2": "with teams that grow together."
+      },
       "mission": {
+        "kicker": "Our Mission",
         "title": "MISSION",
         "subtitle": "Our Mission",
         "body": "Bring advanced technology closer to everyday life. We elevate quality of life worldwide through intelligent innovations and practical solutions—enabling lifestyles that are easier, healthier, and more vibrant."
       },
       "vision": {
+        "kicker": "Our Vision",
         "title": "VISION",
         "subtitle": "Our Vision",
         "body": "To become a new-generation global retail brand—valuable, warm, and trusted. We celebrate cultural diversity, deliver service with care, and build a truly user-centered operating system."
-      }
+      },
+      "orbitCaption": "People move. Standards stay."
     },
+    
     "whoWeAre": {
       "tagline": "People move. Standards stay.",
       "kicker": "WHO WE ARE",

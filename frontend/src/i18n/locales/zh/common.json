@@ -163,6 +163,32 @@
       { "label": "KA 渠道", "value": "1000+", "unit": "家门店" }
     ],
     "capabilities": ["仓储", "本地物流", "售后服务", "OMO 与运营"],
+
+    "hero": {
+      "badges": {
+        "companyStory": "公司故事",
+        "globalLocalizationGrowth": "全球化 • 本地化 • 增长",
+        "omoOperations": "OMO 与运营"
+      },
+      "companyName": "SHD",
+      "headline": "可落地的卓越运营——贯穿始终。",
+      "subheadline": "我们从源头到交付坚持高标准，让每一次体验都清晰、稳定、值得信赖。",
+      "cta": {
+        "viewJobs": "查看全部职位",
+        "readStory": "阅读公司故事"
+      },
+      "stats": {
+        "years": { "label": "行业经验", "suffix": "年" },
+        "brands": { "label": "支持品牌", "suffix": "个" },
+        "ka": { "label": "KA 渠道", "suffix": "家门店" }
+      },
+      "chips": {
+        "warehousing": "仓储",
+        "localLogistics": "本地物流",
+        "afterSales": "售后服务"
+      }
+    },
+
     "offices": {
       "title": "我们的办公室",
       "desc": "我们的办公室实景墙。",
@@ -249,7 +275,13 @@
         "办公室 80"
       ]
     },
+
     "story": {
+      "header": {
+        "kicker": "我们的故事",
+        "title": "SHD 的故事",
+        "desc": "从深圳出发，走向东南亚——打造可复制、可扩张的增长引擎，让品牌走得更远、更快、更长久。"
+      },
       "kicker": "我们的故事",
       "title": "SHD 的故事",
       "desc": "从深圳出发，走向东南亚——打造可复制、可扩张的增长引擎，让品牌走得更远、更快、更长久。",
@@ -262,9 +294,12 @@
         { "label": "支持品牌", "value": "20+" }
       ],
       "flow": {
-        "kicker": "SHD 成长路径",
-        "headline": "我们相信坚持。\n用行动证明价值。",
-        "subline": "愿景 • 执行 • 扩张",
+        "header": {
+          "kicker": "SHD 成长路径",
+          "titleLine1": "我们相信坚持。",
+          "titleLine2": "用行动证明价值。",
+          "subtitle": "愿景 • 执行 • 扩张"
+        },
         "steps": [
           {
             "id": "01",
@@ -290,20 +325,28 @@
         ]
       }
     },
+
     "missionVision": {
       "kicker": "使命 · 愿景",
-      "headline": "创造可持续价值\n与团队共同成长",
+      "headline": {
+        "line1": "创造可持续价值",
+        "line2": "与团队共同成长"
+      },
       "mission": {
+        "kicker": "我们的使命",
         "title": "使命",
         "subtitle": "我们的使命",
         "body": "让前沿科技走进日常生活。我们通过智能创新与实用解决方案，持续提升全球用户的生活品质，带来更便捷、更健康、更有活力的生活方式。"
       },
       "vision": {
+        "kicker": "我们的愿景",
         "title": "愿景",
         "subtitle": "我们的愿景",
         "body": "成为新一代全球零售品牌：有价值、温暖且值得信赖。我们尊重文化多样性，以关怀打造服务体验，并构建真正以用户为中心的运营体系。"
-      }
+      },
+      "orbitCaption": "人会流动，标准不变。"
     },
+
     "whoWeAre": {
       "tagline": "人会流动，标准不变。",
       "kicker": "我们是谁",
