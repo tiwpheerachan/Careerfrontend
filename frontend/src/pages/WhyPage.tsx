@@ -111,7 +111,16 @@ function ImageModal({
 }: {
   open: boolean;
   onClose: () => void;
-  item: { src: string; title: string; desc?: string; badge?: string } | null;
+  item: {
+    src: string;
+    title: string;
+    desc?: string;
+    badge?: string;
+    name?: string;
+    role?: string;
+    headline?: string;
+    quote?: string;
+  } | null;
 }) {
   const { t } = useTranslation();
 
@@ -174,11 +183,11 @@ function ImageModal({
         </div>
 
         {/* 16:8 media */}
-        <div className="relative aspect-[2/1] w-full">
+        <div className="relative aspect-[2/1] w-full bg-white">
           <img
             src={item.src}
             alt={item.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-contain"
             draggable={false}
           />
 
@@ -205,11 +214,28 @@ function ImageModal({
                 </span>
               </div>
 
+              {/* name/role chips (optional) */}
+              {item.name || item.role ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  {item.name ? (
+                    <span className="rounded-full bg-slate-950 px-3 py-1 font-black text-white">
+                      {item.name}
+                    </span>
+                  ) : null}
+                  {item.role ? (
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700">
+                      {item.role}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="mt-3 text-lg font-black tracking-tight sm:text-xl">
                 {item.title}
               </div>
+
               {item.desc ? (
-                <div className="mt-2 text-sm leading-relaxed text-slate-700">
+                <div className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
                   {item.desc}
                 </div>
               ) : null}
@@ -361,9 +387,7 @@ function PhotoCard16x8({
               "ring-1 ring-slate-200"
             )}
           >
-            <div className="text-sm font-black leading-snug sm:text-base line-clamp-1">
-              {title}
-            </div>
+            <div className="text-sm font-black leading-snug sm:text-base line-clamp-1">{title}</div>
             {desc ? (
               <div className="mt-1 text-xs leading-relaxed text-slate-700 sm:text-sm line-clamp-2">
                 {desc}
@@ -425,6 +449,97 @@ function CarouselControlsLight({
   );
 }
 
+type StoryPerson = {
+  name: string;
+  role: string;
+  headline: string;
+  quote: string;
+};
+
+function StoryTemplateSlide({
+  src,
+  expandLabel,
+  badge,
+  person,
+  onClick,
+}: {
+  src: string;
+  expandLabel: string;
+  badge?: string;
+  person?: StoryPerson;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
+        "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
+        "transition hover:-translate-y-0.5 active:scale-[0.99]"
+      )}
+    >
+      <div className="relative aspect-[2/1] w-full bg-white">
+        {/* ✅ สำคัญ: object-contain เพื่อไม่ให้ template โดนครอป */}
+        <img
+          src={src}
+          alt={person?.headline || "Employee story"}
+          className="absolute inset-0 h-full w-full object-contain"
+          draggable={false}
+          loading="lazy"
+        />
+
+        {/* top chips */}
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+            <Sparkles className="h-3.5 w-3.5" />
+            {expandLabel}
+          </div>
+
+          {badge ? (
+            <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+              {badge}
+            </div>
+          ) : (
+            <div className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+              SHD
+            </div>
+          )}
+        </div>
+
+        {/* ✅ overlay text แบบในภาพตัวอย่าง: วางฝั่งซ้ายกลางๆ */}
+        {person ? (
+          <div
+            className={cn(
+              "absolute left-[6%] top-[28%] w-[56%]",
+              "sm:left-[7%] sm:top-[30%] sm:w-[54%]",
+              "lg:left-[7%] lg:top-[30%] lg:w-[52%]"
+            )}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-blue-600 px-4 py-2 text-sm font-black text-white">
+                {person.name}
+              </span>
+              <span className="rounded-full bg-orange-400 px-4 py-2 text-sm font-black text-white">
+                {person.role}
+              </span>
+            </div>
+
+            <div className="mt-4 text-sm leading-relaxed text-slate-800 whitespace-pre-line">
+              {person.quote}
+            </div>
+          </div>
+        ) : null}
+
+        {/* soft hover shine */}
+        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+          <div className="absolute inset-0 bg-[radial-gradient(560px_240px_at_40%_20%,rgba(255,255,255,0.28),transparent_60%)]" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function WhyPage() {
   const { t } = useTranslation();
 
@@ -436,29 +551,38 @@ export default function WhyPage() {
   const CTA_BG = "/images/why/why-cta.jpg";
 
   // ===== Employee Stories (14) =====
-  const employeePhotos = useMemo(
-    () =>
-      Array.from({ length: 14 }).map((_, i) => {
-        const idx = i + 1;
-        return {
-          src: `/images/why/stories/s${idx}.jpg`,
-          title: t("why.stories.itemTitle", {
-            index: idx,
-            defaultValue: `Employee story #${idx}`,
-          }),
-          desc: t("why.stories.itemDesc", {
-            defaultValue: "A day in the team • Real projects • Real growth",
-          }),
-          badge:
-            i % 3 === 0
-              ? t("why.stories.badges.growth", { defaultValue: "Growth" })
-              : i % 3 === 1
-              ? t("why.stories.badges.team", { defaultValue: "Team" })
-              : t("why.stories.badges.impact", { defaultValue: "Impact" }),
-        };
-      }),
-    [t]
-  );
+  const employeePhotos = useMemo(() => {
+    return Array.from({ length: 14 }).map((_, i) => {
+      const idx = i + 1;
+
+      // ✅ i18n overlay per person (supports 3 languages via your locales)
+      const name = t(`why.stories.cards.${idx}.name`, { defaultValue: "" });
+      const role = t(`why.stories.cards.${idx}.role`, { defaultValue: "" });
+      const headline = t(`why.stories.cards.${idx}.headline`, { defaultValue: "" });
+      const quote = t(`why.stories.cards.${idx}.quote`, { defaultValue: "" });
+
+      const person: StoryPerson | undefined =
+        name && role && headline && quote ? { name, role, headline, quote } : undefined;
+
+      return {
+        src: `/images/why/stories/s${idx}.jpg`,
+        title: t("why.stories.itemTitle", {
+          index: idx,
+          defaultValue: `Employee story #${idx}`,
+        }),
+        desc: t("why.stories.itemDesc", {
+          defaultValue: "A day in the team • Real projects • Real growth",
+        }),
+        badge:
+          i % 3 === 0
+            ? t("why.stories.badges.growth", { defaultValue: "Growth" })
+            : i % 3 === 1
+            ? t("why.stories.badges.team", { defaultValue: "Team" })
+            : t("why.stories.badges.impact", { defaultValue: "Impact" }),
+        person,
+      };
+    });
+  }, [t]);
 
   // ===== Events (10) =====
   const eventPhotos = useMemo(
@@ -505,9 +629,22 @@ export default function WhyPage() {
     title: string;
     desc?: string;
     badge?: string;
+    name?: string;
+    role?: string;
+    headline?: string;
+    quote?: string;
   } | null>(null);
 
-  function openModal(item: { src: string; title: string; desc?: string; badge?: string }) {
+  function openModal(item: {
+    src: string;
+    title: string;
+    desc?: string;
+    badge?: string;
+    name?: string;
+    role?: string;
+    headline?: string;
+    quote?: string;
+  }) {
     setModalItem(item);
     setModalOpen(true);
   }
@@ -520,7 +657,9 @@ export default function WhyPage() {
   return (
     <>
       <Helmet>
-        <title>{t("nav.why")} • {t("brand", { defaultValue: "SHD Careers" })}</title>
+        <title>
+          {t("nav.why")} • {t("brand", { defaultValue: "SHD Careers" })}
+        </title>
         <meta
           name="description"
           content={t("why.seo.description", {
@@ -586,7 +725,9 @@ export default function WhyPage() {
             </h1>
 
             <p className="mx-auto mt-4 max-w-[70ch] text-base leading-relaxed text-white/90 sm:text-lg">
-              {t("why.hero.subtitle", { defaultValue: "โตได้มากกว่าที่คิด เป็นคุณได้เต็มศักยภาพที่ SHD Technology" })}
+              {t("why.hero.subtitle", {
+                defaultValue: "โตได้มากกว่าที่คิด เป็นคุณได้เต็มศักยภาพที่ SHD Technology",
+              })}
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -637,10 +778,7 @@ export default function WhyPage() {
          ========================= */}
       <section id="pillars" className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${PILLARS_BG})` }}
-          />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${PILLARS_BG})` }} />
           <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_18%,rgba(255,255,255,0.60),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(760px_420px_at_80%_50%,rgba(16,185,129,0.10),transparent_62%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -702,10 +840,7 @@ export default function WhyPage() {
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${STORIES_BG})` }}
-          />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${STORIES_BG})` }} />
           <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_20%_22%,rgba(255,255,255,0.62),transparent_60%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
@@ -767,10 +902,7 @@ export default function WhyPage() {
             <div className="lg:col-span-3">
               <div
                 ref={stories.ref}
-                className={cn(
-                  "no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3",
-                  "snap-x snap-mandatory"
-                )}
+                className={cn("no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3", "snap-x snap-mandatory")}
                 onMouseEnter={() => stories.setHovered(true)}
                 onMouseLeave={() => stories.setHovered(false)}
                 onPointerDown={() => stories.markUserAction()}
@@ -779,49 +911,24 @@ export default function WhyPage() {
               >
                 {employeePhotos.map((p, idx) => (
                   <div key={`${p.src}-${idx}`} className="snap-start">
-                    <button
-                      type="button"
-                      onClick={() => openModal(p)}
-                      className={cn(
-                        "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
-                        "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
-                        "shadow-none",
-                        "ring-0",
-                        "transition hover:-translate-y-0.5 active:scale-[0.99]"
-                      )}
-                    >
-                      <div className="relative aspect-[2/1] w-full">
-                        <img
-                          src={p.src}
-                          alt={p.title}
-                          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                          draggable={false}
-                          loading="lazy"
-                        />
-
-                        {/* top chips */}
-                        <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
-                          <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-                            <Sparkles className="h-3.5 w-3.5" />
-                            {t("why.common.expand", { defaultValue: "Expand" })}
-                          </div>
-
-                          {p.badge ? (
-                            <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
-                              {p.badge}
-                            </div>
-                          ) : (
-                            <div className="rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
-                              SHD
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
-                          <div className="absolute inset-0 bg-[radial-gradient(560px_240px_at_55%_15%,rgba(255,255,255,0.28),transparent_60%)]" />
-                        </div>
-                      </div>
-                    </button>
+                    <StoryTemplateSlide
+                      src={p.src}
+                      badge={p.badge}
+                      expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
+                      person={p.person}
+                      onClick={() =>
+                        openModal({
+                          src: p.src,
+                          title: p.person?.headline || p.title,
+                          desc: p.person?.quote || p.desc,
+                          badge: p.badge,
+                          name: p.person?.name,
+                          role: p.person?.role,
+                          headline: p.person?.headline,
+                          quote: p.person?.quote,
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -840,10 +947,7 @@ export default function WhyPage() {
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${LIFE_BG})` }}
-          />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${LIFE_BG})` }} />
           <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_70%_30%,rgba(255,255,255,0.58),transparent_60%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
@@ -895,10 +999,7 @@ export default function WhyPage() {
 
             <div
               ref={life.ref}
-              className={cn(
-                "mt-8 no-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2",
-                "snap-x snap-mandatory"
-              )}
+              className={cn("mt-8 no-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2", "snap-x snap-mandatory")}
               onMouseEnter={() => life.setHovered(true)}
               onMouseLeave={() => life.setHovered(false)}
               onPointerDown={() => life.markUserAction()}
@@ -912,7 +1013,14 @@ export default function WhyPage() {
                     title={p.title}
                     desc={p.desc}
                     badge={p.badge}
-                    onClick={() => openModal(p)}
+                    onClick={() =>
+                      openModal({
+                        src: p.src,
+                        title: p.title,
+                        desc: p.desc,
+                        badge: p.badge,
+                      })
+                    }
                     expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
                   />
                 </div>
@@ -932,10 +1040,7 @@ export default function WhyPage() {
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${CTA_BG})` }}
-          />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${CTA_BG})` }} />
           <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_35%,rgba(255,255,255,0.62),transparent_62%)]" />
         </div>
 

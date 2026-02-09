@@ -451,124 +451,164 @@
       "copyright": "© 2026 SHD Technology"
     }
   },
-  "why": {
-    "title": "Why SHD",
-    "p1": "We invest in people and long-term growth, with opportunities at a global scale.",
-    "items": [
-      {
-        "title": "Growth",
-        "desc": "Clear career ladders with continuous development."
-      },
-      {
-        "title": "Global team",
-        "desc": "Collaborate with colleagues across countries."
-      },
-      {
-        "title": "Professional standards",
-        "desc": "Transparent, auditable processes and ownership."
-      },
-      {
-        "title": "Benefits",
-        "desc": "Competitive benefits aligned with local needs."
-      }
-    ],
-
-    "seo": {
-      "description": "Why join SHD Technology — growth, people, resources, and the stories behind our culture."
-    },
-
-    "hero": {
-      "kicker": "WHY SHD",
-      "title": "Why join SHD Technology?",
-      "subtitle": "Faster growth, a bigger stage, and stronger resources—turn your capabilities into measurable outcomes.",
-      "ctaPrimary": "View open roles",
-      "ctaSecondary": "Explore the advantages",
-      "chips": {
-        "growth": "Infinite Growth",
-        "people": "Great People",
-        "resources": "Strong Resources"
-      }
-    },
-
-    "pillars": {
-      "kicker": "CORE ADVANTAGES",
-      "title": "Growth • People • Resources",
-      "subtitle": "Three reasons to move faster, stay stronger, and go further at SHD.",
-      "cards": {
-        "growth": {
-          "title": "Infinite growth",
-          "desc": "Real challenges with clear support—so you level up quickly on high-impact work."
-        },
-        "people": {
-          "title": "Great people",
-          "desc": "Collaborate across countries and build with teammates who get things done."
-        },
-        "resources": {
-          "title": "Strong resources",
-          "desc": "Tools, systems, and cross-team alignment—so you can focus on creating impact."
-        }
-      },
-      "foot": "High-impact teams • Real ownership"
-    },
-
-    "stories": {
-      "kicker": "TEAM STORIES",
-      "title": "Stories from our people",
-      "subtitle": "Real projects, real growth, real collaboration—straight from the team.",
-      "note": "* Auto-scrolls every 3 seconds (pauses on hover / drag / manual controls).",
-      "badges": {
-        "growth": "Growth",
-        "team": "Team",
-        "impact": "Impact"
-      },
-      "itemTitle": "Team story #{{index}}",
-      "itemDesc": "Day-to-day • Projects • Growth"
-    },
-
-    "life": {
-      "kicker": "LIFE AT SHD",
-      "title": "Activities & culture",
-      "subtitle": "We value collaboration and growth—and we celebrate moments worth remembering.",
-      "badges": {
-        "event": "Event",
-        "life": "Life"
-      },
-      "itemTitle": "Activity #{{index}}",
-      "itemDesc": "Culture • Collaboration • Moments that matter"
-    },
-
-    "cta": {
-      "kicker": "JOIN US",
-      "title": "Ready to grow with us?",
-      "subtitle": "If you want real challenges and real growth, we’d love to meet you at SHD Technology.",
-      "ctaPrimary": "View open roles",
-      "ctaSecondary": "Back to advantages",
-      "chips": {
-        "growthFirst": "Growth-first",
-        "greatTeams": "Great teams",
-        "realResources": "Real resources"
-      }
-    },
-
-    "carousel": {
-      "pause": "Pause",
-      "autoPlay": "Auto play",
-      "leftAria": "Scroll left",
-      "rightAria": "Scroll right"
-    },
-
-    "common": {
-      "expand": "Expand"
-    },
-
-    "modal": {
-      "brand": "SHD Careers",
-      "closeAria": "Close",
-      "tapToExplore": "Tap an image to explore",
-      "viewOpenRoles": "View open roles",
-      "hint": "Desktop: press ESC to close • Mobile: tap backdrop to close"
+"why": {
+  "title": "Why SHD",
+  "p1": "We invest in people and long-term growth, with opportunities at a global scale.",
+  "items": [
+    { "title": "Growth", "desc": "Clear career ladders with continuous development." },
+    { "title": "Global team", "desc": "Collaborate with colleagues across countries." },
+    { "title": "Professional standards", "desc": "Transparent, auditable processes and ownership." },
+    { "title": "Benefits", "desc": "Competitive benefits aligned with local needs." }
+  ],
+  "seo": {
+    "description": "Why join SHD Technology — growth, people, resources, and the stories behind our culture."
+  },
+  "hero": {
+    "kicker": "WHY SHD",
+    "title": "Why join SHD Technology?",
+    "subtitle": "Faster growth, a bigger stage, and stronger resources—turn your capabilities into measurable outcomes.",
+    "ctaPrimary": "View open roles",
+    "ctaSecondary": "Explore the advantages",
+    "chips": {
+      "growth": "Infinite Growth",
+      "people": "Great People",
+      "resources": "Strong Resources"
     }
   },
+  "pillars": {
+    "kicker": "CORE ADVANTAGES",
+    "title": "Growth • People • Resources",
+    "subtitle": "Three reasons to move faster, stay stronger, and go further at SHD.",
+    "cards": {
+      "growth": {
+        "title": "Infinite growth",
+        "desc": "Real challenges with clear support—so you level up quickly on high-impact work."
+      },
+      "people": {
+        "title": "Great people",
+        "desc": "Collaborate across countries and build with teammates who get things done."
+      },
+      "resources": {
+        "title": "Strong resources",
+        "desc": "Tools, systems, and cross-team alignment—so you can focus on creating impact."
+      }
+    },
+    "foot": "High-impact teams • Real ownership"
+  },
+
+  "stories": {
+    "kicker": "TEAM STORIES",
+    "title": "Stories from our people",
+    "subtitle": "Real projects, real growth, real collaboration—straight from the team.",
+    "note": "Scroll through real-life work stories from our representatives.",
+    "badges": {
+      "growth": "Growth",
+      "team": "Team",
+      "impact": "Impact"
+    },
+    "itemTitle": "Team story #{{index}}",
+    "itemDesc": "Day-to-day • Projects • Growth",
+
+    "people": {
+      "bo": {
+        "name": "Bo",
+        "role": "E-Commerce Manager",
+        "headline": "Becoming the best version of myself",
+        "quote": "Working here as an E-commerce Manager means becoming the best version of myself. It’s not just about executing tasks—there’s space to think outside the box, experiment, and learn through real action (learning by doing). What truly sets this place apart is the fun—work never feels boring because there are new challenges and new innovations to explore every day. If you want an environment that pushes you to grow while having fun, this is genuinely the right place."
+      },
+      "apple": {
+        "name": "Apple",
+        "role": "Business Development Director",
+        "headline": "A field with no ceiling for ideas",
+        "quote": "As a Business Development Director, what excites me most is being in a field where ideas have no ceiling. We move at high-growth speed, which gives us the freedom to craft strategy and open new waters. We don’t just wait for opportunities—we create them through data analysis and real execution. The focus here is turning ideas into business outcomes with massive impact. If you love challenge in a fast-decision, result-oriented environment, you’ll love working here."
+      },
+      "rodtu": {
+        "name": "Rodtu",
+        "role": "Human Resource Manager",
+        "headline": "Unlocking potential beyond what people expect",
+        "quote": "The most challenging and exciting part of being HR here is working in a fast-paced environment that changes constantly. My role is to discover and push people’s potential beyond what they think is possible. We don’t look for people who only follow instructions—we look for those with drive and the willingness to grow at the speed of the business. Seeing teammates make bold decisions and improve through real work every day proves that our culture truly brings out the best in everyone."
+      }
+    },
+
+    "cards": {
+      "1": {
+        "name": "Bo",
+        "role": "E-Commerce Manager",
+        "headline": "Becoming the best version of myself",
+        "quote": "Working here as an E-commerce Manager means becoming the best version of myself. It’s not just about executing tasks—there’s space to think outside the box, experiment, and learn through real action (learning by doing). What truly sets this place apart is the fun—work never feels boring because there are new challenges and new innovations to explore every day. If you want an environment that pushes you to grow while having fun, this is genuinely the right place."
+      },
+      "2": {
+        "name": "Apple",
+        "role": "Business Development Director",
+        "headline": "A field with no ceiling for ideas",
+        "quote": "As a Business Development Director, what excites me most is being in a field where ideas have no ceiling. We move at high-growth speed, which gives us the freedom to craft strategy and open new waters. We don’t just wait for opportunities—we create them through data analysis and real execution. The focus here is turning ideas into business outcomes with massive impact. If you love challenge in a fast-decision, result-oriented environment, you’ll love working here."
+      },
+      "3": {
+        "name": "Rodtu",
+        "role": "Human Resource Manager",
+        "headline": "Unlocking potential beyond what people expect",
+        "quote": "The most challenging and exciting part of being HR here is working in a fast-paced environment that changes constantly. My role is to discover and push people’s potential beyond what they think is possible. We don’t look for people who only follow instructions—we look for those with drive and the willingness to grow at the speed of the business. Seeing teammates make bold decisions and improve through real work every day proves that our culture truly brings out the best in everyone."
+      },
+
+      "4":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "5":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "6":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "7":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "8":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "9":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "10": { "name": "", "role": "", "headline": "", "quote": "" },
+      "11": { "name": "", "role": "", "headline": "", "quote": "" },
+      "12": { "name": "", "role": "", "headline": "", "quote": "" },
+      "13": { "name": "", "role": "", "headline": "", "quote": "" },
+      "14": { "name": "", "role": "", "headline": "", "quote": "" }
+    }
+  },
+
+  "life": {
+    "kicker": "LIFE AT SHD",
+    "title": "Activities & culture",
+    "subtitle": "We value collaboration and growth—and we celebrate moments worth remembering.",
+    "badges": {
+      "event": "Event",
+      "life": "Life"
+    },
+    "itemTitle": "Activity #{{index}}",
+    "itemDesc": "Culture • Collaboration • Moments that matter"
+  },
+
+  "cta": {
+    "kicker": "JOIN US",
+    "title": "Ready to grow with us?",
+    "subtitle": "If you want real challenges and real growth, we’d love to meet you at SHD Technology.",
+    "ctaPrimary": "View open roles",
+    "ctaSecondary": "Back to advantages",
+    "chips": {
+      "growthFirst": "Growth-first",
+      "greatTeams": "Great teams",
+      "realResources": "Real resources"
+    }
+  },
+
+  "carousel": {
+    "pause": "Pause",
+    "autoPlay": "Auto play",
+    "leftAria": "Scroll left",
+    "rightAria": "Scroll right"
+  },
+
+  "common": {
+    "expand": "Expand"
+  },
+
+  "modal": {
+    "brand": "SHD Careers",
+    "closeAria": "Close",
+    "tapToExplore": "Tap an image to explore",
+    "viewOpenRoles": "View open roles",
+    "hint": "Desktop: press ESC to close • Mobile: tap backdrop to close"
+  }
+}
+  ,
 "jobs": {
   "title": "Open Positions",
   "openings": "openings",

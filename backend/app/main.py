@@ -60,8 +60,12 @@ SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "careers").strip()
 
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "25"))
 
-# ✅ Jobs cache (ยิ่งทำให้เร็วขึ้นมาก)
+# ✅ Jobs cache
 JOBS_CACHE_TTL_SEC = int(os.getenv("JOBS_CACHE_TTL_SEC", "60"))  # แนะนำ 60-180
+
+# ✅ Google Sheet (Apps Script) apply sink
+APPS_SCRIPT_APPLY_SHEET_URL = os.getenv("APPS_SCRIPT_APPLY_SHEET_URL", "").strip()
+APPLY_SHEET_API_KEY = os.getenv("APPLY_SHEET_API_KEY", "").strip()
 
 # Limits
 MAX_RESUME_BYTES = 2 * 1024 * 1024
@@ -202,6 +206,39 @@ def insert_many_supabase(table: str, rows: List[Dict[str, Any]]) -> None:
         sb.table(table).insert(rows).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Insert many to {table} failed: {e}")
+
+
+# ---------------------------
+# Google Sheet (Apps Script) push helper
+# ---------------------------
+async def push_application_to_sheet(payload: Dict[str, Any]) -> None:
+    """
+    Fire-and-forget (best-effort): ถ้า Sheets ล่ม/ช้า จะไม่ทำให้ apply fail
+    """
+    if not APPS_SCRIPT_APPLY_SHEET_URL or not APPLY_SHEET_API_KEY:
+        logger.info("Sheets push skipped (missing APPS_SCRIPT_APPLY_SHEET_URL/APPLY_SHEET_API_KEY)")
+        return
+
+    client: httpx.AsyncClient = app.state.http  # type: ignore[attr-defined]
+    try:
+        r = await client.post(
+            APPS_SCRIPT_APPLY_SHEET_URL,
+            params={"key": APPLY_SHEET_API_KEY},
+            json=payload,
+            timeout=15.0,
+        )
+        if r.status_code != 200:
+            logger.warning("Sheets push HTTP %s: %s", r.status_code, r.text[:300])
+            return
+        try:
+            j = r.json()
+        except Exception:
+            logger.warning("Sheets push non-JSON response: %s", r.text[:300])
+            return
+        if not j.get("ok"):
+            logger.warning("Sheets push not ok: %s", str(j)[:300])
+    except Exception as e:
+        logger.warning("Sheets push error: %s", e)
 
 
 # ---------------------------
@@ -347,12 +384,13 @@ app = FastAPI(title=APP_NAME)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,             # ใช้ list จาก env
+    allow_origins=CORS_ORIGINS,  # ใช้ list จาก env
     allow_origin_regex=r"^https://.*\.netlify\.app$",  # ✅ preview deploy
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.on_event("startup")
 async def _startup() -> None:
@@ -370,6 +408,7 @@ async def _startup() -> None:
     logger.info("GOOGLE_JOBS_FEED_URL=%s", "set" if GOOGLE_JOBS_FEED_URL else "missing")
     logger.info("CORS_ORIGINS=%s", CORS_ORIGINS)
     logger.info("JOBS_CACHE_TTL_SEC=%s", JOBS_CACHE_TTL_SEC)
+    logger.info("APPS_SCRIPT_APPLY_SHEET_URL=%s", "set" if APPS_SCRIPT_APPLY_SHEET_URL else "missing")
 
 
 @app.on_event("shutdown")
@@ -423,6 +462,36 @@ def debug_jobs_cache() -> Dict[str, Any]:
     return {"ok": True, "ttl_sec": JOBS_CACHE_TTL_SEC, "keys": items}
 
 
+# ✅ Debug: ทดสอบยิงเข้า Google Sheet (เรียกใน browser ได้)
+@app.post("/debug/push-apply-sheet")
+async def debug_push_apply_sheet() -> Dict[str, Any]:
+    payload = {
+        "submitted_at": utc_now_iso(),
+        "application_id": "debug-123",
+        "job_id": "debug-job",
+        "first_name": "Debug",
+        "last_name": "User",
+        "email": "debug@example.com",
+        "phone": "+66 000000000",
+        "address": "Thailand — Test",
+        "country": "Thailand",
+        "department": "Debug",
+        "level": "Debug",
+        "visa_required": False,
+        "available_start_date": "",
+        "website_url": "",
+        "source_channel": "debug",
+        "resume_url": "",
+        "transcript_url": "",
+        "skills_json": ["Excel", "Google Sheets"],
+        "education_json": [],
+        "experience_json": [],
+        "attachments_json": [],
+    }
+    await push_application_to_sheet(payload)
+    return {"ok": True}
+
+
 # Jobs endpoints
 @app.get("/jobs")
 async def list_jobs(
@@ -440,7 +509,7 @@ async def list_jobs(
     data = await fetch_jobs_feed(lang=lang, country=country, department=department, level=level)
     rows: List[Dict[str, Any]] = data.get("rows", []) or []
 
-    # ✅ search ทำใน backend (เร็วพอสำหรับจำนวนงานหลักสิบ/ร้อย)
+    # ✅ search ทำใน backend
     qn = (q or "").strip().lower()
     if qn:
         def hay(x: Dict[str, Any]) -> str:
@@ -459,7 +528,7 @@ async def job_detail(job_id: str, lang: str = "th") -> Dict[str, Any]:
     return {"ok": True, "job": j}
 
 
-# Apply endpoint -> Supabase
+# Apply endpoint -> Supabase + Google Sheet
 @app.post("/apply/{job_id}")
 async def apply(
     job_id: str,
@@ -644,5 +713,34 @@ async def apply(
             }
         )
     insert_many_supabase("application_attachments", att_rows)
+
+    # ✅ Push to Google Sheet (best-effort; won't fail the application)
+    sheet_payload = {
+        "submitted_at": utc_now_iso(),
+        "application_id": application_id,
+        "job_id": job_id,
+        "first_name": first_name.strip(),
+        "last_name": last_name.strip(),
+        "email": email.strip(),
+        "phone": phone.strip(),
+        "address": (address or "").strip(),
+        "country": job_country,
+        "department": job_department,
+        "level": job_level,
+        "visa_required": visa_bool,
+        "available_start_date": (available_start_date or ""),
+        "website_url": (website_url or "").strip(),
+        "source_channel": (source_channel or "").strip(),
+        "resume_url": resume_public_url or f"storage:{resume_storage_path}",
+        "transcript_url": (
+            transcript_public_url
+            or (f"storage:{transcript_storage_path}" if transcript_storage_path else "")
+        ),
+        "skills_json": skill_list,
+        "education_json": educations,
+        "experience_json": experiences,
+        "attachments_json": att_rows,
+    }
+    await push_application_to_sheet(sheet_payload)
 
     return {"ok": True, "application_id": application_id}

@@ -452,124 +452,158 @@
     }
   },
 
-  "why": {
-    "title": "为什么选择 SHD",
-    "p1": "我们重视人才与长期成长，并提供全球化发展机会。",
-    "items": [
-      {
-        "title": "成长",
-        "desc": "清晰的职业路径与持续培养。"
-      },
-      {
-        "title": "全球团队",
-        "desc": "与多国家同事协作。"
-      },
-      {
-        "title": "专业标准",
-        "desc": "透明、可追溯的流程与责任制。"
-      },
-      {
-        "title": "福利",
-        "desc": "贴合当地需求的福利体系。"
-      }
-    ],
-
-    "seo": {
-      "description": "为什么选择 SHD Technology —— 成长、人才、资源，以及员工故事与团队文化。"
+"why": {
+  "title": "为什么选择 SHD",
+  "p1": "我们重视人才与长期成长，并提供真正的全球化发展机会。",
+  "items": [
+    {
+      "title": "成长",
+      "desc": "清晰的职业发展路径与持续学习成长机制。"
     },
-
-    "hero": {
-      "kicker": "为什么选择 SHD",
-      "title": "为什么要加入 SHD Technology？",
-      "subtitle": "更快成长、更大舞台、更强资源，把能力转化为看得见的成果。",
-      "ctaPrimary": "查看在招职位",
-      "ctaSecondary": "了解核心优势",
-      "chips": {
-        "growth": "无限成长",
-        "people": "优秀人才",
-        "resources": "强大资源"
-      }
+    {
+      "title": "全球团队",
+      "desc": "与来自多个国家的优秀同事协作共事。"
     },
-
-    "pillars": {
-      "kicker": "三大优势",
-      "title": "成长 • 团队 • 资源",
-      "subtitle": "三个理由，让你在 SHD 走得更快、更稳、更远。",
-      "cards": {
-        "growth": {
-          "title": "无限成长",
-          "desc": "真实挑战与明确支持，助你在关键项目中快速成长。"
-        },
-        "people": {
-          "title": "优秀人才",
-          "desc": "与多国同事协同合作，汇聚优秀人才，共同成就卓越事业。"
-        },
-        "resources": {
-          "title": "强大资源",
-          "desc": "具备完备的工具、系统与跨团队协作支持，让您全心专注于创造和提升影响力。"
-        }
-      },
-      "foot": "高影响力团队 • 真正的主人翁精神"
+    {
+      "title": "专业标准",
+      "desc": "透明、可追溯的流程，以及清晰的责任制度。"
     },
+    {
+      "title": "福利",
+      "desc": "贴合当地需求、具竞争力的福利体系。"
+    }
+  ],
 
-    "stories": {
-      "kicker": "员工故事",
-      "title": "来自团队的一线故事",
-      "subtitle": "真实项目、真实成长、真实协作——听听他们怎么说。",
-      "note": "* 每 3 秒自动滚动（鼠标悬停/手动滑动/点击按钮会暂停）。",
-      "badges": {
-        "growth": "成长",
-        "team": "团队",
-        "impact": "影响力"
-      },
-      "itemTitle": "员工故事 #{{index}}",
-      "itemDesc": "真实日常 • 真实项目 • 真实成长"
-    },
+  "seo": {
+    "description": "为什么选择 SHD Technology —— 成长、人才、资源，以及我们的团队文化与员工故事。"
+  },
 
-    "life": {
-      "kicker": "SHD 的团队生活",
-      "title": "活动与团队文化",
-      "subtitle": "我们重视协作与成长，也珍惜每个值得记住的时刻。",
-      "badges": {
-        "event": "活动",
-        "life": "团队生活"
-      },
-      "itemTitle": "活动 #{{index}}",
-      "itemDesc": "文化 • 协作 • 有温度的时刻"
-    },
-
-    "cta": {
-      "kicker": "加入我们",
-      "title": "准备好和我们一起成长了吗？",
-      "subtitle": "如果你想做真正有挑战、真正能成长的事，欢迎加入 SHD Technology。",
-      "ctaPrimary": "查看在招职位",
-      "ctaSecondary": "回到优势",
-      "chips": {
-        "growthFirst": "成长优先",
-        "greatTeams": "优秀团队",
-        "realResources": "真实资源"
-      }
-    },
-
-    "carousel": {
-      "pause": "暂停",
-      "autoPlay": "自动播放",
-      "leftAria": "向左滚动",
-      "rightAria": "向右滚动"
-    },
-
-    "common": {
-      "expand": "放大查看"
-    },
-
-    "modal": {
-      "brand": "SHD 招聘",
-      "closeAria": "关闭",
-      "tapToExplore": "点击图片查看详情",
-      "viewOpenRoles": "查看在招职位",
-      "hint": "电脑：按 ESC 关闭 • 手机：点击背景关闭"
+  "hero": {
+    "kicker": "为什么选择 SHD",
+    "title": "为什么加入 SHD Technology？",
+    "subtitle": "更快的成长、更大的舞台、更强的资源，把你的能力转化为可衡量的成果。",
+    "ctaPrimary": "查看在招职位",
+    "ctaSecondary": "了解核心优势",
+    "chips": {
+      "growth": "无限成长",
+      "people": "优秀人才",
+      "resources": "强大资源"
     }
   },
+
+  "pillars": {
+    "kicker": "核心优势",
+    "title": "成长 • 团队 • 资源",
+    "subtitle": "三大理由，助你在 SHD 走得更快、更稳、更远。",
+    "cards": {
+      "growth": {
+        "title": "无限成长",
+        "desc": "真实业务挑战，明确支持体系，让你在高影响力项目中快速成长。"
+      },
+      "people": {
+        "title": "优秀团队",
+        "desc": "跨国家协作，与以结果为导向、勇于执行的优秀伙伴共事。"
+      },
+      "resources": {
+        "title": "强大资源",
+        "desc": "完善的工具、系统与跨团队协作支持，让你专注于创造真正的影响力。"
+      }
+    },
+    "foot": "高影响力团队 • 真正的主人翁精神"
+  },
+
+  "stories": {
+    "kicker": "员工故事",
+    "title": "来自团队的一线故事",
+    "subtitle": "真实项目、真实成长、真实协作——直接来自团队的声音。",
+    "note": "瀏覽我們員工提供的真實工作故事。",
+    "badges": {
+      "growth": "成长",
+      "team": "团队",
+      "impact": "影响力"
+    },
+    "itemTitle": "员工故事 #{{index}}",
+    "itemDesc": "日常工作 • 项目实践 • 成长历程",
+
+    "cards": {
+      "1": {
+        "name": "Bo",
+        "role": "电商经理",
+        "headline": "成为更好的自己",
+        "quote": "在这里担任电商经理，让我不断成为更好的自己。工作不仅仅是执行任务，公司给予我充分的空间去跳出框架思考、不断尝试与实践。我深刻感受到，每一个挑战都是通过真实行动学习和成长的机会。这里最特别的地方在于工作的乐趣——每天都有新的问题和新的创新等待探索。如果你希望在充满挑战的环境中快速成长，同时保持工作的乐趣，这里就是你真正适合的地方。"
+      },
+      "2": {
+        "name": "Apple",
+        "role": "业务拓展总监",
+        "headline": "没有天花板的创意舞台",
+        "quote": "作为业务拓展总监，最让我兴奋的是身处一个创意没有上限的舞台。公司以高速成长的节奏运作，给予我们制定战略、开拓新市场的自由。我们不等待机会，而是通过数据分析与真实执行创造机会。这里强调将想法转化为可衡量的商业成果。如果你热爱挑战、喜欢快速决策并以结果为导向的环境，你一定会爱上这里。"
+      },
+      "3": {
+        "name": "Rodtu",
+        "role": "人力资源经理",
+        "headline": "激发超出预期的潜力",
+        "quote": "作为 HR，在这里工作最具挑战性也最令人兴奋的是身处一个高速变化的环境。我的职责是发掘并推动员工的潜力，超越他们原本的想象。我们寻找的不是只会按指示做事的人，而是愿意与业务一同高速成长的人。每天看到团队成员在真实工作中做出大胆决策并持续进步，正是我们文化能够激发每个人最大潜能的最好证明。"
+      },
+
+      "4":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "5":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "6":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "7":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "8":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "9":  { "name": "", "role": "", "headline": "", "quote": "" },
+      "10": { "name": "", "role": "", "headline": "", "quote": "" },
+      "11": { "name": "", "role": "", "headline": "", "quote": "" },
+      "12": { "name": "", "role": "", "headline": "", "quote": "" },
+      "13": { "name": "", "role": "", "headline": "", "quote": "" },
+      "14": { "name": "", "role": "", "headline": "", "quote": "" }
+    }
+  },
+
+  "life": {
+    "kicker": "SHD 的团队生活",
+    "title": "活动与团队文化",
+    "subtitle": "我们重视协作与成长，也珍惜每一个值得铭记的时刻。",
+    "badges": {
+      "event": "活动",
+      "life": "团队生活"
+    },
+    "itemTitle": "活动 #{{index}}",
+    "itemDesc": "文化 • 协作 • 有温度的时刻"
+  },
+
+  "cta": {
+    "kicker": "加入我们",
+    "title": "准备好与我们一起成长了吗？",
+    "subtitle": "如果你正在寻找真正有挑战、真正能成长的舞台，欢迎加入 SHD Technology。",
+    "ctaPrimary": "查看在招职位",
+    "ctaSecondary": "返回核心优势",
+    "chips": {
+      "growthFirst": "成长优先",
+      "greatTeams": "优秀团队",
+      "realResources": "真实资源"
+    }
+  },
+
+  "carousel": {
+    "pause": "暂停",
+    "autoPlay": "自动播放",
+    "leftAria": "向左滚动",
+    "rightAria": "向右滚动"
+  },
+
+  "common": {
+    "expand": "放大查看"
+  },
+
+  "modal": {
+    "brand": "SHD 招聘",
+    "closeAria": "关闭",
+    "tapToExplore": "点击图片查看详情",
+    "viewOpenRoles": "查看在招职位",
+    "hint": "电脑端：按 ESC 关闭 • 手机端：点击背景关闭"
+  }
+}
+,
   
 "jobs": {
   "title": "在招职位",
