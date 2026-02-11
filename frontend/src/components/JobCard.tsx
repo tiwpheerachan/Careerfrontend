@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin, Building2, Layers3 } from "lucide-react";
+import { MapPin, Building2, Layers3, ArrowRight } from "lucide-react";
 import type { Job } from "@/lib/types";
 import { useTranslation } from "react-i18next";
 
@@ -8,64 +8,88 @@ export default function JobCard({ job }: { job: Job }) {
   const href = `/jobs/${encodeURIComponent(job.job_id)}`;
 
   return (
-    <div
+    <Link
+      to={href}
       className={[
-        "relative w-full",
+        // Layout
+        "group relative w-full block",
+        "min-h-[140px]", // ✅ ให้การ์ดมีความสูงขั้นต่ำ
+        // Style
         "rounded-[24px] bg-white",
-        "px-5 py-4 sm:px-6 sm:py-5", // ✅ กระชับลง
-        "ring-1 ring-slate-200/70",
-        "shadow-[0_12px_30px_rgba(2,6,23,0.09)]",
-        "transition",
-        "hover:-translate-y-[1px] hover:shadow-[0_16px_40px_rgba(2,6,23,0.11)]",
+        "px-5 py-5 sm:px-6 sm:py-6", // ✅ เพิ่ม padding ให้ touch area ใหญ่ขึ้น
+        "border-2 border-slate-200/70", // ✅ ใช้ border แทน ring เพื่อ feedback ที่ชัดกว่า
+        "shadow-[0_8px_24px_rgba(2,6,23,0.08)]",
+        // Interaction - ✅ ปรับ transition ให้นุ่มนวลและเสถียร
+        "transition-all duration-300 ease-out",
+        // Hover
+        "hover:border-[#F59E0B]/40",
+        "hover:-translate-y-1",
+        "hover:shadow-[0_16px_40px_rgba(245,158,11,0.15)]",
+        // Active - ✅ feedback ชัดเจนเมื่อกด
+        "active:scale-[0.99]",
+        "active:shadow-[0_4px_12px_rgba(2,6,23,0.1)]",
+        // Mobile
+        "touch-manipulation",
+        "cursor-pointer",
+        // Focus
+        "focus:outline-none",
+        "focus-visible:ring-4 focus-visible:ring-[#F59E0B]/40",
+        "focus-visible:border-[#F59E0B]",
+        // ✅ ป้องกันการ select text เมื่อกดบนมือถือ
+        "select-none",
       ].join(" ")}
     >
-      {/* title + CTA */}
-      <div className="flex items-start justify-between gap-3">
-        <Link to={href} className="min-w-0 flex-1">
-          <div
-            className={[
-              "min-w-0",
-              "text-[18px] sm:text-[19px] md:text-[20px]", // ✅ ลดขนาด title
-              "leading-[1.2]",
-              "font-extrabold tracking-[-0.01em]",
-              "text-[#1565C0] hover:text-[#0B4AA5]",
-            ].join(" ")}
-          >
-            <span className="line-clamp-2 break-words">{job.title}</span>
-          </div>
-        </Link>
+      {/* Title + Badge Container */}
+      <div className="flex items-start justify-between gap-4 mb-4">
+        {/* Title */}
+        <h3
+          className={[
+            "min-w-0 flex-1",
+            "text-[17px] sm:text-[18px] md:text-[19px]",
+            "leading-[1.3]",
+            "font-extrabold tracking-[-0.01em]",
+            "text-[#1565C0]",
+            "transition-colors duration-200",
+            "group-hover:text-[#F59E0B]", // ✅ เปลี่ยนสีเมื่อ hover การ์ด
+          ].join(" ")}
+        >
+          <span className="line-clamp-2 break-words">{job.title}</span>
+        </h3>
 
-        <Link
-          to={href}
+        {/* Badge - ✅ ทำเป็น visual indicator ไม่ใช่ปุ่ม */}
+        <div
           className={[
             "shrink-0",
-            "rounded-full bg-[#F59E0B]",
-            "px-3.5 py-[6px]", // ✅ ปุ่มเล็กลง
-            "text-white font-semibold text-[13px] sm:text-[13.5px]",
-            "shadow-sm",
-            "transition hover:bg-[#F08C00]",
-            "focus:outline-none focus-visible:ring-4 focus-visible:ring-[#F59E0B]/30",
+            "inline-flex items-center gap-1.5",
+            "rounded-full bg-[#F59E0B]/10",
+            "px-3 py-1.5",
+            "text-[#F59E0B] font-semibold text-[12px] sm:text-[13px]",
+            "border border-[#F59E0B]/20",
+            "transition-all duration-200",
+            "group-hover:bg-[#F59E0B]",
+            "group-hover:text-white",
+            "group-hover:border-[#F59E0B]",
             "whitespace-nowrap",
           ].join(" ")}
         >
-          {t("common.viewDetail")}
-        </Link>
+          <span>{t("common.viewDetail")}</span>
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </div>
       </div>
 
-      {/* meta row: 3 items inline + truncate when long */}
+      {/* Meta Row - ✅ responsive grid */}
       <div
         className={[
-          "mt-3",
-          "grid gap-3",
+          "grid gap-2.5",
           "grid-cols-1",
           "sm:grid-cols-2",
-          "md:grid-cols-3", // ✅ 3 ช่องเรียงกันเหมือนรูป
+          "md:grid-cols-3",
         ].join(" ")}
       >
         <MetaPill
           icon={
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#1E5BD7] text-white shadow-sm">
-              <Building2 className="h-4 w-4" />
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#1E5BD7] text-white shadow-sm transition-transform group-hover:scale-110">
+              <Building2 className="h-3.5 w-3.5" />
             </span>
           }
           text={job.department}
@@ -73,8 +97,8 @@ export default function JobCard({ job }: { job: Job }) {
 
         <MetaPill
           icon={
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#F59E0B] text-white shadow-sm">
-              <Layers3 className="h-4 w-4" />
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#F59E0B] text-white shadow-sm transition-transform group-hover:scale-110">
+              <Layers3 className="h-3.5 w-3.5" />
             </span>
           }
           text={job.level}
@@ -82,18 +106,25 @@ export default function JobCard({ job }: { job: Job }) {
 
         <MetaPill
           icon={
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm ring-1 ring-slate-200">
-              <MapPin className="h-4 w-4" />
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 transition-transform group-hover:scale-110">
+              <MapPin className="h-3.5 w-3.5" />
             </span>
           }
           text={job.location}
         />
       </div>
-    </div>
+
+      {/* ✅ Visual Indicator - แสดงว่าการ์ดทั้งหมดคลิกได้ */}
+      <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center gap-1 text-[#F59E0B] text-xs font-semibold">
+          <span className="hidden sm:inline">เปิดดู</span>
+          <ArrowRight className="h-4 w-4" />
+        </div>
+      </div>
+    </Link>
   );
 }
 
-/** ✅ ทำให้ truncate ทำงานเสมอ + ฟอนต์เล็กลง */
 function MetaPill({
   icon,
   text,
@@ -102,9 +133,9 @@ function MetaPill({
   text: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
+    <div className="flex min-w-0 items-center gap-2">
       {icon}
-      <span className="min-w-0 flex-1 truncate text-[13px] sm:text-[13.5px] text-slate-900">
+      <span className="min-w-0 flex-1 truncate text-[12.5px] sm:text-[13px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
         {text}
       </span>
     </div>

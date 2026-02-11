@@ -25,6 +25,7 @@ function cn(...xs: Array<string | false | undefined | null>) {
 /** ---------------------------------------
  * Auto carousel (hover pause + user pause)
  * + supports left/right buttons
+ * + ✅ mobile-friendly (touch drag / snap)
  * -------------------------------------- */
 function useAutoScrollCarousel(opts: {
   enabled: boolean;
@@ -32,7 +33,7 @@ function useAutoScrollCarousel(opts: {
   stepPx?: number;
   idleResumeMs?: number;
 }) {
-  const { enabled, intervalMs = 3000, stepPx = 520, idleResumeMs = 3000 } = opts;
+  const { enabled, intervalMs = 3000, stepPx = 560, idleResumeMs = 3000 } = opts;
 
   const ref = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState(false);
@@ -59,11 +60,8 @@ function useAutoScrollCarousel(opts: {
         const max = el.scrollWidth - el.clientWidth;
         const next = Math.min(el.scrollLeft + stepPx, max);
 
-        if (next >= max - 2) {
-          el.scrollTo({ left: 0, behavior: "smooth" });
-        } else {
-          el.scrollTo({ left: next, behavior: "smooth" });
-        }
+        if (next >= max - 2) el.scrollTo({ left: 0, behavior: "smooth" });
+        else el.scrollTo({ left: next, behavior: "smooth" });
       }
 
       tick = window.setTimeout(run, intervalMs);
@@ -103,6 +101,7 @@ function useAutoScrollCarousel(opts: {
  * Modal (image popup)
  * - closes on overlay click, X button, ESC
  * - LIGHT mode: no dark fullscreen overlay
+ * - ✅ mobile: big close button + tap bg to close
  * ------------------------ */
 function ImageModal({
   open,
@@ -151,8 +150,11 @@ function ImageModal({
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      onTouchStart={(e) => {
+        // ✅ mobile tap outside closes
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      {/* content */}
       <div
         className={cn(
           "relative w-full max-w-[1100px] overflow-hidden rounded-[28px]",
@@ -160,7 +162,6 @@ function ImageModal({
           "ring-1 ring-slate-200"
         )}
       >
-        {/* top actions */}
         <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-3 sm:p-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
@@ -171,8 +172,8 @@ function ImageModal({
             type="button"
             onClick={onClose}
             className={cn(
-              "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
-              "bg-white/85 text-slate-900 backdrop-blur",
+              "inline-flex h-11 w-11 items-center justify-center rounded-2xl",
+              "bg-white/90 text-slate-900 backdrop-blur",
               "ring-1 ring-slate-200",
               "transition hover:bg-white active:scale-[0.98]"
             )}
@@ -182,7 +183,6 @@ function ImageModal({
           </button>
         </div>
 
-        {/* 16:8 media */}
         <div className="relative aspect-[2/1] w-full bg-white">
           <img
             src={item.src}
@@ -194,7 +194,6 @@ function ImageModal({
           <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/55" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(800px_420px_at_50%_30%,rgba(255,255,255,0.22),transparent_60%)]" />
 
-          {/* bottom info bar */}
           <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
             <div
               className={cn(
@@ -214,7 +213,6 @@ function ImageModal({
                 </span>
               </div>
 
-              {/* name/role chips (optional) */}
               {item.name || item.role ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {item.name ? (
@@ -230,9 +228,7 @@ function ImageModal({
                 </div>
               ) : null}
 
-              <div className="mt-3 text-lg font-black tracking-tight sm:text-xl">
-                {item.title}
-              </div>
+              <div className="mt-3 text-lg font-black tracking-tight sm:text-xl">{item.title}</div>
 
               {item.desc ? (
                 <div className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
@@ -316,6 +312,9 @@ function PillarCard({
 
 /** -------------------------
  * 16:8 card (2:1)
+ * ✅ UPDATED: remove bottom glass panel (the circled part)
+ * - keep only image + top chips
+ * - still clickable on mobile
  * ------------------------ */
 function PhotoCard16x8({
   src,
@@ -341,7 +340,9 @@ function PhotoCard16x8({
         "w-[min(86vw,560px)]",
         "transition hover:-translate-y-1 active:scale-[0.99]",
         "shadow-[0_18px_70px_-28px_rgba(15,23,42,0.35)]",
-        "ring-1 ring-slate-200 bg-white"
+        "ring-1 ring-slate-200 bg-white",
+        // ✅ better tap area on mobile
+        "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
       )}
     >
       <div className="relative aspect-[2/1] w-full">
@@ -353,7 +354,8 @@ function PhotoCard16x8({
           loading="lazy"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/40" />
+        {/* subtle bottom gradient (no panel/box) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/25" />
 
         {/* sweep */}
         <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
@@ -376,24 +378,6 @@ function PhotoCard16x8({
               SHD
             </div>
           )}
-        </div>
-
-        {/* bottom info panel */}
-        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-          <div
-            className={cn(
-              "rounded-3xl bg-white/82 p-3 sm:p-4 text-slate-950 backdrop-blur-xl",
-              "shadow-[0_18px_90px_rgba(15,23,42,0.18)]",
-              "ring-1 ring-slate-200"
-            )}
-          >
-            <div className="text-sm font-black leading-snug sm:text-base line-clamp-1">{title}</div>
-            {desc ? (
-              <div className="mt-1 text-xs leading-relaxed text-slate-700 sm:text-sm line-clamp-2">
-                {desc}
-              </div>
-            ) : null}
-          </div>
         </div>
 
         <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
@@ -426,7 +410,8 @@ function CarouselControlsLight({
           "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
           "bg-white text-slate-900",
           "ring-1 ring-slate-200 shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-          "transition hover:-translate-y-0.5 active:scale-[0.98]"
+          "transition hover:-translate-y-0.5 active:scale-[0.98]",
+          "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
         )}
         aria-label={leftAria}
       >
@@ -439,7 +424,8 @@ function CarouselControlsLight({
           "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
           "bg-white text-slate-900",
           "ring-1 ring-slate-200 shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-          "transition hover:-translate-y-0.5 active:scale-[0.98]"
+          "transition hover:-translate-y-0.5 active:scale-[0.98]",
+          "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
         )}
         aria-label={rightAria}
       >
@@ -476,11 +462,11 @@ function StoryTemplateSlide({
       className={cn(
         "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
         "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
-        "transition hover:-translate-y-0.5 active:scale-[0.99]"
+        "transition hover:-translate-y-0.5 active:scale-[0.99]",
+        "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
       )}
     >
       <div className="relative aspect-[2/1] w-full bg-white">
-        {/* ✅ สำคัญ: object-contain เพื่อไม่ให้ template โดนครอป */}
         <img
           src={src}
           alt={person?.headline || "Employee story"}
@@ -489,7 +475,6 @@ function StoryTemplateSlide({
           loading="lazy"
         />
 
-        {/* top chips */}
         <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
             <Sparkles className="h-3.5 w-3.5" />
@@ -507,7 +492,7 @@ function StoryTemplateSlide({
           )}
         </div>
 
-        {/* ✅ overlay text แบบในภาพตัวอย่าง: วางฝั่งซ้ายกลางๆ */}
+        {/* ✅ removed the circled grey frame entirely by not rendering any bottom panel */}
         {person ? (
           <div
             className={cn(
@@ -531,7 +516,6 @@ function StoryTemplateSlide({
           </div>
         ) : null}
 
-        {/* soft hover shine */}
         <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
           <div className="absolute inset-0 bg-[radial-gradient(560px_240px_at_40%_20%,rgba(255,255,255,0.28),transparent_60%)]" />
         </div>
@@ -550,12 +534,19 @@ export default function WhyPage() {
   const LIFE_BG = "/images/why/why-life.jpg";
   const CTA_BG = "/images/why/why-cta.jpg";
 
-  // ===== Employee Stories (14) =====
-  const employeePhotos = useMemo(() => {
+  /**
+   * ============================
+   * ✅ เรื่องเล่าจากทีมของเรา: แสดง "แค่ 3 การ์ดแรก"
+   * - ทำเผื่อเพิ่ม: data เต็มได้ แต่ renderLimit = 3
+   * - ปุ่ม "ดูทั้งหมด" สามารถเปิด render เพิ่มได้ในอนาคต
+   * ============================
+   */
+  const STORIES_RENDER_LIMIT = 3;
+
+  const employeePhotosAll = useMemo(() => {
     return Array.from({ length: 14 }).map((_, i) => {
       const idx = i + 1;
 
-      // ✅ i18n overlay per person (supports 3 languages via your locales)
       const name = t(`why.stories.cards.${idx}.name`, { defaultValue: "" });
       const role = t(`why.stories.cards.${idx}.role`, { defaultValue: "" });
       const headline = t(`why.stories.cards.${idx}.headline`, { defaultValue: "" });
@@ -566,10 +557,7 @@ export default function WhyPage() {
 
       return {
         src: `/images/why/stories/s${idx}.jpg`,
-        title: t("why.stories.itemTitle", {
-          index: idx,
-          defaultValue: `Employee story #${idx}`,
-        }),
+        title: t("why.stories.itemTitle", { index: idx, defaultValue: `Employee story #${idx}` }),
         desc: t("why.stories.itemDesc", {
           defaultValue: "A day in the team • Real projects • Real growth",
         }),
@@ -583,6 +571,11 @@ export default function WhyPage() {
       };
     });
   }, [t]);
+
+  const employeePhotos = useMemo(
+    () => employeePhotosAll.slice(0, STORIES_RENDER_LIMIT),
+    [employeePhotosAll]
+  );
 
   // ===== Events (10) =====
   const eventPhotos = useMemo(
@@ -607,8 +600,8 @@ export default function WhyPage() {
   // Auto sliders
   const stories = useAutoScrollCarousel({
     enabled: true,
-    intervalMs: 3000,
-    stepPx: 560,
+    intervalMs: 3200,
+    stepPx: 920,
     idleResumeMs: 3000,
   });
 
@@ -693,12 +686,10 @@ export default function WhyPage() {
             style={{ backgroundImage: `url(${HERO_BG})` }}
           />
 
-          {/* ✅ no black overlay */}
           <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_25%_18%,rgba(255,255,255,0.24),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(800px_420px_at_75%_28%,rgba(16,185,129,0.14),transparent_62%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_70%_78%,rgba(168,85,247,0.14),transparent_62%)]" />
 
-          {/* mouse spotlight */}
           <div
             className={cn(
               "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300",
@@ -837,6 +828,7 @@ export default function WhyPage() {
 
       {/* =========================
           C) EMPLOYEE STORIES (LIGHT)
+          ✅ show only first 3 cards
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
@@ -855,7 +847,7 @@ export default function WhyPage() {
               </div>
 
               <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
-                {t("why.stories.title", { defaultValue: "เรื่องเล่าจากทีมงาน" })}
+                {t("why.stories.title", { defaultValue: "เรื่องเล่าจากทีมของเรา" })}
               </h3>
 
               <p className="mt-2 text-sm leading-relaxed text-slate-700">
@@ -873,7 +865,8 @@ export default function WhyPage() {
                     "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
                     "bg-white text-slate-900 ring-1 ring-slate-200",
                     "shadow-none",
-                    "transition hover:-translate-y-0.5 active:scale-[0.98]"
+                    "transition hover:-translate-y-0.5 active:scale-[0.98]",
+                    "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
                   )}
                 >
                   {stories.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -893,7 +886,7 @@ export default function WhyPage() {
               <div className="mt-4 text-[11px] text-slate-500">
                 {t("why.stories.note", {
                   defaultValue:
-                    "* เลื่อนอัตโนมัติทุก 3 วิ (หยุดเมื่อเอาเมาส์วาง / แตะเลื่อน / กดปุ่ม)",
+                    "* แสดง 3 เรื่องเล่าแรก (ทำระบบเผื่อเพิ่มแล้ว) — เลื่อนได้บนมือถือ",
                 })}
               </div>
             </div>
@@ -902,7 +895,11 @@ export default function WhyPage() {
             <div className="lg:col-span-3">
               <div
                 ref={stories.ref}
-                className={cn("no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3", "snap-x snap-mandatory")}
+                className={cn(
+                  "no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3",
+                  "snap-x snap-mandatory",
+                  "touch-pan-x"
+                )}
                 onMouseEnter={() => stories.setHovered(true)}
                 onMouseLeave={() => stories.setHovered(false)}
                 onPointerDown={() => stories.markUserAction()}
@@ -944,6 +941,7 @@ export default function WhyPage() {
 
       {/* =========================
           E) LIFE AT SHD (LIGHT)
+          ✅ removed bottom info box on cards
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
@@ -979,7 +977,8 @@ export default function WhyPage() {
                     "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
                     "bg-white text-slate-900 ring-1 ring-slate-200",
                     "shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-                    "transition hover:-translate-y-0.5 active:scale-[0.98]"
+                    "transition hover:-translate-y-0.5 active:scale-[0.98]",
+                    "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
                   )}
                 >
                   {life.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -999,7 +998,11 @@ export default function WhyPage() {
 
             <div
               ref={life.ref}
-              className={cn("mt-8 no-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2", "snap-x snap-mandatory")}
+              className={cn(
+                "mt-8 no-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2",
+                "snap-x snap-mandatory",
+                "touch-pan-x"
+              )}
               onMouseEnter={() => life.setHovered(true)}
               onMouseLeave={() => life.setHovered(false)}
               onPointerDown={() => life.markUserAction()}

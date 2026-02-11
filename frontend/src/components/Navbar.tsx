@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { cn } from "@/lib/cn";
@@ -21,11 +21,8 @@ function NavItem({
         cn(
           "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
-          // base color
           scrolled ? "text-white/90" : "text-white/90",
-          // hover
           scrolled ? "hover:bg-white/10" : "hover:bg-black/10",
-          // active
           isActive ? "bg-white/14 text-white" : "bg-transparent"
         )
       }
@@ -46,6 +43,8 @@ function NavItem({
 
 export default function Navbar() {
   const { t } = useTranslation();
+  const location = useLocation();
+
   const [scrolled, setScrolled] = React.useState(false);
   const [open, setOpen] = React.useState(false);
 
@@ -56,27 +55,39 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // close mobile on route change-ish (best-effort)
+  // ✅ ปิดเมนูเมื่อเปลี่ยนหน้า (สำคัญมาก)
   React.useEffect(() => {
-    if (!scrolled) return;
+    setOpen(false);
+  }, [location.pathname]);
+
+  // ✅ ESC ปิดเมนู
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // ✅ กันเมนูค้างตอน rotate/resize
+  React.useEffect(() => {
     const close = () => setOpen(false);
     window.addEventListener("resize", close);
     return () => window.removeEventListener("resize", close);
-  }, [scrolled]);
+  }, []);
 
   return (
     <header className="fixed top-0 z-50 w-full">
-      {/* ✅ “ไม่เต็มจอ” ตอนเลื่อน: เราทำให้ header โปร่ง แล้วให้ตัว bar เป็นกล่องลอยด้านใน */}
+      {/* ✅ Wrapper: ให้ header เองไม่กิน pointer-events */}
       <div className="pointer-events-none mx-auto w-full px-3 pt-3 sm:px-4">
+        {/* ✅ bar กลาง: pointer-events กลับมา auto เฉพาะส่วนที่กดได้ */}
         <div
           className={cn(
             "pointer-events-auto mx-auto flex w-full items-center justify-between gap-3",
             "transition-all duration-300 ease-out",
-            // width behavior
             scrolled ? "max-w-[1080px]" : "max-w-[1180px]"
           )}
         >
-          {/* ✅ Floating pill when scrolled */}
           <div
             className={cn(
               "flex w-full items-center justify-between gap-3",
@@ -110,12 +121,10 @@ export default function Navbar() {
 
             {/* RIGHT */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Language */}
               <div className="hidden sm:flex items-center text-white/90">
                 <LanguageSwitcher className="!bg-transparent !border-0 !shadow-none !p-0 !text-white/90" />
               </div>
 
-              {/* Find jobs CTA */}
               <Link
                 to="/jobs"
                 className={cn(
@@ -151,6 +160,7 @@ export default function Navbar() {
                     "text-white/90 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   )}
                   aria-label="Menu"
+                  aria-expanded={open}
                 >
                   {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
@@ -159,56 +169,74 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE DROPDOWN */}
-        <div
-          className={cn(
-            "pointer-events-auto mx-auto md:hidden transition-all duration-200",
-            open ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 -translate-y-1"
-          )}
-          style={{ maxWidth: scrolled ? 1080 : 1180 }}
-        >
-          <div className="mt-3 rounded-3xl bg-black/70 backdrop-blur-xl ring-1 ring-white/12 shadow-[0_28px_90px_rgba(0,0,0,0.40)] p-4">
-            <div className="mb-3 text-white/90">
-              <LanguageSwitcher className="!bg-transparent !border-0 !shadow-none !text-white/90" />
-            </div>
+        {/* ✅ สำคัญ: ทำ dropdown ให้อยู่แบบ ABSOLUTE (ไม่กินความสูง header) */}
+        <div className="pointer-events-none relative mx-auto w-full" style={{ maxWidth: scrolled ? 1080 : 1180 }}>
+          {/* Overlay (คลิกปิด) */}
+          <div
+            className={cn(
+              "fixed inset-0 z-40 bg-black/25 backdrop-blur-[1px] transition",
+              open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            )}
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
 
-            <div className="flex flex-col gap-2">
-              {[
-                { k: "about", path: "/about" },
-                { k: "why", path: "/why-shd" },
-                { k: "jobs", path: "/jobs" },
-                { k: "partners", path: "/partners" },
-              ].map((x) => (
+          {/* Panel */}
+          <div
+            className={cn(
+              "absolute left-0 right-0 top-full z-50 mt-3 md:hidden",
+              open ? "pointer-events-auto" : "pointer-events-none"
+            )}
+          >
+            <div
+              className={cn(
+                "rounded-3xl bg-black/70 backdrop-blur-xl ring-1 ring-white/12 shadow-[0_28px_90px_rgba(0,0,0,0.40)] p-4",
+                "transition-all duration-200",
+                open ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
+              )}
+            >
+              <div className="mb-3 text-white/90">
+                <LanguageSwitcher className="!bg-transparent !border-0 !shadow-none !text-white/90" />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {[
+                  { k: "about", path: "/about" },
+                  { k: "why", path: "/why-shd" },
+                  { k: "jobs", path: "/jobs" },
+                  { k: "partners", path: "/partners" },
+                ].map((x) => (
+                  <Link
+                    key={x.k}
+                    to={x.path}
+                    onClick={() => setOpen(false)}
+                    className="rounded-2xl px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10"
+                  >
+                    {t(`nav.${x.k}`)}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-4">
                 <Link
-                  key={x.k}
-                  to={x.path}
+                  to="/jobs"
                   onClick={() => setOpen(false)}
-                  className="rounded-2xl px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10"
+                  className="inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-extrabold"
+                  style={{
+                    background: "rgba(255,255,255,0.14)",
+                    color: "rgba(255,255,255,0.95)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                  }}
                 >
-                  {t(`nav.${x.k}`)}
+                  Find jobs
                 </Link>
-              ))}
-            </div>
-
-            <div className="mt-4">
-              <Link
-                to="/jobs"
-                onClick={() => setOpen(false)}
-                className="inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-extrabold"
-                style={{
-                  background: "rgba(255,255,255,0.14)",
-                  color: "rgba(255,255,255,0.95)",
-                  border: "1px solid rgba(255,255,255,0.18)",
-                }}
-              >
-                Find jobs
-              </Link>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ กัน content โดนทับ (ถ้า layout ยังไม่ได้เผื่อ padding-top) */}
+      {/* กัน content โดนทับ */}
       <div className="h-[76px]" />
     </header>
   );

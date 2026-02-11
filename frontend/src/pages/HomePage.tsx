@@ -1,3 +1,4 @@
+// frontend/src/pages/HomePage.tsx
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -28,6 +29,14 @@ function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
 }
 
+/** =========================================================
+ * ✅ HERO BACKGROUND (Desktop vs Mobile)
+ * ✅ ตามที่ขอ: "ไม่ต้องเปลี่ยนรูปตอนเม้าแตะ" → ใช้แค่ 1 รูปต่อ device
+ * ========================================================= */
+const HERO_BG_DESKTOP = "/images/5_07_Charge_Faster_Clean_Longer_1200x.webp"; // ✅ desktop
+const HERO_BG_MOBILE = "/images/hero/mobile/hero-1.webp"; // ✅ mobile (แนวตั้ง)
+
+/** ---------- Smart UI card ---------- */
 function Feature({
   icon,
   title,
@@ -84,8 +93,9 @@ type Office = {
   label: string;
   countryValueMatch: string[];
   flagEmoji?: string;
-  bgImage: string;
-  portraitImage: string; // (คงไว้ตามเดิม ถึงแม้เราจะไม่ใช้แล้ว)
+  bgImage: string; // desktop/tablet
+  bgImageMobile?: string; // ✅ mobile portrait background (optional)
+  portraitImage: string; // legacy (คงไว้ตามเดิม)
   tagline?: string;
   lat: number;
   lng: number;
@@ -98,6 +108,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["TH", "Thailand", "ไทย", "Bangkok"],
     flagEmoji: "🇹🇭",
     bgImage: "/images/offices/th-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/th-bg.jpg",
     portraitImage: "/images/offices/th-portrait.jpg",
     tagline: "Bangkok • Local excellence to global scale",
     lat: 13.7563,
@@ -109,6 +120,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["CN", "China", "จีน"],
     flagEmoji: "🇨🇳",
     bgImage: "/images/offices/cn-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/cn-bg.jpg",
     portraitImage: "/images/offices/cn-portrait.jpg",
     tagline: "Innovation hub • Supply chain & product",
     lat: 31.2304,
@@ -120,6 +132,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["ID", "Indonesia", "อินโดนีเซีย"],
     flagEmoji: "🇮🇩",
     bgImage: "/images/offices/id-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/id-bg.jpg",
     portraitImage: "/images/offices/id-portrait.jpg",
     tagline: "SEA growth • Marketplace acceleration",
     lat: -6.2088,
@@ -131,6 +144,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["PH", "Philippines", "ฟิลิปปินส์"],
     flagEmoji: "🇵🇭",
     bgImage: "/images/offices/ph-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/ph-bg.jpg",
     portraitImage: "/images/offices/ph-portrait.jpg",
     tagline: "Operations • Customer experience",
     lat: 14.5995,
@@ -142,6 +156,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["VN", "Vietnam", "เวียดนาม"],
     flagEmoji: "🇻🇳",
     bgImage: "/images/offices/vn-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/vn-bg.jpg",
     portraitImage: "/images/offices/vn-portrait.jpg",
     tagline: "Regional team • Logistics & growth",
     lat: 21.0278,
@@ -153,6 +168,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["BR", "Brazil", "บราซิล"],
     flagEmoji: "🇧🇷",
     bgImage: "/images/offices/br-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/br-bg.jpg",
     portraitImage: "/images/offices/br-portrait.jpg",
     tagline: "LATAM • Go-to-market & distribution",
     lat: -23.5505,
@@ -164,6 +180,7 @@ const OFFICES: Office[] = [
     countryValueMatch: ["MX", "Mexico", "เม็กซิโก"],
     flagEmoji: "🇲🇽",
     bgImage: "/images/offices/mx-bg.jpg",
+    bgImageMobile: "/images/offices/mobile/mx-bg.jpg",
     portraitImage: "/images/offices/mx-portrait.jpg",
     tagline: "LATAM expansion • Partnerships",
     lat: 19.4326,
@@ -172,7 +189,9 @@ const OFFICES: Office[] = [
 ];
 
 /** ---------- Horizontal 16:8 gallery images (17 boxes) ---------- */
-const GALLERY_16x8: string[] = Array.from({ length: 17 }).map((_, i) => `/images/gallery/g${i + 1}.jpg`);
+const GALLERY_16x8: string[] = Array.from({ length: 17 }).map(
+  (_, i) => `/images/gallery/g${i + 1}.jpg`
+);
 
 /** =========================================================
  *  ✅ 3D Globe (day style)
@@ -320,7 +339,7 @@ function GlobePin({
         />
       </mesh>
 
-      {/* Label: active show name, inactive show dot/flag */}
+      {/* Label */}
       <Html distanceFactor={6} position={[0.052, 0.12, 0]}>
         <button
           type="button"
@@ -367,7 +386,7 @@ function GlobeScene({
   const earthDay = useTexture("/images/offices/globe/earth_day.jpg");
   const earthNight = useTexture("/images/offices/globe/earth_night.jpg");
 
-  useMemo(() => {
+  useEffect(() => {
     earthDay.colorSpace = THREE.SRGBColorSpace;
     earthDay.anisotropy = 8;
     earthDay.wrapS = THREE.ClampToEdgeWrapping;
@@ -400,9 +419,6 @@ function GlobeScene({
 
   useEffect(() => {
     if (!ready) return;
-    const g = groupRef.current;
-    if (!g) return;
-
     const of = offices.find((o) => o.key === activeKey);
     if (!of) return;
 
@@ -410,7 +426,6 @@ function GlobeScene({
     const front = new THREE.Vector3(0, 0, 1);
 
     const q = new THREE.Quaternion().setFromUnitVectors(pin, front);
-
     const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.08, 0, 0));
     q.multiply(tilt);
 
@@ -435,8 +450,6 @@ function GlobeScene({
     const t = 1 - Math.exp(-dt * 3.8);
     currentQuat.current.slerp(composedTarget, t);
     g.quaternion.copy(currentQuat.current);
-
-    targetQuat.current.copy(g.quaternion);
   });
 
   return (
@@ -472,7 +485,13 @@ function GlobeScene({
         </mesh>
 
         {offices.map((o) => (
-          <GlobePin key={o.key} o={o} active={o.key === activeKey} onSelect={onSelect} radius={radius} />
+          <GlobePin
+            key={o.key}
+            o={o}
+            active={o.key === activeKey}
+            onSelect={onSelect}
+            radius={radius}
+          />
         ))}
       </group>
 
@@ -495,10 +514,14 @@ function Globe3D({
   return (
     <div className="relative min-w-0">
       <div className="relative w-full">
-        <div className="relative h-[360px] w-full p-3 sm:h-[460px] sm:p-4 md:h-[560px] lg:h-[600px]">
+        <div className="relative h-[320px] w-full p-3 sm:h-[460px] sm:p-4 md:h-[560px] lg:h-[600px]">
           <div className="relative h-full w-full">
             <R3FErrorBoundary fallback={<GlobeFallbackCard label={t("common.loading")} />}>
-              <Canvas camera={{ position: [0, 0, 3.05], fov: 42 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+              <Canvas
+                camera={{ position: [0, 0, 3.05], fov: 42 }}
+                dpr={[1, 2]}
+                gl={{ antialias: true, alpha: true }}
+              >
                 <R3FErrorBoundary
                   fallback={
                     <Html center>
@@ -544,8 +567,6 @@ export default function HomePage() {
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsError, setJobsError] = useState<string | null>(null);
-
-  const [heroHover, setHeroHover] = useState(false);
 
   const [officeKey, setOfficeKey] = useState<string>(OFFICES[0]?.key ?? "TH");
   const office = useMemo(() => OFFICES.find((o) => o.key === officeKey) ?? OFFICES[0], [officeKey]);
@@ -659,13 +680,11 @@ export default function HomePage() {
 
       {/* ===========================
           HERO
+          ✅ 1 รูปต่อ device (mobile/desktop) — ไม่มี hover เปลี่ยนรูปแล้ว
       =========================== */}
       <section
         ref={(n) => (heroRef.current = n)}
         className="group relative isolate overflow-hidden bg-slate-950"
-        onMouseEnter={() => setHeroHover(true)}
-        onMouseLeave={() => setHeroHover(false)}
-        onTouchStart={() => setHeroHover((v) => !v)}
         onMouseMove={(e) => {
           const el = heroRef.current;
           if (!el) return;
@@ -676,24 +695,22 @@ export default function HomePage() {
           el.style.setProperty("--my", `${y}%`);
         }}
       >
-        {/* FULL-BLEED BACKGROUND */}
+        {/* FULL-BLEED BACKGROUND (Responsive swap) */}
         <div className="absolute inset-0">
-          <div
-            className={cn(
-              "absolute inset-0 bg-cover bg-center",
-              "scale-[1.03] will-change-transform",
-              "transition-opacity duration-700"
-            )}
-            style={{ backgroundImage: `url(/images/5_07_Charge_Faster_Clean_Longer_1200x.webp)` }}
+          {/* ✅ Mobile background (<640px) */}
+          <img
+            src={HERO_BG_MOBILE}
+            alt=""
+            className={cn("sm:hidden absolute inset-0 h-full w-full object-cover", "scale-[1.03]")}
+            draggable={false}
           />
-          <div
-            className={cn(
-              "absolute inset-0 bg-cover bg-center",
-              "scale-[1.03] will-change-transform",
-              "transition-opacity duration-700",
-              heroHover ? "opacity-100" : "opacity-0"
-            )}
-            style={{ backgroundImage: `url(/images/x50-ultra-banner.webp)` }}
+
+          {/* ✅ Desktop background (>=640px) */}
+          <img
+            src={HERO_BG_DESKTOP}
+            alt=""
+            className={cn("hidden sm:block absolute inset-0 h-full w-full object-cover", "scale-[1.03]")}
+            draggable={false}
           />
 
           {/* overlays */}
@@ -713,18 +730,15 @@ export default function HomePage() {
 
         {/* MOUSE SPOTLIGHT */}
         <div
-          className={cn(
-            "pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300",
-            "group-hover:opacity-100"
-          )}
+          className={cn("pointer-events-none absolute inset-0 opacity-100")}
           style={{
             background:
-              "radial-gradient(520px 360px at var(--mx, 50%) var(--my, 35%), rgba(255,255,255,0.16), rgba(255,255,255,0.06) 40%, transparent 70%)",
+              "radial-gradient(520px 360px at var(--mx, 50%) var(--my, 35%), rgba(255,255,255,0.14), rgba(255,255,255,0.06) 40%, transparent 70%)",
           }}
         />
 
         {/* CONTENT */}
-        <div className="container-page relative py-14 sm:py-16 lg:py-20">
+        <div className="container-page relative py-12 sm:py-16 lg:py-20">
           <div className="mx-auto max-w-[920px] text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/90 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_28px_rgba(52,211,153,0.65)]" />
@@ -783,7 +797,7 @@ export default function HomePage() {
             <p className="mt-5 text-xs text-white/55">{t("home.bannerNote")}</p>
           </div>
 
-          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-2 lg:grid-cols-4">
             <Feature
               icon={<Globe2 className="h-5 w-5" />}
               title={t("home.features.multiCountry.title")}
@@ -809,22 +823,30 @@ export default function HomePage() {
       </section>
 
       {/* ===========================
-          OFFICES (ชิดกับ HERO — ไม่มีช่องว่าง)
+          OFFICES (Grow around the world)
+          ✅ สลับรูป per office ระหว่าง mobile/desktop ด้วย <picture>
+          ✅ ไม่มีช่องว่างกับ HERO
       =========================== */}
       <section className="relative pt-0 -mt-px">
         <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen">
           <div className="relative overflow-hidden rounded-none">
             <div className="relative min-h-[260px] md:min-h-[240px] lg:min-h-[220px]">
-              {/* bg image */}
-              <img
-                src={office.bgImage}
-                alt={t("home.offices.badges.office") + ` ${office.label}`}
-                className={cn(
-                  "absolute inset-0 h-full w-full object-cover",
-                  "scale-[1.03] will-change-transform",
-                  "animate-[fadeIn_700ms_ease-out]"
-                )}
-              />
+              {/* ✅ BG: swap per device */}
+              <picture>
+                {/* 📌 มือถือ: ใส่รูปที่ /public/images/offices/mobile/<key>-bg.jpg */}
+                <source media="(max-width: 640px)" srcSet={office.bgImageMobile ?? office.bgImage} />
+                {/* 📌 เดสก์ท็อป: /public/images/offices/<key>-bg.jpg */}
+                <img
+                  src={office.bgImage}
+                  alt={t("home.offices.badges.office") + ` ${office.label}`}
+                  className={cn(
+                    "absolute inset-0 h-full w-full object-cover",
+                    "scale-[1.03] will-change-transform",
+                    "animate-[fadeIn_700ms_ease-out]"
+                  )}
+                  draggable={false}
+                />
+              </picture>
 
               {/* overlays */}
               <div className="absolute inset-0 bg-[radial-gradient(75%_70%_at_50%_18%,rgba(255,255,255,0.78),transparent_60%)]" />
@@ -833,9 +855,11 @@ export default function HomePage() {
 
               {/* header */}
               <div className="relative z-10">
-                <div className="container-page px-4 pt-12 md:pt-14">
+                <div className="container-page px-4 pt-10 md:pt-14">
                   <div className="mx-auto max-w-[1020px] text-center">
-                    <div className="text-xs font-semibold tracking-wide text-emerald-700">{t("home.offices.kicker")}</div>
+                    <div className="text-xs font-semibold tracking-wide text-emerald-700">
+                      {t("home.offices.kicker")}
+                    </div>
 
                     <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
                       {t("home.offices.title")}
@@ -864,7 +888,9 @@ export default function HomePage() {
 
                       <div className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/55 bg-white/45 px-4 py-3 text-sm font-semibold text-slate-900">
                         <Briefcase className="h-4 w-4 text-slate-800" />
-                        {loadingJobs ? t("home.offices.openingsLoading") : t("home.offices.openings", { count: officeJobsCount })}
+                        {loadingJobs
+                          ? t("home.offices.openingsLoading")
+                          : t("home.offices.openings", { count: officeJobsCount })}
                       </div>
                     </div>
                   </div>
@@ -906,14 +932,14 @@ export default function HomePage() {
 
               {/* content */}
               <div className="relative z-10">
-                <div className="mx-auto w-full max-w-[1760px] px-6 pt-0 pb-4 md:px-10 md:pb-6 lg:px-16">
-                  <div className="mt-8 md:mt-9 lg:mt-10">
+                <div className="mx-auto w-full max-w-[1760px] px-4 pt-0 pb-4 sm:px-6 md:px-10 md:pb-6 lg:px-16">
+                  <div className="mt-7 md:mt-9 lg:mt-10">
                     <div className="w-full">
-                      <div className="grid items-start gap-10 md:grid-cols-[minmax(0,920px)_minmax(0,520px)] md:gap-14 xl:gap-16">
+                      <div className="grid items-start gap-8 md:grid-cols-[minmax(0,920px)_minmax(0,520px)] md:gap-14 xl:gap-16">
                         {/* LEFT: Globe */}
                         <div className="min-w-0 pt-0 md:pt-1 animate-[rise_700ms_cubic-bezier(.2,.8,.2,1)] flex items-start justify-center">
-                          <div className="w-full px-2 sm:px-4 md:px-5 lg:px-6">
-                            <div className="-translate-y-[6%] md:-translate-y-[8%]">
+                          <div className="w-full px-0 sm:px-4 md:px-5 lg:px-6">
+                            <div className="sm:-translate-y-[6%] md:-translate-y-[8%]">
                               <Globe3D
                                 offices={OFFICES}
                                 activeKey={officeKey}
@@ -927,13 +953,12 @@ export default function HomePage() {
                         {/* RIGHT: jobs card */}
                         <div
                           className={cn(
-                            "min-w-0 pt-0 md:pt-2 mt-8 md:mt-10",
+                            "min-w-0 pt-0 md:pt-2 mt-2 md:mt-10",
                             "border-0 bg-transparent p-0 backdrop-blur-0 shadow-none",
                             "shadow-[0_28px_120px_rgba(0,0,0,0.10)]",
-                            "-translate-x-6 lg:-translate-x-10"
+                            "md:-translate-x-6 lg:-translate-x-10"
                           )}
                         >
-                          {/* header badges */}
                           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-800">
                             <span className="inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/35 px-3 py-1">
                               <Flag className="h-3.5 w-3.5" />
@@ -957,7 +982,6 @@ export default function HomePage() {
                           </div>
                           <div className="mt-1 text-sm text-slate-700">{t("home.offices.cardSubtitle")}</div>
 
-                          {/* 4 cards always */}
                           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             {loadingJobs ? (
                               Array.from({ length: 4 }).map((_, i) => (
@@ -1012,7 +1036,6 @@ export default function HomePage() {
                             )}
                           </div>
 
-                          {/* Pagination */}
                           <div className="mt-4 flex items-center justify-between">
                             <button
                               type="button"
@@ -1071,7 +1094,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* keyframes */}
               <style>{`
                 @keyframes fadeIn {
                   from { opacity: 0; transform: scale(1.06); }
@@ -1134,7 +1156,9 @@ export default function HomePage() {
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {loadingJobs ? (
-            Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[120px] animate-pulse rounded-3xl bg-slate-100" />)
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-[120px] animate-pulse rounded-3xl bg-slate-100" />
+            ))
           ) : deptCounts.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
               {t("home.findYourFit.noJobs")}

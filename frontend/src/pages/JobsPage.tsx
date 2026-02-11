@@ -23,7 +23,7 @@ import JobCard from "@/components/JobCard";
 import { listJobs } from "@/lib/api";
 import type { Job, Language } from "@/lib/types";
 
-const PAGE_SIZE = 10; // Desktop 2 cols => 10 cards/page
+const PAGE_SIZE = 10;
 
 function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
@@ -127,7 +127,6 @@ function Pagination({
   );
 }
 
-/** ========= Inline Options ========= */
 type FilterOptions = {
   countries: string[];
   departments: string[];
@@ -154,35 +153,51 @@ function SelectPill({
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-2xl border border-white/35 bg-white/18 px-3 py-2.5 backdrop-blur">
-      <div className="flex items-center gap-2 text-[11px] font-black text-white/90">
+    <div className="w-full">
+      <div className="mb-2 flex items-center gap-2 text-[11px] font-black text-white/90">
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-white/25 bg-white/10">
           {icon}
         </span>
         {label}
       </div>
 
-      <select
-        className={cn(
-          "mt-2 w-full rounded-2xl border border-white/25 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white outline-none transition",
-          "focus:border-orange-200 focus:ring-4 focus:ring-orange-200/30"
-        )}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={label}
-      >
-        <option value="ALL">{t("common.all")}</option>
-        {options.map((o) => (
-          <option key={o} value={o} className="text-slate-900">
-            {o}
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "w-full appearance-none",
+            "rounded-2xl border-2 border-white/25",
+            "bg-white/10 backdrop-blur-sm",
+            "px-4 py-3 pr-10",
+            "text-sm font-semibold text-white",
+            "focus:border-orange-200 focus:outline-none focus:ring-2 focus:ring-orange-200/30",
+            "cursor-pointer min-h-[48px]"
+          )}
+          style={{
+            color: 'white',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none',
+          }}
+        >
+          <option value="ALL" style={{ backgroundColor: '#1e293b', color: 'white' }}>
+            {t("common.all")}
           </option>
-        ))}
-      </select>
+          {options.map((o) => (
+            <option key={o} value={o} style={{ backgroundColor: '#1e293b', color: 'white' }}>
+              {o}
+            </option>
+          ))}
+        </select>
+
+        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+          <ChevronDown className="h-5 w-5 text-white/70" />
+        </div>
+      </div>
     </div>
   );
 }
 
-/** ========= Hiring Process (flip cards) ========= */
 type Step = {
   n: number;
   icon: ReactNode;
@@ -268,7 +283,6 @@ function HiringProcessCards() {
               aria-label={t("jobs.hiring.ariaStep", { n: s.n })}
             >
               <div className="relative h-[280px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-200/60">
-                {/* FRONT */}
                 <div
                   className={cn(
                     "absolute inset-0 p-5 transition duration-300",
@@ -303,7 +317,6 @@ function HiringProcessCards() {
                   <div className="mt-4 text-xs font-semibold text-slate-500">{t("jobs.hiring.hoverHint")}</div>
                 </div>
 
-                {/* BACK */}
                 <div
                   className={cn(
                     "absolute inset-0 p-5 transition duration-300",
@@ -340,7 +353,6 @@ function HiringProcessCards() {
   );
 }
 
-/** ========= FAQ ========= */
 type FaqItem = { q: string; a: string };
 
 function FaqTabs() {
@@ -437,18 +449,15 @@ export default function JobsPage() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // URL params
   const q = sp.get("q") ?? "";
   const country = sp.get("country") ?? "ALL";
   const department = sp.get("department") ?? "ALL";
   const level = sp.get("level") ?? "ALL";
   const pageParam = Number(sp.get("page") || "1") || 1;
 
-  // local input state (debounce)
   const [qDraft, setQDraft] = useState(q);
   const qDebounceRef = useRef<number | null>(null);
 
-  // hero hover
   const [heroHover, setHeroHover] = useState(false);
 
   const title = useMemo(() => `${t("nav.jobs")} • SHD Careers`, [t]);
@@ -462,18 +471,14 @@ export default function JobsPage() {
     setSp(merged, { replace: true });
   }
 
-  // Keep qDraft synced when user navigates/back or language changes
   useEffect(() => {
     setQDraft(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, lang]);
 
-  // Scroll top once
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  // Fetch jobs
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -503,7 +508,6 @@ export default function JobsPage() {
     };
   }, [lang, q, country, department, level, t]);
 
-  /** options from jobs */
   const filterOptions: FilterOptions = useMemo(() => {
     const uniq = (xs: string[]) =>
       Array.from(new Set(xs.map((x) => normalizeOpt(x)).filter((x) => x && x !== "null" && x !== "undefined")));
@@ -515,7 +519,6 @@ export default function JobsPage() {
     return { countries, departments, levels };
   }, [jobs]);
 
-  // Pagination
   const totalCount = useMemo(() => (total > 0 ? total : jobs.length), [total, jobs.length]);
   const totalPages = useMemo(() => Math.max(1, Math.ceil(totalCount / PAGE_SIZE)), [totalCount]);
   const page = useMemo(() => clamp(pageParam, 1, totalPages), [pageParam, totalPages]);
@@ -525,7 +528,6 @@ export default function JobsPage() {
     return jobs.slice(start, start + PAGE_SIZE);
   }, [jobs, page]);
 
-  // Clamp URL page silently
   useEffect(() => {
     if (pageParam !== page) {
       const merged = new URLSearchParams(sp);
@@ -533,10 +535,8 @@ export default function JobsPage() {
       else merged.set("page", String(page));
       setSp(merged, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageParam, totalPages]);
+  }, [page, pageParam, totalPages, sp, setSp]);
 
-  // Scroll to list top on page change
   const listTopRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!listTopRef.current) return;
@@ -544,7 +544,6 @@ export default function JobsPage() {
     window.scrollTo({ top: y, behavior: "smooth" });
   }, [page]);
 
-  // Debounce qDraft -> updateParams(q) (reset page)
   useEffect(() => {
     if (qDraft === q) return;
     if (qDebounceRef.current) window.clearTimeout(qDebounceRef.current);
@@ -554,8 +553,7 @@ export default function JobsPage() {
     return () => {
       if (qDebounceRef.current) window.clearTimeout(qDebounceRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qDraft]);
+  }, [qDraft, q]);
 
   function onChangePage(p: number) {
     const next = clamp(p, 1, totalPages);
@@ -575,59 +573,85 @@ export default function JobsPage() {
       </Helmet>
 
       <section className="bg-white">
-        {/* HERO */}
-        <div
-          className="relative overflow-hidden border-b border-slate-200"
-          onMouseEnter={() => setHeroHover(true)}
-          onMouseLeave={() => setHeroHover(false)}
-          onTouchStart={() => setHeroHover((v) => !v)}
-        >
-          {/* Background */}
-          <div className="absolute inset-0">
+        {/* ✅ HERO - แบบใหม่ทั้งหมด: แยก layer ชัดเจน 100% */}
+        <div className="relative overflow-hidden border-b border-slate-200">
+          {/* 
+            Background Layer (z-0) 
+            - อยู่ด้านหลังสุด
+            - ทุก element ภายใน = pointer-events: none
+            - ไม่รับ click events ใดๆ เลย
+          */}
+          <div 
+            className="absolute inset-0 select-none"
+            style={{ pointerEvents: 'none' }}
+          >
             <div
               className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
-              style={{ backgroundImage: `url(/images/jobs-hero.jpg)` }}
+              style={{ 
+                backgroundImage: `url(/images/jobs-hero.jpg)`,
+                pointerEvents: 'none'
+              }}
             />
             <div
-              className={cn("absolute inset-0 bg-cover bg-center transition-opacity duration-500", heroHover ? "opacity-100" : "opacity-0")}
-              style={{ backgroundImage: `url(/images/jobs-hero-hover.jpg)` }}
+              className={cn(
+                "absolute inset-0 bg-cover bg-center transition-opacity duration-500",
+                heroHover ? "opacity-100" : "opacity-0"
+              )}
+              style={{ 
+                backgroundImage: `url(/images/jobs-hero-hover.jpg)`,
+                pointerEvents: 'none'
+              }}
             />
-
-            <div className="absolute inset-0 bg-[radial-gradient(62%_58%_at_18%_18%,rgba(0,0,0,0.38),transparent_62%)]" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-white/0 to-white" />
+            <div 
+              className="absolute inset-0 bg-[radial-gradient(62%_58%_at_18%_18%,rgba(0,0,0,0.38),transparent_62%)]"
+              style={{ pointerEvents: 'none' }}
+            />
+            <div 
+              className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-white/0 to-white"
+              style={{ pointerEvents: 'none' }}
+            />
           </div>
 
-          {/* Content */}
-          <div className="relative">
+          {/* 
+            Content Layer (relative, no z-index) 
+            - ทุก interactive element อยู่ layer นี้
+            - pointer-events: auto (default)
+          */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setHeroHover(true)}
+            onMouseLeave={() => setHeroHover(false)}
+          >
             <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 pb-12 md:pt-28 md:pb-16">
+              {/* Text Content - ไม่ต้องคลิก */}
               <div className="w-full max-w-3xl">
-                {/* chip */}
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
                   <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">{t("jobs.hero.badge")}</span>
                 </div>
 
-                {/* title */}
                 <h1 className="mt-3 text-3xl font-black tracking-tight text-white md:text-5xl">
                   <span className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)]">{t("jobs.hero.title")}</span>
                 </h1>
 
-                {/* subtitle */}
                 <p className="mt-2 text-sm text-white/90 md:text-base">
                   <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">{t("jobs.hero.subtitle")}</span>
                 </p>
               </div>
 
-              {/* SEARCH + FILTER BAR */}
+              {/* Interactive Controls - คลิกได้ทั้งหมด */}
               <div className="mt-5 w-full">
-                {/* row 1 */}
+                {/* Search & Buttons */}
                 <div className="flex flex-col gap-3 md:flex-row md:items-center">
                   <div className="relative flex-1">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/80" />
                     <input
+                      type="text"
                       className={cn(
-                        "w-full rounded-2xl border border-white/20 bg-white/10 px-11 py-3 text-sm font-semibold text-white placeholder:text-white/70",
-                        "outline-none transition focus:border-orange-200 focus:ring-4 focus:ring-orange-200/30"
+                        "w-full rounded-2xl border-2 border-white/20 bg-white/10",
+                        "px-11 py-3 text-sm font-semibold text-white placeholder:text-white/70",
+                        "outline-none transition",
+                        "focus:border-orange-200 focus:ring-2 focus:ring-orange-200/30"
                       )}
                       value={qDraft}
                       placeholder={t("jobs.hero.searchPlaceholder")}
@@ -636,9 +660,8 @@ export default function JobsPage() {
                     />
                   </div>
 
-                  {/* right: count + clear */}
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between md:justify-end">
-                    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white">
+                    <div className="rounded-2xl border-2 border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white select-none">
                       {loading ? t("common.loading") : t("jobs.hero.openCount", { count: totalCount })}
                     </div>
 
@@ -646,7 +669,12 @@ export default function JobsPage() {
                       <button
                         type="button"
                         onClick={clearAllFilters}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15"
+                        className={cn(
+                          "inline-flex items-center justify-center gap-2",
+                          "rounded-2xl border-2 border-white/20 bg-white/10",
+                          "px-4 py-3 text-sm font-bold text-white",
+                          "transition hover:bg-white/15 active:bg-white/20"
+                        )}
                       >
                         <X className="h-4 w-4" />
                         {t("jobs.hero.clearFilters")}
@@ -655,7 +683,7 @@ export default function JobsPage() {
                   </div>
                 </div>
 
-                {/* row 2 */}
+                {/* Filters - แยกออกมาเป็น row ของตัวเอง */}
                 <div className="mt-3 grid gap-3 md:grid-cols-3">
                   <SelectPill
                     label={t("jobs.filters.country")}
@@ -680,7 +708,9 @@ export default function JobsPage() {
                   />
                 </div>
 
-                <div className="mt-3 text-xs font-semibold text-white/85">{t("jobs.hero.tip")}</div>
+                <div className="mt-3 text-xs font-semibold text-white/85">
+                  {t("jobs.hero.tip")}
+                </div>
               </div>
             </div>
           </div>
@@ -738,12 +768,10 @@ export default function JobsPage() {
             )}
           </div>
 
-          {/* Hiring process */}
           <div className="mt-10">
             <HiringProcessCards />
           </div>
 
-          {/* FAQ */}
           <div className="mt-8">
             <FaqTabs />
           </div>
