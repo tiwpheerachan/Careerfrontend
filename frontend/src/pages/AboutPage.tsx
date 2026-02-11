@@ -509,7 +509,7 @@ function AppsWall({
   title,
   desc,
   images,
-  bgImage = "/images/offices/ph-bg.jpg",
+  bgImage = "/images/offices/bg.jpg",
 }: {
   title: string;
   desc: string;
