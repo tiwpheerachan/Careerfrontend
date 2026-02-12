@@ -405,52 +405,41 @@
         }
       ]
     },
-    "awards": {
-      "kicker": "AWARDS & RECOGNITION",
-      "title": "Awards & Recognition",
-      "desc": "Proof of outcomes built through close collaboration with brands and platforms across multiple countries.",
-      "highlightsTitle": "Highlights",
-      "kpi": {
-        "year": "2024",
-        "count": "9+",
-        "label": "Awards across platforms & regions"
+  "awards": {
+    "header": {
+      "kicker": "AWARDS",
+      "title": "AWARDS & RECOGNITION",
+      "desc": "Proof points earned through partnerships and platform execution across multiple countries."
+    },
+    "grid": {
+      "labels": {
+        "highlights": "Highlights",
+        "moments": "Award Moments",
+        "trusted": "Trusted by partners"
       },
-      "note": "Through deep partnership with brands and platforms, we deliver results that are measurable—and consistently repeatable.",
-      "items": [
-        {
-          "year": "2024",
-          "title": "Highest Customer Satisfaction Brand Award",
-          "brand": "Dreame — Shopee Thailand"
-        },
-        {
-          "year": "2021",
-          "title": "Rising Star Distributor of the Year",
-          "brand": "SUNMOON168 — Shopee Thailand"
-        },
-        {
-          "year": "2023",
-          "title": "Best-Selling Product of the Year",
-          "brand": "Thaimall — Shopee Thailand"
-        },
-        {
-          "year": "2023",
-          "title": "Outstanding Seller of the Year",
-          "brand": "70mai — Shopee Thailand"
-        }
-      ],
-      "cta": {
-        "primary": "Explore open roles",
-        "secondary": "Back to top"
+      "statPill": "Recognition",
+      "statYear": "2024",
+      "statTitle": "Awards across platforms & regions",
+      "statDesc": "Recognition from partners and platforms across markets—built through execution and consistency.",
+      "feature": {
+        "year": "2024",
+        "title": "Best-Selling Product of the Year",
+        "org": "Platform / Partner"
+      },
+      "textTile": {
+        "year": "Year",
+        "title": "Award",
+        "org": "Organization"
       }
     },
-    "footer": {
-      "brand": "SHD Careers",
-      "desc": "A global recruitment experience with multi-language support.",
-      "nav": ["About", "Why SHD", "Jobs", "Partners", "Contact"],
-      "emailLabel": "Email: careers@shd-technology.co.th",
-      "copyright": "© 2026 SHD Technology"
+    "actions": {
+      "explore": "Explore open roles",
+      "backToTop": "Back to top"
     }
-  },
+  }
+},
+
+
 "why": {
   "title": "Why SHD",
   "p1": "We invest in people and long-term growth, with opportunities at a global scale.",

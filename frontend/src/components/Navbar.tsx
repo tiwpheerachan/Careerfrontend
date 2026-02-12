@@ -135,7 +135,7 @@ export default function Navbar() {
                   <NavItem to="/about" label={t("nav.about")} scrolled={scrolled} />
                   <NavItem to="/why-shd" label={t("nav.why")} scrolled={scrolled} />
                   <NavItem to="/jobs" label={t("nav.jobs")} scrolled={scrolled} />
-                  <NavItem to="/partners" label={t("nav.partners")} scrolled={scrolled} />
+                  {/*<NavItem to="/partners" label={t("nav.partners")} scrolled={scrolled} />*/}
                 </nav>
 
                 {/* RIGHT */}
