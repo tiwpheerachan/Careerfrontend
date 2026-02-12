@@ -1,5 +1,5 @@
 // frontend/src/pages/WhyPage.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -22,10 +22,36 @@ function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
 }
 
+/** -------------------------
+ * Media query hook (for stepPx / layout tuning)
+ * ------------------------ */
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const m = window.matchMedia(query);
+    const onChange = () => setMatches(!!m.matches);
+    onChange();
+    // Safari fallback
+    if (m.addEventListener) m.addEventListener("change", onChange);
+    else m.addListener(onChange);
+    return () => {
+      if (m.removeEventListener) m.removeEventListener("change", onChange);
+      else m.removeListener(onChange);
+    };
+  }, [query]);
+
+  return matches;
+}
+
 /** ---------------------------------------
  * Auto carousel (hover pause + user pause)
  * + supports left/right buttons
  * + ✅ mobile-friendly (touch drag / snap)
+ *
+ * ✅ FIX: effect must start AFTER element exists
+ * -> use callback ref + stateful element (el)
  * -------------------------------------- */
 function useAutoScrollCarousel(opts: {
   enabled: boolean;
@@ -35,7 +61,11 @@ function useAutoScrollCarousel(opts: {
 }) {
   const { enabled, intervalMs = 3000, stepPx = 560, idleResumeMs = 3000 } = opts;
 
-  const ref = useRef<HTMLDivElement | null>(null);
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setEl(node);
+  }, []);
+
   const [hovered, setHovered] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
   const lastUserAction = useRef<number>(0);
@@ -44,23 +74,25 @@ function useAutoScrollCarousel(opts: {
 
   useEffect(() => {
     if (!enabled) return;
-    const el = ref.current;
     if (!el) return;
 
     let tick: number | undefined;
 
     const run = () => {
-      // resume after user idle
+      // auto resume after idle
       if (userPaused && idleResumeMs > 0) {
         const dt = Date.now() - lastUserAction.current;
         if (dt > idleResumeMs) setUserPaused(false);
       }
 
-      if (!paused) {
+      // scroll if not paused
+      if (!(hovered || userPaused)) {
         const max = el.scrollWidth - el.clientWidth;
         const next = Math.min(el.scrollLeft + stepPx, max);
 
-        if (next >= max - 2) el.scrollTo({ left: 0, behavior: "smooth" });
+        if (max <= 2) {
+          // nothing to scroll
+        } else if (next >= max - 2) el.scrollTo({ left: 0, behavior: "smooth" });
         else el.scrollTo({ left: next, behavior: "smooth" });
       }
 
@@ -71,8 +103,7 @@ function useAutoScrollCarousel(opts: {
     return () => {
       if (tick) window.clearTimeout(tick);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, intervalMs, stepPx, paused, userPaused, idleResumeMs]);
+  }, [enabled, el, intervalMs, stepPx, hovered, userPaused, idleResumeMs]);
 
   function markUserAction() {
     lastUserAction.current = Date.now();
@@ -80,7 +111,6 @@ function useAutoScrollCarousel(opts: {
   }
 
   function scrollByDir(dir: -1 | 1) {
-    const el = ref.current;
     if (!el) return;
     markUserAction();
     el.scrollBy({ left: dir * stepPx, behavior: "smooth" });
@@ -88,6 +118,7 @@ function useAutoScrollCarousel(opts: {
 
   return {
     ref,
+    el,
     paused,
     userPaused,
     setUserPaused,
@@ -98,10 +129,52 @@ function useAutoScrollCarousel(opts: {
 }
 
 /** -------------------------
+ * Helper: block click when user drags (mobile horizontal scroll)
+ * ------------------------ */
+function useBlockClickOnDrag(thresholdPx = 10) {
+  const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null);
+  const moved = useRef(false);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    moved.current = false;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (startX.current == null || startY.current == null) return;
+    const dx = Math.abs(e.clientX - startX.current);
+    const dy = Math.abs(e.clientY - startY.current);
+    if (dx > thresholdPx || dy > thresholdPx) moved.current = true;
+  };
+
+  const onPointerUp = () => {
+    startX.current = null;
+    startY.current = null;
+  };
+
+  const shouldBlockClick = () => moved.current;
+
+  return { onPointerDown, onPointerMove, onPointerUp, shouldBlockClick };
+}
+
+type ModalItem = {
+  src: string;
+  title: string;
+  desc?: string;
+  badge?: string;
+  name?: string;
+  role?: string;
+  headline?: string;
+  quote?: string;
+};
+
+/** -------------------------
  * Modal (image popup)
  * - closes on overlay click, X button, ESC
- * - LIGHT mode: no dark fullscreen overlay
- * - ✅ mobile: big close button + tap bg to close
+ * - ✅ FIX: robust close handlers + stopPropagation inside
+ * - ✅ FIX: Mobile layout = image top + scrollable text
  * ------------------------ */
 function ImageModal({
   open,
@@ -110,27 +183,23 @@ function ImageModal({
 }: {
   open: boolean;
   onClose: () => void;
-  item: {
-    src: string;
-    title: string;
-    desc?: string;
-    badge?: string;
-    name?: string;
-    role?: string;
-    headline?: string;
-    quote?: string;
-  } | null;
+  item: ModalItem | null;
 }) {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   useEffect(() => {
     if (!open) return;
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+
     window.addEventListener("keydown", onKey);
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
@@ -139,21 +208,158 @@ function ImageModal({
 
   if (!open || !item) return null;
 
-  return (
+  const Overlay = ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className: string;
+  }) => (
     <div
       role="dialog"
       aria-modal="true"
-      className={cn(
-        "fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6",
-        "bg-white/65 backdrop-blur-md"
-      )}
+      className={className}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
       onTouchStart={(e) => {
-        // ✅ mobile tap outside closes
         if (e.target === e.currentTarget) onClose();
       }}
+    >
+      {children}
+    </div>
+  );
+
+  // ✅ Mobile modal
+  if (isMobile) {
+    return (
+      <Overlay
+        className={cn(
+          "fixed inset-0 z-[80] flex items-end justify-center p-0",
+          "bg-white/70 backdrop-blur-md"
+        )}
+      >
+        <div
+          className={cn(
+            "relative w-full max-w-[720px] overflow-hidden",
+            "rounded-t-[28px] bg-white ring-1 ring-slate-200",
+            "shadow-[0_-30px_140px_rgba(15,23,42,0.28)]"
+          )}
+          style={{ maxHeight: "92vh" }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          {/* header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white/92 px-4 py-3 backdrop-blur">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                <Sparkles className="h-3.5 w-3.5" />
+                {t("why.modal.brand", { defaultValue: "SHD Careers" })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center rounded-2xl",
+                "bg-white text-slate-900 ring-1 ring-slate-200",
+                "transition active:scale-[0.98]"
+              )}
+              aria-label={t("why.modal.closeAria", { defaultValue: "Close" })}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* content */}
+          <div className="flex flex-col">
+            <div className="relative aspect-[4/3] w-full bg-slate-50">
+              <img
+                src={item.src}
+                alt={item.title}
+                className="absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/15" />
+
+              <div className="absolute left-3 right-3 bottom-3 flex items-center justify-between">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {t("why.common.expand", { defaultValue: "Expand" })}
+                </div>
+                {item.badge ? (
+                  <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                    {item.badge}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="max-h-[48vh] overflow-y-auto px-4 pb-6 pt-4">
+              {item.name || item.role ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {item.name ? (
+                    <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                      {item.name}
+                    </span>
+                  ) : null}
+                  {item.role ? (
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
+                      {item.role}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="mt-3 text-[18px] font-black leading-snug tracking-tight text-slate-950">
+                {item.headline || item.title}
+              </div>
+
+              {item.desc ? (
+                <div className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                  {item.desc}
+                </div>
+              ) : null}
+
+              <div className="mt-5 flex flex-col gap-2">
+                <Link
+                  to="/jobs"
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
+                    "bg-slate-950 text-white",
+                    "shadow-[0_18px_70px_rgba(15,23,42,0.22)]",
+                    "transition active:scale-[0.98]"
+                  )}
+                >
+                  {t("why.modal.viewOpenRoles", { defaultValue: "View open roles" })}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+
+                <div className="text-center text-[11px] text-slate-500">
+                  {t("why.modal.hint", { defaultValue: "Tap the background to close" })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-2 bg-white" />
+        </div>
+      </Overlay>
+    );
+  }
+
+  // ✅ Desktop modal
+  return (
+    <Overlay
+      className={cn(
+        "fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-6",
+        "bg-white/65 backdrop-blur-md"
+      )}
     >
       <div
         className={cn(
@@ -161,6 +367,9 @@ function ImageModal({
           "bg-white shadow-[0_50px_180px_rgba(15,23,42,0.35)]",
           "ring-1 ring-slate-200"
         )}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-3 sm:p-4">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur">
@@ -252,7 +461,8 @@ function ImageModal({
 
                 <div className="text-[11px] text-slate-500">
                   {t("why.modal.hint", {
-                    defaultValue: "Desktop: Press ESC to close • Mobile: Tap the background to close",
+                    defaultValue:
+                      "Desktop: Press ESC to close • Mobile: Tap the background to close",
                   })}
                 </div>
               </div>
@@ -262,7 +472,7 @@ function ImageModal({
 
         <div className="h-2 bg-white" />
       </div>
-    </div>
+    </Overlay>
   );
 }
 
@@ -311,10 +521,8 @@ function PillarCard({
 }
 
 /** -------------------------
- * 16:8 card (2:1)
- * ✅ UPDATED: remove bottom glass panel (the circled part)
- * - keep only image + top chips
- * - still clickable on mobile
+ * 16:8 card (2:1) — Life carousel
+ * ✅ FIX: block click on drag
  * ------------------------ */
 function PhotoCard16x8({
   src,
@@ -331,17 +539,29 @@ function PhotoCard16x8({
   onClick?: () => void;
   expandLabel: string;
 }) {
+  const drag = useBlockClickOnDrag(10);
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={drag.onPointerUp}
+      onPointerCancel={drag.onPointerUp}
+      onClick={(e) => {
+        if (drag.shouldBlockClick()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        onClick?.();
+      }}
       className={cn(
         "group relative shrink-0 overflow-hidden rounded-[26px] text-left",
         "w-[min(86vw,560px)]",
         "transition hover:-translate-y-1 active:scale-[0.99]",
         "shadow-[0_18px_70px_-28px_rgba(15,23,42,0.35)]",
         "ring-1 ring-slate-200 bg-white",
-        // ✅ better tap area on mobile
         "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
       )}
     >
@@ -354,15 +574,12 @@ function PhotoCard16x8({
           loading="lazy"
         />
 
-        {/* subtle bottom gradient (no panel/box) */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/25" />
 
-        {/* sweep */}
         <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
           <div className="absolute -left-1/2 top-0 h-full w-1/2 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/26 to-transparent" />
         </div>
 
-        {/* top chips */}
         <div className="absolute left-3 right-3 top-3 flex items-center justify-between">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
             <Sparkles className="h-3.5 w-3.5" />
@@ -384,6 +601,15 @@ function PhotoCard16x8({
           <div className="absolute inset-0 bg-[radial-gradient(520px_220px_at_55%_15%,rgba(255,255,255,0.30),transparent_60%)]" />
         </div>
       </div>
+
+      {(title || desc) && (
+        <div className="px-4 pb-4 pt-3">
+          <div className="text-sm font-black text-slate-950 line-clamp-2">{title}</div>
+          {desc ? (
+            <div className="mt-1 text-sm text-slate-700 line-clamp-2">{desc}</div>
+          ) : null}
+        </div>
+      )}
     </button>
   );
 }
@@ -442,6 +668,10 @@ type StoryPerson = {
   quote: string;
 };
 
+/** -------------------------
+ * Desktop story slide (เดิม)
+ * ✅ FIX: block click on drag
+ * ------------------------ */
 function StoryTemplateSlide({
   src,
   expandLabel,
@@ -455,10 +685,23 @@ function StoryTemplateSlide({
   person?: StoryPerson;
   onClick?: () => void;
 }) {
+  const drag = useBlockClickOnDrag(10);
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={drag.onPointerUp}
+      onPointerCancel={drag.onPointerUp}
+      onClick={(e) => {
+        if (drag.shouldBlockClick()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        onClick?.();
+      }}
       className={cn(
         "group relative shrink-0 overflow-hidden rounded-[28px] text-left",
         "w-[min(94vw,820px)] sm:w-[min(84vw,860px)] lg:w-[860px]",
@@ -492,7 +735,6 @@ function StoryTemplateSlide({
           )}
         </div>
 
-        {/* ✅ removed the circled grey frame entirely by not rendering any bottom panel */}
         {person ? (
           <div
             className={cn(
@@ -510,7 +752,7 @@ function StoryTemplateSlide({
               </span>
             </div>
 
-            <div className="mt-4 text-sm leading-relaxed text-slate-800 whitespace-pre-line">
+            <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-800">
               {person.quote}
             </div>
           </div>
@@ -524,23 +766,135 @@ function StoryTemplateSlide({
   );
 }
 
+/** -------------------------
+ * ✅ Mobile story card (ข้อความ “ใต้รูป”)
+ * ✅ FIX: block click on drag
+ * ------------------------ */
+function StoryMobileCard({
+  src,
+  expandLabel,
+  badge,
+  person,
+  onClick,
+}: {
+  src: string;
+  expandLabel: string;
+  badge?: string;
+  person?: StoryPerson;
+  onClick?: () => void;
+}) {
+  const drag = useBlockClickOnDrag(10);
+
+  return (
+    <button
+      type="button"
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={drag.onPointerUp}
+      onPointerCancel={drag.onPointerUp}
+      onClick={(e) => {
+        if (drag.shouldBlockClick()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        onClick?.();
+      }}
+      className={cn(
+        "group relative shrink-0 text-left",
+        "w-[min(88vw,420px)]",
+        "rounded-[26px] bg-white ring-1 ring-slate-200",
+        "shadow-[0_18px_70px_-30px_rgba(15,23,42,0.35)]",
+        "transition active:scale-[0.99]",
+        "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20",
+        "overflow-hidden"
+      )}
+    >
+      <div className="relative aspect-[4/3] w-full bg-slate-50">
+        <img
+          src={src}
+          alt={person?.headline || "Employee story"}
+          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+          draggable={false}
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/30" />
+
+        <div className="absolute left-3 right-3 top-3 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/88 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+            <Sparkles className="h-3.5 w-3.5" />
+            {expandLabel}
+          </div>
+          {badge ? (
+            <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+              {badge}
+            </div>
+          ) : (
+            <div className="rounded-full bg-white/88 px-3 py-1 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+              SHD
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4">
+        {person?.name || person?.role ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {person?.name ? (
+              <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                {person.name}
+              </span>
+            ) : null}
+            {person?.role ? (
+              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
+                {person.role}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="mt-3 text-[15px] font-black leading-snug tracking-tight text-slate-950">
+          {person?.headline || "Employee story"}
+        </div>
+
+        {person?.quote ? (
+          <div className="mt-2 line-clamp-4 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+            {person.quote}
+          </div>
+        ) : (
+          <div className="mt-2 text-sm text-slate-700">—</div>
+        )}
+
+        <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+        <div className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          Tap to expand
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function WhyPage() {
   const { t } = useTranslation();
-
-  // ✅ ใส่รูปใน: frontend/public/images/why/*
-  const HERO_BG = "/images/why/why-hero.jpg";
-  const PILLARS_BG = "/images/why/why-pillars.jpg";
-  const STORIES_BG = "/images/why/why-stories.jpg";
-  const LIFE_BG = "/images/why/why-life.jpg";
-  const CTA_BG = "/images/why/why-cta.jpg";
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   /**
-   * ============================
-   * ✅ เรื่องเล่าจากทีมของเรา: แสดง "แค่ 3 การ์ดแรก"
-   * - ทำเผื่อเพิ่ม: data เต็มได้ แต่ renderLimit = 3
-   * - ปุ่ม "ดูทั้งหมด" สามารถเปิด render เพิ่มได้ในอนาคต
-   * ============================
+   * ✅ Background images
    */
+  const HERO_BG_DESKTOP = "/images/why/why-hero.jpg";
+  const PILLARS_BG_DESKTOP = "/images/why/why-pillars.jpg";
+  const STORIES_BG_DESKTOP = "/images/why/why-stories.jpg";
+  const LIFE_BG_DESKTOP = "/images/why/why-life.jpg";
+  const CTA_BG_DESKTOP = "/images/why/why-cta.jpg";
+
+  const HERO_BG_MOBILE = "/images/hero/mobile/herowhy.webp";
+  const PILLARS_BG_MOBILE = "/images/why/why-pillars-mobile.jpg";
+  const STORIES_BG_MOBILE = "/images/why/why-stories-mobile.jpg";
+  const LIFE_BG_MOBILE = "/images/why/why-life-mobile.jpg";
+  const CTA_BG_MOBILE = "/images/why/why-cta-mobile.jpg";
+
   const STORIES_RENDER_LIMIT = 3;
 
   const employeePhotosAll = useMemo(() => {
@@ -555,8 +909,12 @@ export default function WhyPage() {
       const person: StoryPerson | undefined =
         name && role && headline && quote ? { name, role, headline, quote } : undefined;
 
+      const srcDesktop = `/images/why/stories/s${idx}.jpg`;
+      const srcMobile = `/images/why/stories/mobile/s${idx}.jpg`;
+
       return {
-        src: `/images/why/stories/s${idx}.jpg`,
+        srcDesktop,
+        srcMobile,
         title: t("why.stories.itemTitle", { index: idx, defaultValue: `Employee story #${idx}` }),
         desc: t("why.stories.itemDesc", {
           defaultValue: "A day in the team • Real projects • Real growth",
@@ -577,7 +935,6 @@ export default function WhyPage() {
     [employeePhotosAll]
   );
 
-  // ===== Events (10) =====
   const eventPhotos = useMemo(
     () =>
       Array.from({ length: 10 }).map((_, i) => {
@@ -597,47 +954,26 @@ export default function WhyPage() {
     [t]
   );
 
-  // Auto sliders
   const stories = useAutoScrollCarousel({
     enabled: true,
     intervalMs: 3200,
-    stepPx: 920,
+    stepPx: isMobile ? 360 : 920,
     idleResumeMs: 3000,
   });
 
   const life = useAutoScrollCarousel({
     enabled: true,
     intervalMs: 3200,
-    stepPx: 560,
+    stepPx: isMobile ? 360 : 560,
     idleResumeMs: 3000,
   });
 
-  // mouse spotlight
   const sectionRef = useRef<HTMLElement | null>(null);
 
-  // modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalItem, setModalItem] = useState<{
-    src: string;
-    title: string;
-    desc?: string;
-    badge?: string;
-    name?: string;
-    role?: string;
-    headline?: string;
-    quote?: string;
-  } | null>(null);
+  const [modalItem, setModalItem] = useState<ModalItem | null>(null);
 
-  function openModal(item: {
-    src: string;
-    title: string;
-    desc?: string;
-    badge?: string;
-    name?: string;
-    role?: string;
-    headline?: string;
-    quote?: string;
-  }) {
+  function openModal(item: ModalItem) {
     setModalItem(item);
     setModalOpen(true);
   }
@@ -665,7 +1001,7 @@ export default function WhyPage() {
       <ImageModal open={modalOpen} onClose={closeModal} item={modalItem} />
 
       {/* =========================
-          A) HERO (keep white text)
+          A) HERO
          ========================= */}
       <section
         ref={(n) => (sectionRef.current = n)}
@@ -682,8 +1018,12 @@ export default function WhyPage() {
       >
         <div className="absolute inset-0">
           <div
-            className="absolute inset-0 bg-cover bg-center scale-[1.03] will-change-transform"
-            style={{ backgroundImage: `url(${HERO_BG})` }}
+            className="absolute inset-0 hidden bg-cover bg-center scale-[1.03] will-change-transform sm:block"
+            style={{ backgroundImage: `url(${HERO_BG_DESKTOP})` }}
+          />
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-[1.03] will-change-transform sm:hidden"
+            style={{ backgroundImage: `url(${HERO_BG_MOBILE})` }}
           />
 
           <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_25%_18%,rgba(255,255,255,0.24),transparent_60%)]" />
@@ -704,30 +1044,31 @@ export default function WhyPage() {
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16 sm:py-20 lg:py-24">
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-[1040px] text-center text-white">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/95 backdrop-blur">
               <Sparkles className="h-4 w-4" />
               {t("why.hero.kicker", { defaultValue: "WHY SHD TECHNOLOGY" })}
             </div>
 
-            <h1 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-[28px] font-black tracking-tight sm:text-5xl lg:text-6xl">
               {t("why.hero.title", { defaultValue: "ทำไมถึงต้องร่วมงาน SHD Technology ?" })}
             </h1>
 
-            <p className="mx-auto mt-4 max-w-[70ch] text-base leading-relaxed text-white/90 sm:text-lg">
+            <p className="mx-auto mt-4 max-w-[70ch] text-[15px] leading-relaxed text-white/90 sm:text-lg">
               {t("why.hero.subtitle", {
                 defaultValue: "โตได้มากกว่าที่คิด เป็นคุณได้เต็มศักยภาพที่ SHD Technology",
               })}
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/jobs"
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
+                  "inline-flex w-full max-w-[360px] items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
                   "bg-white text-slate-950 shadow-[0_24px_80px_rgba(0,0,0,0.35)]",
-                  "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(0,0,0,0.40)] active:scale-[0.98]"
+                  "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(0,0,0,0.40)] active:scale-[0.98]",
+                  "sm:w-auto"
                 )}
               >
                 {t("why.hero.ctaPrimary", { defaultValue: "View open roles" })}{" "}
@@ -737,16 +1078,17 @@ export default function WhyPage() {
               <a
                 href="#pillars"
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
+                  "inline-flex w-full max-w-[360px] items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black",
                   "border border-white/25 bg-white/10 text-white backdrop-blur",
-                  "transition hover:bg-white/14 hover:-translate-y-0.5 active:scale-[0.98]"
+                  "transition hover:bg-white/14 hover:-translate-y-0.5 active:scale-[0.98]",
+                  "sm:w-auto"
                 )}
               >
                 {t("why.hero.ctaSecondary", { defaultValue: "Explore pillars" })}
               </a>
             </div>
 
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-2 text-xs text-white/90">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-white/90">
               <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
                 <Rocket className="h-3.5 w-3.5" />
                 {t("why.hero.chips.growth", { defaultValue: "Limitless growth" })}
@@ -765,17 +1107,24 @@ export default function WhyPage() {
       </section>
 
       {/* =========================
-          B) 3 PILLARS (LIGHT)
+          B) 3 PILLARS
          ========================= */}
       <section id="pillars" className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${PILLARS_BG})` }} />
+          <div
+            className="absolute inset-0 hidden bg-cover bg-center sm:block"
+            style={{ backgroundImage: `url(${PILLARS_BG_DESKTOP})` }}
+          />
+          <div
+            className="absolute inset-0 bg-cover bg-center sm:hidden"
+            style={{ backgroundImage: `url(${PILLARS_BG_MOBILE})` }}
+          />
           <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_18%,rgba(255,255,255,0.60),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(760px_420px_at_80%_50%,rgba(16,185,129,0.10),transparent_62%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-14 sm:py-16">
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-12 sm:py-16">
           <div className="mx-auto max-w-[1160px]">
             <div className="flex flex-col gap-3 text-center">
               <div className="inline-flex justify-center">
@@ -794,7 +1143,7 @@ export default function WhyPage() {
               </p>
             </div>
 
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <div className="mt-9 grid gap-4 md:grid-cols-3">
               <PillarCard
                 icon={<Rocket className="h-6 w-6 text-emerald-600" />}
                 title={t("why.pillars.cards.growth.title", { defaultValue: "Limitless Growth" })}
@@ -827,19 +1176,24 @@ export default function WhyPage() {
       </section>
 
       {/* =========================
-          C) EMPLOYEE STORIES (LIGHT)
-          ✅ show only first 3 cards
+          C) EMPLOYEE STORIES
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${STORIES_BG})` }} />
+          <div
+            className="absolute inset-0 hidden bg-cover bg-center sm:block"
+            style={{ backgroundImage: `url(${STORIES_BG_DESKTOP})` }}
+          />
+          <div
+            className="absolute inset-0 bg-cover bg-center sm:hidden"
+            style={{ backgroundImage: `url(${STORIES_BG_MOBILE})` }}
+          />
           <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_20%_22%,rgba(255,255,255,0.62),transparent_60%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16">
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-14 sm:py-16">
           <div className="grid gap-8 lg:grid-cols-4 lg:items-start">
-            {/* left */}
             <div className="lg:col-span-1">
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-xs font-semibold text-slate-900 backdrop-blur">
                 <Quote className="h-4 w-4" />
@@ -885,21 +1239,23 @@ export default function WhyPage() {
 
               <div className="mt-4 text-[11px] text-slate-500">
                 {t("why.stories.note", {
-                  defaultValue:
-                    "* แสดง 3 เรื่องเล่าแรก (ทำระบบเผื่อเพิ่มแล้ว) — เลื่อนได้บนมือถือ",
+                  defaultValue: "* แสดง 3 เรื่องเล่าแรก (ทำระบบเผื่อเพิ่มแล้ว) — เลื่อนได้บนมือถือ",
                 })}
               </div>
             </div>
 
-            {/* right */}
             <div className="lg:col-span-3">
               <div
                 ref={stories.ref}
                 className={cn(
-                  "no-scrollbar flex gap-5 overflow-x-auto scroll-smooth pb-3",
+                  "no-scrollbar flex gap-4 sm:gap-5 overflow-x-auto scroll-smooth pb-3",
                   "snap-x snap-mandatory",
                   "touch-pan-x"
                 )}
+                style={{
+                  WebkitOverflowScrolling: "touch",
+                  touchAction: "pan-x",
+                }}
                 onMouseEnter={() => stories.setHovered(true)}
                 onMouseLeave={() => stories.setHovered(false)}
                 onPointerDown={() => stories.markUserAction()}
@@ -907,25 +1263,48 @@ export default function WhyPage() {
                 onTouchStart={() => stories.markUserAction()}
               >
                 {employeePhotos.map((p, idx) => (
-                  <div key={`${p.src}-${idx}`} className="snap-start">
-                    <StoryTemplateSlide
-                      src={p.src}
-                      badge={p.badge}
-                      expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
-                      person={p.person}
-                      onClick={() =>
-                        openModal({
-                          src: p.src,
-                          title: p.person?.headline || p.title,
-                          desc: p.person?.quote || p.desc,
-                          badge: p.badge,
-                          name: p.person?.name,
-                          role: p.person?.role,
-                          headline: p.person?.headline,
-                          quote: p.person?.quote,
-                        })
-                      }
-                    />
+                  <div key={`${p.srcDesktop}-${idx}`} className="snap-start">
+                    <div className="sm:hidden">
+                      <StoryMobileCard
+                        src={p.srcMobile}
+                        badge={p.badge}
+                        expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
+                        person={p.person}
+                        onClick={() =>
+                          openModal({
+                            src: p.srcMobile,
+                            title: p.person?.headline || p.title,
+                            desc: p.person?.quote || p.desc,
+                            badge: p.badge,
+                            name: p.person?.name,
+                            role: p.person?.role,
+                            headline: p.person?.headline,
+                            quote: p.person?.quote,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="hidden sm:block">
+                      <StoryTemplateSlide
+                        src={p.srcDesktop}
+                        badge={p.badge}
+                        expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
+                        person={p.person}
+                        onClick={() =>
+                          openModal({
+                            src: p.srcDesktop,
+                            title: p.person?.headline || p.title,
+                            desc: p.person?.quote || p.desc,
+                            badge: p.badge,
+                            name: p.person?.name,
+                            role: p.person?.role,
+                            headline: p.person?.headline,
+                            quote: p.person?.quote,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -940,17 +1319,23 @@ export default function WhyPage() {
       </section>
 
       {/* =========================
-          E) LIFE AT SHD (LIGHT)
-          ✅ removed bottom info box on cards
+          E) LIFE AT SHD
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${LIFE_BG})` }} />
+          <div
+            className="absolute inset-0 hidden bg-cover bg-center sm:block"
+            style={{ backgroundImage: `url(${LIFE_BG_DESKTOP})` }}
+          />
+          <div
+            className="absolute inset-0 bg-cover bg-center sm:hidden"
+            style={{ backgroundImage: `url(${LIFE_BG_MOBILE})` }}
+          />
           <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_70%_30%,rgba(255,255,255,0.58),transparent_60%)]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16">
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-14 sm:py-16">
           <div className="mx-auto max-w-[1160px]">
             <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
               <div>
@@ -1003,6 +1388,10 @@ export default function WhyPage() {
                 "snap-x snap-mandatory",
                 "touch-pan-x"
               )}
+              style={{
+                WebkitOverflowScrolling: "touch",
+                touchAction: "pan-x",
+              }}
               onMouseEnter={() => life.setHovered(true)}
               onMouseLeave={() => life.setHovered(false)}
               onPointerDown={() => life.markUserAction()}
@@ -1039,16 +1428,23 @@ export default function WhyPage() {
       </section>
 
       {/* =========================
-          CTA (LIGHT)
+          CTA
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${CTA_BG})` }} />
+          <div
+            className="absolute inset-0 hidden bg-cover bg-center sm:block"
+            style={{ backgroundImage: `url(${CTA_BG_DESKTOP})` }}
+          />
+          <div
+            className="absolute inset-0 bg-cover bg-center sm:hidden"
+            style={{ backgroundImage: `url(${CTA_BG_MOBILE})` }}
+          />
           <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_35%,rgba(255,255,255,0.62),transparent_62%)]" />
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-16 sm:py-18">
-          <div className="mx-auto max-w-[1040px] overflow-hidden rounded-[28px] bg-white/82 p-8 text-center text-slate-950 backdrop-blur-xl shadow-[0_30px_140px_rgba(15,23,42,0.18)] ring-1 ring-slate-200 sm:p-10">
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10 py-14 sm:py-18">
+          <div className="mx-auto max-w-[1040px] overflow-hidden rounded-[28px] bg-white/82 p-7 text-center text-slate-950 backdrop-blur-xl shadow-[0_30px_140px_rgba(15,23,42,0.18)] ring-1 ring-slate-200 sm:p-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-900">
               <Sparkles className="h-4 w-4" />
               {t("why.cta.kicker", { defaultValue: "Join us" })}
@@ -1064,14 +1460,15 @@ export default function WhyPage() {
               })}
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to="/jobs"
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
+                  "inline-flex w-full max-w-[380px] items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
                   "bg-slate-950 text-white",
                   "shadow-[0_24px_80px_rgba(15,23,42,0.25)]",
-                  "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(15,23,42,0.30)] active:scale-[0.98]"
+                  "transition hover:-translate-y-0.5 hover:shadow-[0_34px_120px_rgba(15,23,42,0.30)] active:scale-[0.98]",
+                  "sm:w-auto"
                 )}
               >
                 {t("why.cta.ctaPrimary", { defaultValue: "View open roles" })}{" "}
@@ -1081,9 +1478,10 @@ export default function WhyPage() {
               <a
                 href="#pillars"
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
+                  "inline-flex w-full max-w-[380px] items-center justify-center gap-2 rounded-2xl px-7 py-3 text-sm font-black",
                   "border border-slate-200 bg-white text-slate-900",
-                  "transition hover:-translate-y-0.5 active:scale-[0.98]"
+                  "transition hover:-translate-y-0.5 active:scale-[0.98]",
+                  "sm:w-auto"
                 )}
               >
                 {t("why.cta.ctaSecondary", { defaultValue: "Explore pillars" })}
