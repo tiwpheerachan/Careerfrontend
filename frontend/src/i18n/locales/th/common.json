@@ -106,11 +106,14 @@
       "ctaAllJobs": "ไปหน้าตำแหน่งงานทั้งหมด",
       "error": "เกิดข้อผิดพลาด: {{message}}",
       "empty": "ยังไม่มีตำแหน่งงานในระบบ",
-      "card": {
-        "hiringCount": "รับสมัคร {{count}} ตำแหน่ง",
-        "team": "Team",
-        "openings": "Openings"
-      },
+"card": {
+  "hiring": "กำลังเปิดรับ",
+  "roleUnit": "ตำแหน่ง",
+  "teamChip": "ทีม",
+  "openingsChip": "ตำแหน่งงาน"
+}
+,
+
       "footnote": "* คลิกการ์ดเพื่อไปหน้า Jobs พร้อม filter ตามแผนก"
     },
     "gallery": {
@@ -641,7 +644,6 @@
   "jobs": {
     "title": "ตำแหน่งที่ว่างอยู่",
     "openings": "ตำแหน่งที่เปิดรับ",
-    "filters": "ตัวกรอง",
     "empty": "ยังไม่มีตำแหน่งที่ตรงกับตัวกรอง",
     "applyTitle": "สมัครงาน",
     "pagination": {
@@ -649,6 +651,12 @@
       "next": "หน้าถัดไป",
       "goTo": "ไปหน้าที่ {{page}}"
     },
+        "card": {
+    "position_one": "ตำแหน่ง",
+    "position_other": "ตำแหน่ง",
+    "hiring": "กำลังเปิดรับ"
+  },
+    
     "hero": {
       "badge": "ตำแหน่งที่ว่างอยู่",
       "title": "ค้นหางานในฝันของคุณ",
@@ -659,10 +667,11 @@
       "clearFilters": "ล้างตัวกรอง",
       "tip": "Tip: เลือกประเทศ/แผนก/ระดับ แล้วผลลัพธ์จะอัปเดตทันที"
     },
-    "filtersLabel": {
-      "country": "ประเทศ",
-      "department": "แผนก",
-      "level": "ระดับ"
+  "filters": {
+    "title": "ตัวกรอง",
+    "country": "ประเทศ",
+    "department": "แผนก",
+    "level": "ระดับ"
     },
     "list": {
       "title": "ตำแหน่งที่ว่างอยู่",

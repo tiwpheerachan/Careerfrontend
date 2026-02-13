@@ -1113,112 +1113,148 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FIND YOUR FIT */}
-      <section className="container-page py-16">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
+{/* FIND YOUR FIT */}
+<section className="container-page py-16">
+  <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+    <div>
+      <div
+        className={cn(
+          "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
+          "border border-[#6f5730]/30 bg-[#6f5730]/10 text-[#6f5730]"
+        )}
+      >
+        <Briefcase className="h-4 w-4" />
+        {t("home.findYourFit.badge", { defaultValue: "Find your fit" })}
+      </div>
+
+      <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+        {t("home.findYourFit.title", {
+          defaultValue: "Find your direction",
+        })}
+      </h2>
+
+      <p className="mt-2 max-w-xl text-sm text-slate-600">
+        {t("home.findYourFit.desc", {
+          defaultValue:
+            "Based on real openings — choose a department to see available roles.",
+        })}
+      </p>
+    </div>
+
+    <Link
+      to="/jobs"
+      className={cn(
+        "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
+        "bg-[#6f5730] text-white",
+        "shadow-[0_16px_50px_rgba(111,87,48,0.35)]",
+        "transition hover:-translate-y-0.5 hover:bg-[#5f4a28] active:scale-[0.97]"
+      )}
+    >
+      {t("home.findYourFit.ctaAllJobs", {
+        defaultValue: "View all jobs",
+      })}
+      <ArrowRight className="h-4 w-4" />
+    </Link>
+  </div>
+
+  {/* Error */}
+  {jobsError && (
+    <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+      {t("home.findYourFit.errorPrefix", {
+        defaultValue: "Error:",
+      })}{" "}
+      {String(jobsError)}
+    </div>
+  )}
+
+  <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    {loadingJobs ? (
+      Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-[120px] animate-pulse rounded-3xl bg-slate-100" />
+      ))
+    ) : deptCounts.length === 0 ? (
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+        {t("home.findYourFit.noJobs", {
+          defaultValue: "No jobs available.",
+        })}
+      </div>
+    ) : (
+      deptCounts.map(([dept, count]) => (
+        <button
+          key={dept}
+          type="button"
+          onClick={() => goToDept(dept)}
+          className={cn(
+            "group relative overflow-hidden rounded-3xl p-6 text-left",
+            "border border-slate-200 bg-white",
+            "transition-all duration-300",
+            "hover:-translate-y-1 hover:border-[#6f5730]/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)]",
+            "active:scale-[0.98]"
+          )}
+        >
+          <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#6f5730]/10 via-transparent to-transparent" />
+          </div>
+
+          <div className="relative flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-black text-slate-900">{dept}</div>
+
+              {/* ✅ Hiring Line ตรง JSON ของคุณ */}
+              <div className="mt-1 text-sm text-slate-600">
+                {t("home.findYourFit.card.hiring", {
+                  defaultValue: "Hiring",
+                })}{" "}
+                <span className="font-black text-slate-900">
+                  {count}
+                </span>{" "}
+                {t("home.findYourFit.card.roleUnit", {
+                  defaultValue: "roles",
+                })}
+              </div>
+            </div>
+
             <div
               className={cn(
-                "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
-                "border border-[#6f5730]/30 bg-[#6f5730]/10 text-[#6f5730]"
+                "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
+                "border border-slate-200 bg-slate-50 text-slate-700",
+                "transition-all duration-300",
+                "group-hover:border-[#6f5730]/40 group-hover:bg-[#6f5730] group-hover:text-white",
+                "group-hover:translate-x-0.5"
               )}
             >
-              <Briefcase className="h-4 w-4" />
-              {t("home.findYourFit.badge")}
+              <ArrowRight className="h-4 w-4" />
             </div>
-
-            <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-              {t("home.findYourFit.title")}
-            </h2>
-
-            <p className="mt-2 max-w-xl text-sm text-slate-600">{t("home.findYourFit.desc")}</p>
           </div>
 
-          <Link
-            to="/jobs"
-            className={cn(
-              "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black",
-              "bg-[#6f5730] text-white",
-              "shadow-[0_16px_50px_rgba(111,87,48,0.35)]",
-              "transition hover:-translate-y-0.5 hover:bg-[#5f4a28] active:scale-[0.97]"
-            )}
-          >
-            {t("home.findYourFit.ctaAllJobs")}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
+          <div className="relative mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
+              <Users className="h-3.5 w-3.5" />{" "}
+              {t("home.findYourFit.card.teamChip", {
+                defaultValue: "Team",
+              })}
+            </span>
 
-        {jobsError && (
-          <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            {t("home.findYourFit.errorPrefix")} {jobsError}
+            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
+              <Briefcase className="h-3.5 w-3.5" />{" "}
+              {t("home.findYourFit.card.openingsChip", {
+                defaultValue: "Openings",
+              })}
+            </span>
           </div>
-        )}
+        </button>
+      ))
+    )}
+  </div>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {loadingJobs ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-[120px] animate-pulse rounded-3xl bg-slate-100" />
-            ))
-          ) : deptCounts.length === 0 ? (
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-              {t("home.findYourFit.noJobs")}
-            </div>
-          ) : (
-            deptCounts.map(([dept, count]) => (
-              <button
-                key={dept}
-                type="button"
-                onClick={() => goToDept(dept)}
-                className={cn(
-                  "group relative overflow-hidden rounded-3xl p-6 text-left",
-                  "border border-slate-200 bg-white",
-                  "transition-all duration-300",
-                  "hover:-translate-y-1 hover:border-[#6f5730]/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)]",
-                  "active:scale-[0.98]"
-                )}
-              >
-                <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#6f5730]/10 via-transparent to-transparent" />
-                </div>
+  <div className="mt-5 text-xs text-slate-500">
+    {t("home.findYourFit.footnote", {
+      defaultValue:
+        "* Click a card to go to Jobs page with department filter.",
+    })}
+  </div>
+</section>
 
-                <div className="relative flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-black text-slate-900">{dept}</div>
-                    <div className="mt-1 text-sm text-slate-600">
-                      {t("home.findYourFit.card.hiring")}{" "}
-                      <span className="font-black text-slate-900">{count}</span>{" "}
-                      {t("home.findYourFit.card.roleUnit")}
-                    </div>
-                  </div>
-
-                  <div
-                    className={cn(
-                      "inline-flex h-10 w-10 items-center justify-center rounded-2xl",
-                      "border border-slate-200 bg-slate-50 text-slate-700",
-                      "transition-all duration-300",
-                      "group-hover:border-[#6f5730]/40 group-hover:bg-[#6f5730] group-hover:text-white",
-                      "group-hover:translate-x-0.5"
-                    )}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </div>
-
-                <div className="relative mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
-                    <Users className="h-3.5 w-3.5" /> {t("home.findYourFit.card.teamChip")}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
-                    <Briefcase className="h-3.5 w-3.5" /> {t("home.findYourFit.card.openingsChip")}
-                  </span>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-
-        <div className="mt-5 text-xs text-slate-500">{t("home.findYourFit.footnote")}</div>
-      </section>
 
       {/* GALLERY / PARTNERS */}
       <section

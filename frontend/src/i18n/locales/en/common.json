@@ -610,8 +610,12 @@
     "next": "Next page",
     "goTo": "Go to page {{page}}"
   },
-
-  "hero": {
+    "card": {
+    "position_one": "Position",
+    "position_other": "Positions",
+    "hiring": "Hiring"
+  },
+    "hero": {
     "badge": "Open positions",
     "title": "Find your dream job",
     "subtitle": "Search by keyword • country • department • level — clean UI, fast experience",

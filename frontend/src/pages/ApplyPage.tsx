@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,9 @@ import {
   ShieldCheck,
   FileText,
   Sparkles,
+  Calendar,
+  Trash2,
+  Paperclip,
 } from "lucide-react";
 import { getJob, submitApplication } from "@/lib/api";
 import type { Job, Language } from "@/lib/types";
@@ -20,6 +23,19 @@ import type { Job, Language } from "@/lib/types";
 type Edu = { level: string; school: string; from: string; to: string; note?: string };
 type Exp = { company: string; title: string; from: string; to: string; note?: string };
 
+/** -------------------- utils -------------------- */
+function cn(...xs: Array<string | false | undefined | null>) {
+  return xs.filter(Boolean).join(" ");
+}
+function normalizePhoneNumber(s: string) {
+  return (s || "").replace(/[^\d]/g, "");
+}
+function uniq(arr: string[]) {
+  return Array.from(new Set(arr));
+}
+function fileKey(f: File) {
+  return `${f.name}__${f.size}__${f.lastModified}`;
+}
 function clampFiles(input: FileList | null, maxBytes: number) {
   if (!input) return null;
   const files = Array.from(input);
@@ -30,7 +46,7 @@ function clampFiles(input: FileList | null, maxBytes: number) {
   return { ok: true as const, files };
 }
 
-/** ✅ Countries (with Other) */
+/** -------------------- constants -------------------- */
 const RESIDENCE_COUNTRIES: Array<{ value: string; label: string }> = [
   { value: "Thailand", label: "ไทย (Thailand)" },
   { value: "China", label: "จีน (China)" },
@@ -44,7 +60,6 @@ const RESIDENCE_COUNTRIES: Array<{ value: string; label: string }> = [
   { value: "Other", label: "อื่น ๆ (Other)" },
 ];
 
-/** ✅ Phone country codes */
 const PHONE_COUNTRY_CODES = [
   { code: "+66", label: "Thailand (+66)" },
   { code: "+86", label: "China (+86)" },
@@ -70,7 +85,6 @@ const EDUCATION_LEVELS = [
   { value: "Other / Equivalent", label: "Other / Equivalent — อื่น ๆ (เทียบเท่า)" },
 ] as const;
 
-/** Skills (categorized) */
 const SKILL_CATEGORIES: Record<string, { title: string; items: string[] }> = {
   "Office & Productivity": {
     title: "Office & Productivity",
@@ -98,13 +112,22 @@ const SKILL_CATEGORIES: Record<string, { title: string; items: string[] }> = {
   },
 };
 
-function normalizePhoneNumber(s: string) {
-  return (s || "").replace(/[^\d]/g, "");
-}
-function uniq(arr: string[]) {
-  return Array.from(new Set(arr));
-}
+const MONTHS = [
+  { v: "01", label: "Jan" },
+  { v: "02", label: "Feb" },
+  { v: "03", label: "Mar" },
+  { v: "04", label: "Apr" },
+  { v: "05", label: "May" },
+  { v: "06", label: "Jun" },
+  { v: "07", label: "Jul" },
+  { v: "08", label: "Aug" },
+  { v: "09", label: "Sep" },
+  { v: "10", label: "Oct" },
+  { v: "11", label: "Nov" },
+  { v: "12", label: "Dec" },
+];
 
+/** -------------------- UI atoms -------------------- */
 function Field({
   label,
   hint,
@@ -164,7 +187,11 @@ function StepPill({ active, done, label }: { active?: boolean; done?: boolean; l
     <div
       className={[
         "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
-        done ? "border-emerald-200 bg-emerald-50 text-emerald-700" : active ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600",
+        done
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : active
+            ? "border-blue-200 bg-blue-50 text-blue-700"
+            : "border-slate-200 bg-white text-slate-600",
       ].join(" ")}
     >
       <span className={["h-2 w-2 rounded-full", done ? "bg-emerald-500" : active ? "bg-blue-500" : "bg-slate-300"].join(" ")} />
@@ -173,6 +200,205 @@ function StepPill({ active, done, label }: { active?: boolean; done?: boolean; l
   );
 }
 
+/** -------------------- Month-Year Picker -------------------- */
+function ymToLabel(ym: string) {
+  if (!ym) return "";
+  const [y, m] = ym.split("-");
+  const mm = MONTHS.find((x) => x.v === m)?.label ?? m;
+  return `${mm} ${y}`;
+}
+function buildYM(year: number, monthV: string) {
+  return `${year}-${monthV}`;
+}
+function todayYM() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+function parseYM(ym: string) {
+  if (!ym) return null;
+  const [ys, ms] = ym.split("-");
+  const y = Number(ys);
+  const m = Number(ms);
+  if (!y || !m) return null;
+  return { y, m };
+}
+
+function MonthYearPicker({
+  value,
+  onChange,
+  placeholder = "Select month…",
+  minYM,
+  maxYM,
+}: {
+  value: string;
+  onChange: (ym: string) => void;
+  placeholder?: string;
+  minYM?: string;
+  maxYM?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const now = new Date();
+  const defaultYear = parseYM(value)?.y ?? now.getFullYear();
+  const defaultMonth = parseYM(value)?.m ?? now.getMonth() + 1;
+
+  const [year, setYear] = useState<number>(defaultYear);
+  const [monthV, setMonthV] = useState<string>(String(defaultMonth).padStart(2, "0"));
+
+  useEffect(() => {
+    const p = parseYM(value);
+    if (!p) return;
+    setYear(p.y);
+    setMonthV(String(p.m).padStart(2, "0"));
+  }, [value]);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      const el = ref.current;
+      if (!el) return;
+      if (!el.contains(e.target as any)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const years = useMemo(() => {
+    const nowY = new Date().getFullYear();
+    const minY = parseYM(minYM || "")?.y ?? nowY - 35;
+    const maxY = parseYM(maxYM || "")?.y ?? nowY + 5;
+    const a: number[] = [];
+    for (let y = maxY; y >= minY; y--) a.push(y);
+    return a;
+  }, [minYM, maxYM]);
+
+  function apply() {
+    const ym = buildYM(year, monthV);
+
+    if (minYM && ym < minYM) {
+      onChange(minYM);
+      setOpen(false);
+      return;
+    }
+    if (maxYM && ym > maxYM) {
+      onChange(maxYM);
+      setOpen(false);
+      return;
+    }
+    onChange(ym);
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className={cn("input flex w-full items-center justify-between gap-2", "bg-white/85 text-left")}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className={cn("truncate", value ? "text-slate-900" : "text-slate-500")}>
+          {value ? ymToLabel(value) : placeholder}
+        </span>
+        <Calendar className="h-4 w-4 text-slate-400" />
+      </button>
+
+      {open && (
+        <div className="absolute z-[120] mt-2 w-full min-w-[260px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div className="p-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold text-slate-500">Year</div>
+                <select className="input h-10" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+                  {years.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold text-slate-500">Month</div>
+                <select className="input h-10" value={monthV} onChange={(e) => setMonthV(e.target.value)}>
+                  {MONTHS.map((m) => (
+                    <option key={m.v} value={m.v}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  onChange("");
+                  setOpen(false);
+                }}
+              >
+                Clear
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    const ym = todayYM();
+                    onChange(ym);
+                    setOpen(false);
+                  }}
+                >
+                  This month
+                </button>
+                <button type="button" className="btn btn-primary" onClick={apply}>
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px bg-slate-100" />
+
+          <div className="px-3 py-2 text-[11px] text-slate-500">Tip: เลือก “ปี” และ “เดือน” ได้ตรง ๆ (ไม่ใช้ปฏิทินรายวัน)</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonthRange({
+  from,
+  to,
+  onChangeFrom,
+  onChangeTo,
+}: {
+  from: string;
+  to: string;
+  onChangeFrom: (v: string) => void;
+  onChangeTo: (v: string) => void;
+}) {
+  useEffect(() => {
+    if (from && to && to < from) onChangeTo(from);
+  }, [from, to, onChangeTo]);
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Field label="From">
+        <MonthYearPicker value={from} onChange={onChangeFrom} placeholder="Select start…" />
+      </Field>
+      <Field label="To">
+        <MonthYearPicker value={to} onChange={onChangeTo} placeholder="Select end…" minYM={from || undefined} />
+      </Field>
+    </div>
+  );
+}
+
+/** -------------------- page -------------------- */
 export default function ApplyPage() {
   const { jobId } = useParams();
   const { t, i18n } = useTranslation();
@@ -213,10 +439,12 @@ export default function ApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message?: string } | null>(null);
 
-  // ✅ Popup states
   const [modalOpen, setModalOpen] = useState(false);
   const [submitPhase, setSubmitPhase] = useState<"idle" | "validating" | "uploading" | "sending" | "done">("idle");
   const [submitHint, setSubmitHint] = useState<string>("");
+
+  const resumeInputRef = useRef<HTMLInputElement | null>(null);
+  const attachmentsInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -300,23 +528,60 @@ export default function ApplyPage() {
     setCustomSkill("");
   }
 
+  /** -------------------- files: add/remove -------------------- */
+  function setResumeFromInput(file: File | null) {
+    if (!file) {
+      setResumeFile(null);
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setResult({ ok: false, message: "Resume file must be ≤ 2MB" });
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
+      return;
+    }
+    setResumeFile(file);
+  }
+
+  function addAttachmentsFromInput(fileList: FileList | null) {
+    const r = clampFiles(fileList, 50 * 1024 * 1024);
+    if (!r) return;
+    if (!r.ok) {
+      setResult({ ok: false, message: r.message });
+      if (attachmentsInputRef.current) attachmentsInputRef.current.value = "";
+      return;
+    }
+
+    setAttachments((prev) => {
+      const map = new Map<string, File>();
+      prev.forEach((f) => map.set(fileKey(f), f));
+      r.files.forEach((f) => map.set(fileKey(f), f));
+      return Array.from(map.values()).slice(0, 20);
+    });
+
+    if (attachmentsInputRef.current) attachmentsInputRef.current.value = "";
+  }
+
+  function removeAttachmentByKey(k: string) {
+    setAttachments((prev) => prev.filter((f) => fileKey(f) !== k));
+  }
+
+  /** -------------------- submit -------------------- */
   async function onSubmit() {
     if (!job) return;
     setResult(null);
     setSubmitting(true);
 
-    // ✅ open modal
     setModalOpen(true);
     setSubmitPhase("validating");
     setSubmitHint("Checking required fields…");
 
     try {
-      // small UX delay so user sees phase change
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 200));
 
       setSubmitPhase("uploading");
       setSubmitHint("Preparing your files…");
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 200));
 
       const fd = new FormData();
       fd.set("first_name", firstName.trim());
@@ -346,7 +611,7 @@ export default function ApplyPage() {
 
       setSubmitPhase("done");
       setSubmitHint(r.ok ? "Submitted successfully." : (r.message || "Submit failed."));
-      await new Promise((rr) => setTimeout(rr, 550));
+      await new Promise((rr) => setTimeout(rr, 450));
 
       if (r.ok) {
         setFirstName("");
@@ -373,6 +638,9 @@ export default function ApplyPage() {
         setAttachments([]);
         setAgree(false);
 
+        if (resumeInputRef.current) resumeInputRef.current.value = "";
+        if (attachmentsInputRef.current) attachmentsInputRef.current.value = "";
+
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (e: any) {
@@ -381,9 +649,6 @@ export default function ApplyPage() {
       setSubmitHint(e?.message ?? "Error");
     } finally {
       setSubmitting(false);
-      // keep modal for result; close if success after a moment
-      // user can always close manually if fail
-      if (result?.ok) setModalOpen(false);
     }
   }
 
@@ -395,57 +660,39 @@ export default function ApplyPage() {
         <title>{t("jobs.applyTitle")} • SHD Careers</title>
       </Helmet>
 
-      {/* ✅ Premium layout + modal + skills frames */}
       <style>{`
-        /* Background */
-        .applyBg{
-          position: relative;
-          isolation: isolate;
+        /* --------- FIX 1: Back button not under navbar --------- */
+        :root{
+          --navbar-h: 78px; /* ปรับได้ให้ตรงกับ Navbar ของคุณ */
         }
-        .applyBg:before{
-          content:"";
-          position:absolute; inset:0;
-          background:
-            radial-gradient(900px 520px at 18% 10%, rgba(99,102,241,.16), transparent 55%),
-            radial-gradient(700px 520px at 82% 22%, rgba(14,165,233,.14), transparent 55%),
-            radial-gradient(600px 420px at 60% 95%, rgba(16,185,129,.10), transparent 60%);
-          pointer-events:none;
-          z-index:-2;
+        .applySection{
+          scroll-margin-top: calc(var(--navbar-h) + 18px);
         }
-        .applyBg:after{
-          content:"";
-          position:absolute; inset:0;
-          background: linear-gradient(to bottom, rgba(255,255,255,.92), rgba(255,255,255,.98));
-          pointer-events:none;
-          z-index:-1;
-        }
-
-        /* Sticky back */
         .backWrap{
           position: sticky;
-          top: 12px;
-          z-index: 60;
+          top: calc(env(safe-area-inset-top, 0px) + var(--navbar-h) + 10px);
+          z-index: 90;
           pointer-events: none;
           margin-top: 6px;
         }
         .backWrap > *{ pointer-events: auto; }
 
-        /* Skills grid */
-        .skillsGrid{ display:grid; gap:12px; }
-        @media (min-width: 768px){
-          .skillsGrid{ grid-template-columns: 260px 1fr; align-items:start; }
+        /* Background */
+        .applyBg{ position: relative; isolation: isolate; }
+        .applyBg:before{
+          content:""; position:absolute; inset:0;
+          background:
+            radial-gradient(900px 520px at 18% 10%, rgba(99,102,241,.16), transparent 55%),
+            radial-gradient(700px 520px at 82% 22%, rgba(14,165,233,.14), transparent 55%),
+            radial-gradient(600px 420px at 60% 95%, rgba(16,185,129,.10), transparent 60%);
+          pointer-events:none; z-index:-2;
+        }
+        .applyBg:after{
+          content:""; position:absolute; inset:0;
+          background: linear-gradient(to bottom, rgba(255,255,255,.92), rgba(255,255,255,.98));
+          pointer-events:none; z-index:-1;
         }
 
-        /* Mobile tabs scroll */
-        .tabsRow{
-          display:flex; gap:8px; overflow:auto;
-          -webkit-overflow-scrolling:touch;
-          scrollbar-width:none;
-          padding-bottom:2px;
-        }
-        .tabsRow::-webkit-scrollbar{ display:none; }
-
-        /* Card polish */
         .glassCard{
           background: rgba(255,255,255,.75);
           border: 1px solid rgba(148,163,184,.35);
@@ -456,8 +703,35 @@ export default function ApplyPage() {
           height:1px;
           background: linear-gradient(to right, transparent, rgba(148,163,184,.4), transparent);
         }
+        .hoverLift{ transition: transform .15s ease, box-shadow .15s ease; }
+        .hoverLift:hover{ transform: translateY(-1px); box-shadow: 0 22px 55px rgba(15,23,42,.10); }
 
-        /* Skill frames (make it less confusing) */
+        .input{
+          width:100%;
+          border-radius: 16px;
+          border: 1px solid rgba(148,163,184,.6);
+          padding: 10px 12px;
+          background: rgba(255,255,255,.85);
+          font-size: 14px;
+        }
+        .input:focus{
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(59,130,246,.25);
+          border-color: rgba(59,130,246,.5);
+        }
+
+        .skillsGrid{ display:grid; gap:12px; }
+        @media (min-width: 768px){
+          .skillsGrid{ grid-template-columns: 260px 1fr; align-items:start; }
+        }
+        .tabsRow{
+          display:flex; gap:8px; overflow:auto;
+          -webkit-overflow-scrolling:touch;
+          scrollbar-width:none;
+          padding-bottom:2px;
+        }
+        .tabsRow::-webkit-scrollbar{ display:none; }
+
         .frameTitle{
           display:flex; align-items:center; justify-content:space-between; gap:10px;
           padding: 10px 12px;
@@ -466,34 +740,56 @@ export default function ApplyPage() {
         .frameTitle strong{ font-size: 12px; color: rgb(71,85,105); letter-spacing:.02em; text-transform: uppercase; }
         .frameBody{ padding: 12px; }
 
-        /* Better focus */
-        .input:focus{
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(59,130,246,.25);
-          border-color: rgba(59,130,246,.5);
+        /* --------- FIX 2: Skills show full text (no truncate, width by text) --------- */
+        .skillPills{
+          display:flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: flex-start;
         }
-        select.input:focus{ box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
-
-        /* Small hover */
-        .hoverLift{
-          transition: transform .15s ease, box-shadow .15s ease;
+        .skillPill{
+          display:inline-flex;
+          align-items:center;
+          gap:10px;
+          padding: 10px 12px;
+          border-radius: 999px;
+          border: 1px solid rgba(148,163,184,.55);
+          background: rgba(255,255,255,.92);
+          font-weight: 800;
+          font-size: 13px;
+          color: rgb(30,41,59);
+          line-height: 1;
+          white-space: nowrap; /* ไม่ตัดคำ */
+          transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
         }
-        .hoverLift:hover{
+        .skillPill:hover{
+          background: rgba(241,245,249,.92);
           transform: translateY(-1px);
-          box-shadow: 0 22px 55px rgba(15,23,42,.10);
+          box-shadow: 0 14px 30px rgba(15,23,42,.08);
         }
+        .skillPillOn{
+          border-color: rgba(59,130,246,.45);
+          background: rgba(239,246,255,.95);
+          box-shadow: 0 10px 25px rgba(59,130,246,.12);
+        }
+        .skillPillDisabled{ opacity:.5; cursor:not-allowed; }
 
-        /* Make native file input nicer (best effort) */
-        input[type="file"]{
-          width:100%;
-          padding: 12px;
+        /* Files list */
+        .fileRow{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          padding: 10px 12px;
           border-radius: 16px;
-          border: 1px dashed rgba(148,163,184,.65);
-          background: rgba(255,255,255,.8);
+          border: 1px solid rgba(148,163,184,.45);
+          background: rgba(255,255,255,.85);
         }
+        .fileMeta{ min-width:0; display:flex; align-items:center; gap:10px; }
+        .fileName{ font-weight: 700; font-size: 13px; color: rgb(15,23,42); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .fileSize{ font-size: 11px; color: rgb(100,116,139); margin-top: 2px; }
       `}</style>
 
-      {/* ✅ Modal for loading/submitting */}
       <Modal
         open={modalOpen}
         title={submitPhase === "done" ? (result?.ok ? "Application submitted" : "Something went wrong") : "Submitting your application"}
@@ -542,8 +838,7 @@ export default function ApplyPage() {
               type="button"
               className="btn btn-ghost"
               onClick={() => {
-                // allow closing only when done OR not actively submitting
-                if (submitting) return;
+                if (submitting && submitPhase !== "done") return;
                 setModalOpen(false);
               }}
               disabled={submitting && submitPhase !== "done"}
@@ -554,8 +849,7 @@ export default function ApplyPage() {
         </div>
       </Modal>
 
-      <section className="container-page applyBg pb-14 pt-6 sm:pt-10">
-        {/* Back */}
+      <section className="container-page applyBg pb-14 pt-6 sm:pt-10 applySection">
         <div className="backWrap">
           <Link to={job ? `/jobs/${encodeURIComponent(job.job_id)}` : "/jobs"} className="btn btn-ghost inline-flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -596,12 +890,10 @@ export default function ApplyPage() {
 
               {result && (
                 <div
-                  className={
-                    "mt-6 rounded-2xl border px-4 py-3 text-sm " +
-                    (result.ok
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-rose-200 bg-rose-50 text-rose-800")
-                  }
+                  className={cn(
+                    "mt-6 rounded-2xl border px-4 py-3 text-sm",
+                    result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"
+                  )}
                 >
                   <div className="flex items-start gap-2">
                     {result.ok ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
@@ -663,12 +955,7 @@ export default function ApplyPage() {
                           ))}
                         </select>
 
-                        <input
-                          className="input"
-                          value={addressDetail}
-                          onChange={(e) => setAddressDetail(e.target.value)}
-                          placeholder="Address detail (optional)"
-                        />
+                        <input className="input" value={addressDetail} onChange={(e) => setAddressDetail(e.target.value)} placeholder="Address detail (optional)" />
                       </div>
 
                       {residenceCountry === "Other" && (
@@ -705,51 +992,36 @@ export default function ApplyPage() {
                 <div className="mt-4 space-y-4">
                   {education.map((e, idx) => (
                     <div key={idx} className="rounded-3xl border border-slate-200 bg-white/75 p-4 sm:p-5">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="md:col-span-2">
-                          <Field label="Education Level">
-                            <select
-                              className="input"
-                              value={e.level}
-                              onChange={(ev) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, level: ev.target.value } : x)))}
-                            >
-                              <option value="">Select level...</option>
-                              {EDUCATION_LEVELS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
-                          </Field>
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <Field label="School / Institute">
-                            <input
-                              className="input"
-                              value={e.school}
-                              onChange={(ev) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, school: ev.target.value } : x)))}
-                            />
-                          </Field>
-                        </div>
-
-                        <Field label="From">
-                          <input
-                            type="month"
+                      <div className="grid gap-4">
+                        <Field label="Education Level">
+                          <select
                             className="input"
-                            value={e.from}
-                            onChange={(ev) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, from: ev.target.value } : x)))}
+                            value={e.level}
+                            onChange={(ev) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, level: ev.target.value } : x)))}
+                          >
+                            <option value="">Select level...</option>
+                            {EDUCATION_LEVELS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+
+                        <Field label="School / Institute">
+                          <input
+                            className="input"
+                            value={e.school}
+                            onChange={(ev) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, school: ev.target.value } : x)))}
                           />
                         </Field>
 
-                        <Field label="To">
-                          <input
-                            type="month"
-                            className="input"
-                            value={e.to}
-                            onChange={(ev) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, to: ev.target.value } : x)))}
-                          />
-                        </Field>
+                        <MonthRange
+                          from={e.from}
+                          to={e.to}
+                          onChangeFrom={(v) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, from: v } : x)))}
+                          onChangeTo={(v) => setEducation((p) => p.map((x, i) => (i === idx ? { ...x, to: v } : x)))}
+                        />
                       </div>
 
                       {education.length > 1 && (
@@ -797,23 +1069,14 @@ export default function ApplyPage() {
                           />
                         </Field>
 
-                        <Field label="From">
-                          <input
-                            type="month"
-                            className="input"
-                            value={e.from}
-                            onChange={(ev) => setExperience((p) => p.map((x, i) => (i === idx ? { ...x, from: ev.target.value } : x)))}
+                        <div className="md:col-span-2">
+                          <MonthRange
+                            from={e.from}
+                            to={e.to}
+                            onChangeFrom={(v) => setExperience((p) => p.map((x, i) => (i === idx ? { ...x, from: v } : x)))}
+                            onChangeTo={(v) => setExperience((p) => p.map((x, i) => (i === idx ? { ...x, to: v } : x)))}
                           />
-                        </Field>
-
-                        <Field label="To">
-                          <input
-                            type="month"
-                            className="input"
-                            value={e.to}
-                            onChange={(ev) => setExperience((p) => p.map((x, i) => (i === idx ? { ...x, to: ev.target.value } : x)))}
-                          />
-                        </Field>
+                        </div>
                       </div>
 
                       {experience.length > 1 && (
@@ -861,14 +1124,13 @@ export default function ApplyPage() {
                 </div>
 
                 <div className="mt-3 skillsGrid">
-                  {/* ✅ Categories frame */}
+                  {/* Categories */}
                   <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/80">
                     <div className="frameTitle">
                       <strong>Skill Categories</strong>
                       <span className="text-[11px] text-slate-500">Pick a group</span>
                     </div>
 
-                    {/* mobile horizontal */}
                     <div className="frameBody md:hidden">
                       <div className="tabsRow">
                         {Object.keys(SKILL_CATEGORIES).map((k) => {
@@ -877,10 +1139,7 @@ export default function ApplyPage() {
                             <button
                               key={k}
                               type="button"
-                              className={[
-                                "badge whitespace-nowrap transition",
-                                active ? "border-blue-200 bg-blue-50 text-blue-700" : "hover:bg-slate-100",
-                              ].join(" ")}
+                              className={cn("badge whitespace-nowrap transition", active ? "border-blue-200 bg-blue-50 text-blue-700" : "hover:bg-slate-100")}
                               onClick={() => setSkillTab(k)}
                             >
                               {SKILL_CATEGORIES[k].title}
@@ -890,7 +1149,6 @@ export default function ApplyPage() {
                       </div>
                     </div>
 
-                    {/* desktop vertical */}
                     <div className="hidden md:block">
                       <div className="p-3">
                         <div className="flex flex-col gap-2">
@@ -900,10 +1158,10 @@ export default function ApplyPage() {
                               <button
                                 key={k}
                                 type="button"
-                                className={[
+                                className={cn(
                                   "w-full rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition",
-                                  active ? "border-blue-200 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                                ].join(" ")}
+                                  active ? "border-blue-200 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                )}
                                 onClick={() => setSkillTab(k)}
                               >
                                 {SKILL_CATEGORIES[k].title}
@@ -915,7 +1173,7 @@ export default function ApplyPage() {
                     </div>
                   </div>
 
-                  {/* ✅ Options frame */}
+                  {/* Options */}
                   <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/80">
                     <div className="frameTitle">
                       <strong>{skillTabTitle}</strong>
@@ -923,7 +1181,8 @@ export default function ApplyPage() {
                     </div>
 
                     <div className="frameBody">
-                      <div className="flex flex-wrap gap-2">
+                      {/* ✅ pills width by text */}
+                      <div className="skillPills">
                         {skillSuggestions.map((s) => {
                           const active = skills.includes(s);
                           const disabledPick = !active && skills.length >= 8;
@@ -932,15 +1191,14 @@ export default function ApplyPage() {
                               key={s}
                               type="button"
                               disabled={disabledPick}
-                              className={[
-                                "badge transition",
-                                active ? "border-blue-200 bg-blue-50 text-blue-700" : "hover:bg-slate-100",
-                                disabledPick ? "cursor-not-allowed opacity-50" : "",
-                              ].join(" ")}
+                              className={cn("skillPill", active && "skillPillOn", disabledPick && "skillPillDisabled")}
                               onClick={() => toggleSkill(s)}
+                              title={s}
                             >
-                              {s}
-                              {active ? " ✓" : ""}
+                              <span>{s}</span>
+                              <span className={cn("text-xs font-black", active ? "text-blue-700" : "text-slate-400")}>
+                                {active ? "✓" : "+"}
+                              </span>
                             </button>
                           );
                         })}
@@ -999,41 +1257,66 @@ export default function ApplyPage() {
               {/* Files */}
               <div className="mt-10">
                 <div className="text-sm font-black text-slate-900">{t("jobs.form.resume")}</div>
+
                 <div className="mt-3">
                   <input
+                    ref={resumeInputRef}
                     type="file"
                     accept=".pdf,.doc,.docx"
                     onChange={(e) => {
                       const f = e.target.files?.[0] ?? null;
-                      if (!f) return setResumeFile(null);
-                      if (f.size > 2 * 1024 * 1024) {
-                        setResult({ ok: false, message: "Resume file must be ≤ 2MB" });
-                        e.target.value = "";
-                        return;
-                      }
-                      setResumeFile(f);
+                      setResumeFromInput(f);
                     }}
                   />
                 </div>
 
+                {resumeFile && (
+                  <div className="mt-3 fileRow">
+                    <div className="fileMeta">
+                      <FileText className="h-4 w-4 text-slate-500" />
+                      <div className="min-w-0">
+                        <div className="fileName">{resumeFile.name}</div>
+                        <div className="fileSize">{Math.round(resumeFile.size / 1024)} KB</div>
+                      </div>
+                    </div>
+                    <button type="button" className="btn btn-ghost" onClick={() => setResumeFromInput(null)}>
+                      <Trash2 className="h-4 w-4" /> Remove
+                    </button>
+                  </div>
+                )}
+
                 <div className="mt-6">
                   <div className="text-sm font-black text-slate-900">{t("jobs.form.attachments")}</div>
+
                   <div className="mt-3">
-                    <input
-                      type="file"
-                      multiple
-                      onChange={(e) => {
-                        const r = clampFiles(e.target.files, 50 * 1024 * 1024);
-                        if (!r) return;
-                        if (!r.ok) {
-                          setResult({ ok: false, message: r.message });
-                          e.target.value = "";
-                          return;
-                        }
-                        setAttachments(r.files);
-                      }}
-                    />
+                    <input ref={attachmentsInputRef} type="file" multiple onChange={(e) => addAttachmentsFromInput(e.target.files)} />
                   </div>
+
+                  {attachments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {attachments.map((f) => {
+                        const k = fileKey(f);
+                        return (
+                          <div key={k} className="fileRow">
+                            <div className="fileMeta">
+                              <Paperclip className="h-4 w-4 text-slate-500" />
+                              <div className="min-w-0">
+                                <div className="fileName">{f.name}</div>
+                                <div className="fileSize">{Math.round(f.size / 1024)} KB</div>
+                              </div>
+                            </div>
+                            <button type="button" className="btn btn-ghost" onClick={() => removeAttachmentByKey(k)}>
+                              <Trash2 className="h-4 w-4" /> Remove
+                            </button>
+                          </div>
+                        );
+                      })}
+                      <div className="text-[11px] text-slate-500">
+                        Total files: {attachments.length} • Total size: {Math.round(attachments.reduce((s, f) => s + f.size, 0) / 1024 / 1024)} MB
+                        (limit 50MB)
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1046,18 +1329,12 @@ export default function ApplyPage() {
               </div>
 
               <div className="mt-6">
-                <button
-                  disabled={disabled}
-                  onClick={onSubmit}
-                  className={"btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"}
-                >
+                <button disabled={disabled} onClick={onSubmit} className={"btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"}>
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                   {submitting ? t("jobs.form.submitting") : t("jobs.form.submit")}
                 </button>
 
-                <div className="mt-3 text-[11px] text-slate-500">
-                  By submitting, you confirm the information is accurate and you agree to our policies.
-                </div>
+                <div className="mt-3 text-[11px] text-slate-500">By submitting, you confirm the information is accurate and you agree to our policies.</div>
               </div>
             </div>
 
@@ -1087,15 +1364,14 @@ export default function ApplyPage() {
                     <li>Resume file must be PDF/DOC/DOCX and ≤ 2MB</li>
                     <li>Attachments total size ≤ 50MB</li>
                     <li>เลือก Skills ไม่เกิน 8 เพื่อความชัดเจน</li>
+                    <li>From/To เลือกเป็น “เดือน + ปี” เท่านั้น (ง่ายกว่า)</li>
                   </ul>
                 </div>
               </div>
 
               <div className="rounded-3xl border border-slate-200 bg-white/70 p-5">
                 <div className="text-sm font-black text-slate-900">Privacy</div>
-                <div className="mt-2 text-sm text-slate-600">
-                  Your information is used only for recruitment and will be handled securely.
-                </div>
+                <div className="mt-2 text-sm text-slate-600">Your information is used only for recruitment and will be handled securely.</div>
               </div>
             </div>
           </div>

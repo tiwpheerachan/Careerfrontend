@@ -19,6 +19,9 @@ export type Job = {
   responsibilities?: string;
   benefits?: string;
 
+  // ✅ จำนวนที่เปิดรับ (รองรับทั้ง number และ string จาก Apps Script)
+  quantity?: number | string;
+
   // feed มี updated_at ในตัวอย่างของคุณ
   updated_at?: string;
 
@@ -26,7 +29,7 @@ export type Job = {
 };
 
 // ✅ ให้ตรงกับสิ่งที่ frontend ใช้อยู่ (jobs/total)
-// ✅ เพิ่ม version? เพื่อรองรับ backend { ok, version, rows, total }
+// ✅ รองรับ backend { ok, version, rows, total }
 export type JobsResponse = {
   jobs: Job[];
   total: number;

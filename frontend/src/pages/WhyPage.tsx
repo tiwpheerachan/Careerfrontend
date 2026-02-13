@@ -171,7 +171,7 @@ type ModalItem = {
 };
 
 /** -------------------------
- * Modal (image popup)
+ * Modal (image popup) — ใช้กับ Employee Stories (เดิม)
  * - closes on overlay click, X button, ESC
  * - ✅ FIX: robust close handlers + stopPropagation inside
  * - ✅ FIX: Mobile layout = image top + scrollable text
@@ -476,6 +476,145 @@ function ImageModal({
   );
 }
 
+/** -------------------------
+ * ✅ Life Gallery Modal (NEW)
+ * - ✅ modal แสดง “เฉพาะรูป”
+ * - ✅ รูปเรียงแนวนอน เลื่อนได้
+ * - ✅ ไม่มี carousel / ไม่มี pause/play / ไม่มีคำบรรยาย
+ * ------------------------ */
+function LifeGalleryModal({
+  open,
+  onClose,
+  title,
+  images,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  images: string[];
+}) {
+  const isMobile = useMediaQuery("(max-width: 639px)");
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className={cn(
+        "fixed inset-0 z-[90] flex items-center justify-center",
+        "bg-white/70 backdrop-blur-md"
+      )}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onTouchStart={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className={cn(
+          "relative w-full overflow-hidden bg-white ring-1 ring-slate-200",
+          isMobile
+            ? "mx-0 h-[92vh] rounded-t-[28px] self-end"
+            : "mx-4 max-w-[1200px] rounded-[28px] shadow-[0_50px_180px_rgba(15,23,42,0.30)]"
+        )}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+      >
+        {/* minimal header (no description) */}
+        <div
+          className={cn(
+            "flex items-center justify-between gap-3 px-4 py-3",
+            "bg-white/92 backdrop-blur",
+            "border-b border-slate-200/70"
+          )}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+                <Sparkles className="h-3.5 w-3.5" />
+                SHD
+              </span>
+              <div className="truncate text-sm font-black text-slate-950">{title}</div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className={cn(
+              "inline-flex h-11 w-11 items-center justify-center rounded-2xl",
+              "bg-white text-slate-900 ring-1 ring-slate-200",
+              "transition active:scale-[0.98]"
+            )}
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* images only */}
+        <div className={cn("p-4", isMobile ? "h-[calc(92vh-60px)]" : "max-h-[80vh]")}>
+          <div
+            className={cn(
+              "no-scrollbar flex h-full gap-3 overflow-x-auto overflow-y-hidden",
+              "scroll-smooth snap-x snap-mandatory",
+              "touch-pan-x"
+            )}
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
+          >
+            {images.map((src, i) => (
+              <div
+                key={`${src}-${i}`}
+                className={cn(
+                  "snap-start shrink-0 overflow-hidden rounded-3xl",
+                  "bg-slate-50 ring-1 ring-slate-200",
+                  isMobile ? "w-[86vw] h-full" : "w-[min(920px,72vw)] h-[70vh]"
+                )}
+              >
+                <img
+                  src={src}
+                  alt={`${title} ${i + 1}`}
+                  className="h-full w-full object-cover"
+                  draggable={false}
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+
+          <style>{`
+            .no-scrollbar::-webkit-scrollbar{display:none;}
+            .no-scrollbar{-ms-overflow-style:none; scrollbar-width:none;}
+          `}</style>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PillarCard({
   icon,
   title,
@@ -521,7 +660,7 @@ function PillarCard({
 }
 
 /** -------------------------
- * 16:8 card (2:1) — Life carousel
+ * 16:8 card (2:1) — (คงไว้เผื่อส่วนอื่นใช้)
  * ✅ FIX: block click on drag
  * ------------------------ */
 function PhotoCard16x8({
@@ -605,9 +744,7 @@ function PhotoCard16x8({
       {(title || desc) && (
         <div className="px-4 pb-4 pt-3">
           <div className="text-sm font-black text-slate-950 line-clamp-2">{title}</div>
-          {desc ? (
-            <div className="mt-1 text-sm text-slate-700 line-clamp-2">{desc}</div>
-          ) : null}
+          {desc ? <div className="mt-1 text-sm text-slate-700 line-clamp-2">{desc}</div> : null}
         </div>
       )}
     </button>
@@ -876,6 +1013,82 @@ function StoryMobileCard({
   );
 }
 
+/** -------------------------
+ * ✅ Life Category Card (NEW) — 3 cards only
+ * - เรียบหรู
+ * - ไม่มีคำบรรยาย (ไม่มี desc)
+ * ------------------------ */
+function LifeCategoryCard({
+  title,
+  coverSrc,
+  onClick,
+}: {
+  title: string;
+  coverSrc: string;
+  onClick: () => void;
+}) {
+  const drag = useBlockClickOnDrag(10);
+
+  return (
+    <button
+      type="button"
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={drag.onPointerUp}
+      onPointerCancel={drag.onPointerUp}
+      onClick={(e) => {
+        if (drag.shouldBlockClick()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        onClick();
+      }}
+      className={cn(
+        "group relative overflow-hidden rounded-[28px] text-left",
+        "bg-white ring-1 ring-slate-200",
+        "shadow-[0_18px_70px_-30px_rgba(15,23,42,0.35)]",
+        "transition hover:-translate-y-1 active:scale-[0.99]",
+        "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
+      )}
+    >
+      <div className="relative aspect-[16/9] w-full bg-slate-50">
+        <img
+          src={coverSrc}
+          alt={title}
+          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+          draggable={false}
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/0 to-black/30" />
+
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/88 px-3 py-1.5 text-[11px] font-semibold text-slate-900 backdrop-blur ring-1 ring-slate-200">
+            <Sparkles className="h-3.5 w-3.5" />
+            View photos
+          </div>
+          <div className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-black text-white">
+            SHD
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+          <div className="absolute inset-0 bg-[radial-gradient(600px_260px_at_55%_15%,rgba(255,255,255,0.30),transparent_60%)]" />
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="text-[15px] font-black tracking-tight text-slate-950">{title}</div>
+        <div className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        <div className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          Click to open gallery
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function WhyPage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery("(max-width: 639px)");
@@ -935,25 +1148,7 @@ export default function WhyPage() {
     [employeePhotosAll]
   );
 
-  const eventPhotos = useMemo(
-    () =>
-      Array.from({ length: 10 }).map((_, i) => {
-        const idx = i + 1;
-        return {
-          src: `/images/why/events/e${idx}.jpg`,
-          title: t("why.life.itemTitle", { index: idx, defaultValue: `Event #${idx}` }),
-          desc: t("why.life.itemDesc", {
-            defaultValue: "Culture • Collaboration • Moments that matter",
-          }),
-          badge:
-            i % 2 === 0
-              ? t("why.life.badges.event", { defaultValue: "Event" })
-              : t("why.life.badges.life", { defaultValue: "Life" }),
-        };
-      }),
-    [t]
-  );
-
+  // ✅ Stories carousel (คงเดิม)
   const stories = useAutoScrollCarousel({
     enabled: true,
     intervalMs: 3200,
@@ -961,15 +1156,9 @@ export default function WhyPage() {
     idleResumeMs: 3000,
   });
 
-  const life = useAutoScrollCarousel({
-    enabled: true,
-    intervalMs: 3200,
-    stepPx: isMobile ? 360 : 560,
-    idleResumeMs: 3000,
-  });
-
   const sectionRef = useRef<HTMLElement | null>(null);
 
+  // ✅ Employee stories modal (เดิม)
   const [modalOpen, setModalOpen] = useState(false);
   const [modalItem, setModalItem] = useState<ModalItem | null>(null);
 
@@ -977,10 +1166,148 @@ export default function WhyPage() {
     setModalItem(item);
     setModalOpen(true);
   }
+function HorizontalPhotoStrip({
+  images,
+  ariaLabel = "Photo gallery",
+}: {
+  images: Array<{ src: string; alt?: string }>;
+  ariaLabel?: string;
+}) {
+  const stripRef = React.useRef<HTMLDivElement | null>(null);
+
+  return (
+    <>
+      <div
+        ref={stripRef}
+        aria-label={ariaLabel}
+        className={cn(
+          "mt-4 flex gap-3 overflow-x-auto overflow-y-hidden pb-3",
+          "scroll-smooth",
+          // ✅ โชว์ scrollbar (อย่าใช้ no-scrollbar)
+          "life-scrollbar"
+        )}
+        style={{
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x",
+        }}
+        onWheel={(e) => {
+          // ✅ ทำให้ scroll wheel (deltaY) วิ่งเป็นแนวนอน
+          const el = stripRef.current;
+          if (!el) return;
+
+          // ถ้า user กำลังกด Shift อยู่ ให้ปล่อยพฤติกรรมเดิม (ส่วนใหญ่จะเป็นแนวนอนอยู่แล้ว)
+          if (e.shiftKey) return;
+
+          // แปลงแนวตั้ง -> แนวนอน
+          if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            e.preventDefault();
+            el.scrollLeft += e.deltaY;
+          }
+        }}
+      >
+        {images.map((im, i) => (
+          <button
+            key={`${im.src}-${i}`}
+            type="button"
+            className={cn(
+              "shrink-0 overflow-hidden rounded-2xl",
+              "ring-1 ring-slate-200 bg-white",
+              "shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
+              "transition hover:-translate-y-0.5 active:scale-[0.99]",
+              "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
+            )}
+            // ถ้าคุณต้องการคลิกแล้ว “ดูรูปใหญ่” ก็ใส่ onClick ต่อได้
+            onClick={() => {}}
+          >
+            <div className="relative h-[110px] w-[196px] sm:h-[140px] sm:w-[248px] bg-slate-50">
+              <img
+                src={im.src}
+                alt={im.alt || `photo ${i + 1}`}
+                className="absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+                loading="lazy"
+              />
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* ✅ scrollbar styling (โชว์เป็นแถบสวยๆ) */}
+      <style>{`
+        .life-scrollbar {
+          scrollbar-gutter: stable;
+          scrollbar-width: thin;                 /* Firefox */
+          scrollbar-color: rgba(15,23,42,.35) rgba(148,163,184,.25);
+        }
+        .life-scrollbar::-webkit-scrollbar {
+          height: 10px;
+        }
+        .life-scrollbar::-webkit-scrollbar-track {
+          background: rgba(148,163,184,.25);
+          border-radius: 999px;
+        }
+        .life-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(15,23,42,.35);
+          border-radius: 999px;
+        }
+        .life-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(15,23,42,.50);
+        }
+      `}</style>
+    </>
+  );
+}
 
   function closeModal() {
     setModalOpen(false);
     setModalItem(null);
+  }
+
+  /** =========================
+   * ✅ LIFE AT SHD (NEW DATA)
+   * - แค่ 3 การ์ดหมวดหมู่
+   * - คลิกแล้วเปิด modal (รูปอย่างเดียว)
+   * ========================= */
+  const lifeCategories = useMemo(() => {
+    // ใช้ asset เดิมชุด /images/why/events/e1..e10.jpg เพื่อไม่พัง
+    const imgs = Array.from({ length: 10 }).map((_, i) => `/images/why/events/e${i + 1}.jpg`);
+
+    const c1 = {
+      key: "events",
+      title: t("why.life.categories.1", { defaultValue: "Events & Townhalls" }),
+      cover: imgs[0],
+      images: imgs.slice(0, 4),
+    };
+    const c2 = {
+      key: "culture",
+      title: t("why.life.categories.2", { defaultValue: "Culture & Moments" }),
+      cover: imgs[4],
+      images: imgs.slice(4, 7),
+    };
+    const c3 = {
+      key: "team",
+      title: t("why.life.categories.3", { defaultValue: "Team Activities" }),
+      cover: imgs[7],
+      images: imgs.slice(7, 10),
+    };
+
+    return [c1, c2, c3];
+  }, [t]);
+
+  const [lifeOpen, setLifeOpen] = useState(false);
+  const [lifeTitle, setLifeTitle] = useState("");
+  const [lifeImages, setLifeImages] = useState<string[]>([]);
+
+  function openLifeGallery(title: string, images: string[]) {
+    setLifeTitle(title);
+    setLifeImages(images);
+    setLifeOpen(true);
+  }
+
+  function closeLifeGallery() {
+    setLifeOpen(false);
+    setLifeTitle("");
+    setLifeImages([]);
   }
 
   return (
@@ -998,7 +1325,11 @@ export default function WhyPage() {
         />
       </Helmet>
 
+      {/* ✅ Stories modal (เดิม) */}
       <ImageModal open={modalOpen} onClose={closeModal} item={modalItem} />
+
+      {/* ✅ Life modal (ใหม่: รูปอย่างเดียว) */}
+      <LifeGalleryModal open={lifeOpen} onClose={closeLifeGallery} title={lifeTitle} images={lifeImages} />
 
       {/* =========================
           A) HERO
@@ -1319,7 +1650,7 @@ export default function WhyPage() {
       </section>
 
       {/* =========================
-          E) LIFE AT SHD
+          E) LIFE AT SHD (NEW)
          ========================= */}
       <section className="relative isolate overflow-hidden bg-white">
         <div className="absolute inset-0">
@@ -1354,75 +1685,23 @@ export default function WhyPage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => life.setUserPaused((v) => !v)}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-black",
-                    "bg-white text-slate-900 ring-1 ring-slate-200",
-                    "shadow-[0_12px_40px_rgba(15,23,42,0.10)]",
-                    "transition hover:-translate-y-0.5 active:scale-[0.98]",
-                    "focus:outline-none focus-visible:ring-[3px] focus-visible:ring-slate-900/20"
-                  )}
-                >
-                  {life.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                  {life.userPaused
-                    ? t("why.carousel.autoPlay", { defaultValue: "Auto play" })
-                    : t("why.carousel.pause", { defaultValue: "Pause" })}
-                </button>
-
-                <CarouselControlsLight
-                  onLeft={() => life.scrollByDir(-1)}
-                  onRight={() => life.scrollByDir(1)}
-                  leftAria={t("why.carousel.leftAria", { defaultValue: "Scroll left" })}
-                  rightAria={t("why.carousel.rightAria", { defaultValue: "Scroll right" })}
-                />
+              {/* ✅ ไม่มี carousel controls / ไม่มี pause/play */}
+              <div className="text-[11px] text-slate-500">
+                {t("why.life.note", { defaultValue: "เลือกหมวดเพื่อดูรูปทั้งหมดแบบเลื่อนแนวนอน" })}
               </div>
             </div>
 
-            <div
-              ref={life.ref}
-              className={cn(
-                "mt-8 no-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2",
-                "snap-x snap-mandatory",
-                "touch-pan-x"
-              )}
-              style={{
-                WebkitOverflowScrolling: "touch",
-                touchAction: "pan-x",
-              }}
-              onMouseEnter={() => life.setHovered(true)}
-              onMouseLeave={() => life.setHovered(false)}
-              onPointerDown={() => life.markUserAction()}
-              onWheel={() => life.markUserAction()}
-              onTouchStart={() => life.markUserAction()}
-            >
-              {eventPhotos.map((p, idx) => (
-                <div key={`${p.src}-${idx}`} className="snap-start">
-                  <PhotoCard16x8
-                    src={p.src}
-                    title={p.title}
-                    desc={p.desc}
-                    badge={p.badge}
-                    onClick={() =>
-                      openModal({
-                        src: p.src,
-                        title: p.title,
-                        desc: p.desc,
-                        badge: p.badge,
-                      })
-                    }
-                    expandLabel={t("why.common.expand", { defaultValue: "Expand" })}
-                  />
-                </div>
+            {/* ✅ 3 category cards only */}
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {lifeCategories.map((c) => (
+                <LifeCategoryCard
+                  key={c.key}
+                  title={c.title}
+                  coverSrc={c.cover}
+                  onClick={() => openLifeGallery(c.title, c.images)}
+                />
               ))}
             </div>
-
-            <style>{`
-              .no-scrollbar::-webkit-scrollbar{display:none;}
-              .no-scrollbar{-ms-overflow-style:none; scrollbar-width:none;}
-            `}</style>
           </div>
         </div>
       </section>

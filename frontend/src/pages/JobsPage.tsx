@@ -64,23 +64,29 @@ function Pagination({
   page,
   totalPages,
   onChange,
+  className,
 }: {
   page: number;
   totalPages: number;
   onChange: (p: number) => void;
+  className?: string;
 }) {
   const { t } = useTranslation();
+
   const items = useMemo(() => buildPaginationItems(page, totalPages), [page, totalPages]);
   if (totalPages <= 1) return null;
 
+  const prevLabel = t("jobs.pagination.prev", { defaultValue: "Previous page" });
+  const nextLabel = t("jobs.pagination.next", { defaultValue: "Next page" });
+
   return (
-    <div className="mt-8 flex items-center justify-center gap-2">
+    <div className={cn("flex items-center justify-center gap-2", className)}>
       <button
         type="button"
         className="btn btn-ghost"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
-        aria-label={t("jobs.pagination.prev")}
+        aria-label={prevLabel}
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
@@ -95,6 +101,12 @@ function Pagination({
             );
           }
           const active = it === page;
+
+          const goToLabel = t("jobs.pagination.goTo", {
+            page: it,
+            defaultValue: `Go to page ${it}`,
+          });
+
           return (
             <button
               key={it}
@@ -106,7 +118,8 @@ function Pagination({
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               )}
               onClick={() => onChange(it)}
-              aria-label={t("jobs.pagination.goTo", { page: it })}
+              aria-label={goToLabel}
+              aria-current={active ? "page" : undefined}
             >
               {it}
             </button>
@@ -119,7 +132,7 @@ function Pagination({
         className="btn btn-ghost"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
-        aria-label={t("jobs.pagination.next")}
+        aria-label={nextLabel}
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -138,19 +151,23 @@ function normalizeOpt(v: any) {
 }
 
 function SelectPill({
-  label,
+  labelKey,
+  labelDefault,
   icon,
   value,
   options,
   onChange,
 }: {
-  label: string;
+  labelKey: string;
+  labelDefault: string;
   icon: ReactNode;
   value: string;
   options: string[];
   onChange: (v: string) => void;
 }) {
   const { t } = useTranslation();
+  const label = t(labelKey, { defaultValue: labelDefault });
+  const allLabel = t("common.all", { defaultValue: "All" });
 
   return (
     <div className="w-full">
@@ -175,16 +192,16 @@ function SelectPill({
             "cursor-pointer min-h-[48px]"
           )}
           style={{
-            color: 'white',
-            WebkitAppearance: 'none',
-            MozAppearance: 'none',
+            color: "white",
+            WebkitAppearance: "none",
+            MozAppearance: "none",
           }}
         >
-          <option value="ALL" style={{ backgroundColor: '#1e293b', color: 'white' }}>
-            {t("common.all")}
+          <option value="ALL" style={{ backgroundColor: "#1e293b", color: "white" }}>
+            {allLabel}
           </option>
           {options.map((o) => (
-            <option key={o} value={o} style={{ backgroundColor: '#1e293b', color: 'white' }}>
+            <option key={o} value={o} style={{ backgroundColor: "#1e293b", color: "white" }}>
               {o}
             </option>
           ))}
@@ -287,7 +304,9 @@ function HiringProcessCards() {
                   className={cn(
                     "absolute inset-0 p-5 transition duration-300",
                     "md:group-hover:opacity-0 md:group-hover:translate-y-2 md:group-hover:pointer-events-none",
-                    isOpen ? "opacity-0 translate-y-2 pointer-events-none" : "opacity-100 translate-y-0 pointer-events-auto"
+                    isOpen
+                      ? "opacity-0 translate-y-2 pointer-events-none"
+                      : "opacity-100 translate-y-0 pointer-events-auto"
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -460,7 +479,7 @@ export default function JobsPage() {
 
   const [heroHover, setHeroHover] = useState(false);
 
-  const title = useMemo(() => `${t("nav.jobs")} • SHD Careers`, [t]);
+  const title = useMemo(() => `${t("nav.jobs", { defaultValue: "Jobs" })} • SHD Careers`, [t]);
 
   function updateParams(next: Record<string, string>) {
     const merged = new URLSearchParams(sp);
@@ -494,7 +513,7 @@ export default function JobsPage() {
       })
       .catch((e: any) => {
         if (!alive) return;
-        setError(e?.message ?? t("common.error"));
+        setError(e?.message ?? t("common.error", { defaultValue: "Something went wrong" }));
         setJobs([]);
         setTotal(0);
       })
@@ -509,12 +528,12 @@ export default function JobsPage() {
   }, [lang, q, country, department, level, t]);
 
   const filterOptions: FilterOptions = useMemo(() => {
-    const uniq = (xs: string[]) =>
+    const uniqArr = (xs: string[]) =>
       Array.from(new Set(xs.map((x) => normalizeOpt(x)).filter((x) => x && x !== "null" && x !== "undefined")));
 
-    const countries = uniq(jobs.map((j: any) => j?.country)).sort((a, b) => a.localeCompare(b));
-    const departments = uniq(jobs.map((j: any) => j?.department)).sort((a, b) => a.localeCompare(b));
-    const levels = uniq(jobs.map((j: any) => j?.level)).sort((a, b) => a.localeCompare(b));
+    const countries = uniqArr(jobs.map((j: any) => j?.country)).sort((a, b) => a.localeCompare(b));
+    const departments = uniqArr(jobs.map((j: any) => j?.department)).sort((a, b) => a.localeCompare(b));
+    const levels = uniqArr(jobs.map((j: any) => j?.level)).sort((a, b) => a.localeCompare(b));
 
     return { countries, departments, levels };
   }, [jobs]);
@@ -564,7 +583,8 @@ export default function JobsPage() {
     updateParams({ country: "ALL", department: "ALL", level: "ALL", page: "1" });
   }
 
-  const hasAnyFilter = (country && country !== "ALL") || (department && department !== "ALL") || (level && level !== "ALL");
+  const hasAnyFilter =
+    (country && country !== "ALL") || (department && department !== "ALL") || (level && level !== "ALL");
 
   return (
     <>
@@ -573,57 +593,26 @@ export default function JobsPage() {
       </Helmet>
 
       <section className="bg-white">
-        {/* ✅ HERO - แบบใหม่ทั้งหมด: แยก layer ชัดเจน 100% */}
+        {/* ✅ HERO - layer แยก + ไม่กินคลิก */}
         <div className="relative overflow-hidden border-b border-slate-200">
-          {/* 
-            Background Layer (z-0) 
-            - อยู่ด้านหลังสุด
-            - ทุก element ภายใน = pointer-events: none
-            - ไม่รับ click events ใดๆ เลย
-          */}
-          <div 
-            className="absolute inset-0 select-none"
-            style={{ pointerEvents: 'none' }}
-          >
+          <div className="absolute inset-0 select-none" style={{ pointerEvents: "none" }}>
             <div
               className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
-              style={{ 
-                backgroundImage: `url(/images/jobs-hero.jpg)`,
-                pointerEvents: 'none'
-              }}
+              style={{ backgroundImage: `url(/images/jobs-hero.jpg)`, pointerEvents: "none" }}
             />
             <div
-              className={cn(
-                "absolute inset-0 bg-cover bg-center transition-opacity duration-500",
-                heroHover ? "opacity-100" : "opacity-0"
-              )}
-              style={{ 
-                backgroundImage: `url(/images/jobs-hero-hover.jpg)`,
-                pointerEvents: 'none'
-              }}
+              className={cn("absolute inset-0 bg-cover bg-center transition-opacity duration-500", heroHover ? "opacity-100" : "opacity-0")}
+              style={{ backgroundImage: `url(/images/jobs-hero-hover.jpg)`, pointerEvents: "none" }}
             />
-            <div 
+            <div
               className="absolute inset-0 bg-[radial-gradient(62%_58%_at_18%_18%,rgba(0,0,0,0.38),transparent_62%)]"
-              style={{ pointerEvents: 'none' }}
+              style={{ pointerEvents: "none" }}
             />
-            <div 
-              className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-white/0 to-white"
-              style={{ pointerEvents: 'none' }}
-            />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-white/0 to-white" style={{ pointerEvents: "none" }} />
           </div>
 
-          {/* 
-            Content Layer (relative, no z-index) 
-            - ทุก interactive element อยู่ layer นี้
-            - pointer-events: auto (default)
-          */}
-          <div 
-            className="relative"
-            onMouseEnter={() => setHeroHover(true)}
-            onMouseLeave={() => setHeroHover(false)}
-          >
+          <div className="relative" onMouseEnter={() => setHeroHover(true)} onMouseLeave={() => setHeroHover(false)}>
             <div className="mx-auto w-full max-w-[1280px] px-4 pt-24 pb-12 md:pt-28 md:pb-16">
-              {/* Text Content - ไม่ต้องคลิก */}
               <div className="w-full max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -639,9 +628,7 @@ export default function JobsPage() {
                 </p>
               </div>
 
-              {/* Interactive Controls - คลิกได้ทั้งหมด */}
               <div className="mt-5 w-full">
-                {/* Search & Buttons */}
                 <div className="flex flex-col gap-3 md:flex-row md:items-center">
                   <div className="relative flex-1">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/80" />
@@ -662,7 +649,7 @@ export default function JobsPage() {
 
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between md:justify-end">
                     <div className="rounded-2xl border-2 border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white select-none">
-                      {loading ? t("common.loading") : t("jobs.hero.openCount", { count: totalCount })}
+                      {loading ? t("common.loading", { defaultValue: "Loading…" }) : t("jobs.hero.openCount", { count: totalCount })}
                     </div>
 
                     {hasAnyFilter && (
@@ -683,24 +670,26 @@ export default function JobsPage() {
                   </div>
                 </div>
 
-                {/* Filters - แยกออกมาเป็น row ของตัวเอง */}
                 <div className="mt-3 grid gap-3 md:grid-cols-3">
                   <SelectPill
-                    label={t("jobs.filters.country")}
+                    labelKey="jobs.filters.country"
+                    labelDefault="Country"
                     icon={<Globe2 className="h-4 w-4 text-white/90" />}
                     value={country}
                     options={filterOptions.countries}
                     onChange={(v) => updateParams({ country: v, page: "1" })}
                   />
                   <SelectPill
-                    label={t("jobs.filters.department")}
+                    labelKey="jobs.filters.department"
+                    labelDefault="Department"
                     icon={<Building2 className="h-4 w-4 text-white/90" />}
                     value={department}
                     options={filterOptions.departments}
                     onChange={(v) => updateParams({ department: v, page: "1" })}
                   />
                   <SelectPill
-                    label={t("jobs.filters.level")}
+                    labelKey="jobs.filters.level"
+                    labelDefault="Level"
                     icon={<Layers className="h-4 w-4 text-white/90" />}
                     value={level}
                     options={filterOptions.levels}
@@ -708,9 +697,7 @@ export default function JobsPage() {
                   />
                 </div>
 
-                <div className="mt-3 text-xs font-semibold text-white/85">
-                  {t("jobs.hero.tip")}
-                </div>
+                <div className="mt-3 text-xs font-semibold text-white/85">{t("jobs.hero.tip")}</div>
               </div>
             </div>
           </div>
@@ -724,16 +711,18 @@ export default function JobsPage() {
                 <h2 className="text-2xl font-black tracking-tight">{t("jobs.list.title")}</h2>
                 <div className="mt-1 text-sm text-slate-600">
                   {loading
-                    ? t("common.loading")
+                    ? t("common.loading", { defaultValue: "Loading…" })
                     : t("jobs.list.subtitle", { count: totalCount, perPage: PAGE_SIZE })}
                 </div>
               </div>
 
-              <div className="md:block">
-                <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
-                  {t("jobs.list.pageLabel")} <span className="font-bold">{page}</span> / {totalPages}
-                </div>
-              </div>
+              {/* ✅ FIX #1: Pagination ด้านบน (กดได้เหมือนด้านล่าง) */}
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onChange={onChangePage}
+                className="mt-2 md:mt-0"
+              />
             </div>
 
             {error && (
@@ -746,7 +735,7 @@ export default function JobsPage() {
           <div className="mt-4">
             {loading ? (
               <div className="rounded-3xl border border-slate-200 bg-white p-6">
-                <div className="text-sm text-slate-600">{t("common.loading")}</div>
+                <div className="text-sm text-slate-600">{t("common.loading", { defaultValue: "Loading…" })}</div>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {Array.from({ length: 10 }).map((_, i) => (
                     <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
@@ -763,7 +752,8 @@ export default function JobsPage() {
                   ))}
                 </div>
 
-                <Pagination page={page} totalPages={totalPages} onChange={onChangePage} />
+                {/* ✅ Pagination ด้านล่าง (ตัวเดียวกัน) */}
+                <Pagination page={page} totalPages={totalPages} onChange={onChangePage} className="mt-8" />
               </>
             )}
           </div>

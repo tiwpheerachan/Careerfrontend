@@ -539,7 +539,6 @@
 "jobs": {
   "title": "在招职位",
   "openings": "个职位开放",
-  "filters": "筛选",
   "empty": "没有符合筛选条件的职位。",
   "applyTitle": "申请",
 
@@ -559,8 +558,12 @@
     "clearFilters": "清除筛选条件",
     "tip": "提示：选择国家 / 部门 / 级别后，结果将立即更新。"
   },
-
-  "filtersLabel": {
+    "card": {
+    "position_one": "职位",
+    "position_other": "职位",
+    "hiring": "正在招聘"
+  },
+  "filters": {
     "country": "国家",
     "department": "部门",
     "level": "级别"

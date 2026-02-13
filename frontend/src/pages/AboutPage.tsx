@@ -1120,9 +1120,9 @@ export default function AboutPage() {
         </BgSection>
 
         {/* Offices */}
-        <BgSection bg="/images/about/apps.jpg" className="py-2">
+        {/* <BgSection bg="/images/about/apps.jpg" className="py-2">
           <AppsWall title={appsTitle} desc={appsDesc} images={officeWallImages} />
-        </BgSection>
+        </BgSection>*/}
 
         {/* STORY */}
         <BgSection id="story" bg="/images/about/story.jpg" className="py-2">
