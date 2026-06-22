@@ -5,3 +5,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# ✅ SPA fallback: ทุก route (เช่น /admin, /jobs/:id) เสิร์ฟ index.html
+#    แล้วให้ React Router จัดการเอง — กัน 404 ตอนเข้า URL ตรงๆ/refresh
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
