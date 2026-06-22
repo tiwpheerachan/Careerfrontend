@@ -30,6 +30,51 @@ i18n.use(initReactI18next).init({
 
 i18n.on("languageChanged", (lng) => {
   localStorage.setItem(STORAGE_KEY, lng);
+  loadContentOverrides(lng);
 });
+
+// ---------------------------------------------------------------
+// ✅ CMS overrides: ดึงข้อความที่แอดมินแก้จาก backend แล้ว merge ทับ default
+//    (best-effort — ถ้า API ไม่พร้อม เว็บใช้ข้อความ default ตามปกติ)
+// ---------------------------------------------------------------
+const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
+const loadedOverrides = new Set<string>();
+
+// แปลง dot-key ({"a.b.c": "x"}) -> nested ({a:{b:{c:"x"}}})
+function unflatten(flat: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(flat)) {
+    const parts = k.split(".");
+    let node = out;
+    for (let i = 0; i < parts.length - 1; i++) {
+      node[parts[i]] = node[parts[i]] && typeof node[parts[i]] === "object" ? node[parts[i]] : {};
+      node = node[parts[i]];
+    }
+    node[parts[parts.length - 1]] = v;
+  }
+  return out;
+}
+
+export async function loadContentOverrides(lng: string): Promise<void> {
+  if (!API_BASE || loadedOverrides.has(lng)) return;
+  loadedOverrides.add(lng);
+  try {
+    const res = await fetch(`${API_BASE}/content?lang=${encodeURIComponent(lng)}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const items = data?.items;
+    if (items && typeof items === "object" && Object.keys(items).length) {
+      i18n.addResourceBundle(lng, "translation", unflatten(items), true, true);
+      i18n.emit("languageChanged", i18n.language); // re-render
+    }
+  } catch {
+    /* ignore — ใช้ default */
+  }
+}
+
+// โหลด override ของภาษาปัจจุบันตอนเริ่ม
+loadContentOverrides(i18n.language);
 
 export default i18n;

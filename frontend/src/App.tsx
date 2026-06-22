@@ -8,10 +8,15 @@ import JobDetailPage from "@/pages/JobDetailPage";
 import ApplyPage from "@/pages/ApplyPage";
 import PartnersPage from "@/pages/PartnersPage";
 import NotFoundPage from "@/pages/NotFoundPage";
+import AdminApp from "@/admin/AdminApp";
 
 export default function App() {
   return (
     <Routes>
+      {/* ✅ ระบบหลังบ้าน — แยกออกจาก Layout เว็บสาธารณะ (ไม่มี Navbar/Footer/ลิงก์ใดๆ ชี้มา)
+          เข้าถึงได้ทางเดียวคือพิมพ์ URL /admin ตรงๆ */}
+      <Route path="/admin/*" element={<AdminApp />} />
+
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
