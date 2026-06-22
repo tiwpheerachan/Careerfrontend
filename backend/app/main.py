@@ -378,6 +378,102 @@ async def fetch_job_by_id(job_id: str, lang: str = "th") -> Dict[str, Any]:
 
 
 # ---------------------------
+# ✅ Jobs from Supabase (Phase 2) — แหล่งข้อมูลหลักใหม่
+#    เก็บ 3 ภาษาแยกคอลัมน์ แล้ว resolve เป็นภาษาเดียวให้ frontend (shape เดิม)
+# ---------------------------
+JOB_LANGS = ("th", "en", "zh")
+_JOBS_DB_FLAG: Dict[str, Any] = {}  # cache has-rows 30s -> ลด query
+
+
+def _job_public_shape(r: Dict[str, Any], lang: str) -> Dict[str, Any]:
+    lang = (lang or "th").lower()
+    if lang not in JOB_LANGS:
+        lang = "th"
+
+    def pick(base: str) -> str:
+        return (
+            (r.get(f"{base}_{lang}") or "").strip()
+            or (r.get(f"{base}_en") or "").strip()
+            or (r.get(f"{base}_th") or "").strip()
+            or (r.get(f"{base}_zh") or "").strip()
+        )
+
+    return {
+        "job_id": str(r.get("job_id", "")).strip(),
+        "title": pick("title"),
+        "location": pick("location"),
+        "description": pick("desc"),
+        "qualifications": pick("qual"),
+        "department": (r.get("department") or "").strip(),
+        "level": (r.get("level") or "").strip(),
+        "country": (r.get("country") or "").strip(),
+        "quantity": r.get("quantity"),
+        "updated_at": r.get("updated_at"),
+        "status": (r.get("status") or "").strip(),
+    }
+
+
+def jobs_db_has_rows() -> bool:
+    """เช็คว่าตาราง jobs มีข้อมูลแล้วหรือยัง (cache 30 วิ)
+    ถ้ายังว่าง/ยังไม่มีตาราง -> public ใช้ Google feed เดิมไปก่อน (ไม่ทำเว็บล่ม)"""
+    now = time.time()
+    if _JOBS_DB_FLAG.get("v") is not None and (now - _JOBS_DB_FLAG.get("t", 0)) < 30:
+        return bool(_JOBS_DB_FLAG["v"])
+    has = False
+    try:
+        sb = supabase_client()
+        res = sb.table("jobs").select("job_id", count="exact").limit(1).execute()
+        has = (getattr(res, "count", 0) or 0) > 0
+    except Exception:
+        has = False
+    _JOBS_DB_FLAG["v"] = has
+    _JOBS_DB_FLAG["t"] = now
+    return has
+
+
+def invalidate_jobs_db_flag() -> None:
+    _JOBS_DB_FLAG.clear()
+
+
+def fetch_jobs_db(
+    lang: str = "th",
+    country: str = "",
+    department: str = "",
+    level: str = "",
+    q: str = "",
+) -> List[Dict[str, Any]]:
+    sb = supabase_client()
+    query = sb.table("jobs").select("*").eq("status", "published")
+    if country:
+        query = query.eq("country", country)
+    if department:
+        query = query.eq("department", department)
+    if level:
+        query = query.eq("level", level)
+    res = query.execute()
+    rows = _get_res_data(res) or []
+    shaped = [_job_public_shape(r, lang) for r in rows if str(r.get("job_id", "")).strip()]
+
+    qn = (q or "").strip().lower()
+    if qn:
+        def hay(x: Dict[str, Any]) -> str:
+            return f"{x['title']} {x['department']} {x['level']} {x['location']} {x['country']}".lower()
+        shaped = [x for x in shaped if qn in hay(x)]
+
+    shaped.sort(key=lambda x: str(x.get("updated_at") or ""), reverse=True)
+    return shaped
+
+
+def fetch_job_db(job_id: str, lang: str = "th") -> Optional[Dict[str, Any]]:
+    sb = supabase_client()
+    res = sb.table("jobs").select("*").eq("job_id", job_id).limit(1).execute()
+    rows = _get_res_data(res) or []
+    if not rows:
+        return None
+    return _job_public_shape(rows[0], lang)
+
+
+# ---------------------------
 # App
 # ---------------------------
 app = FastAPI(title=APP_NAME)
@@ -390,6 +486,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ✅ Admin router (Phase 1) — auth + applications management
+# รองรับทั้งการรันแบบ `uvicorn app.main:app` (cwd=backend) และ `uvicorn main:app` (cwd=app)
+try:
+    from app.admin import router as admin_router  # type: ignore
+except Exception:
+    from admin import router as admin_router  # type: ignore
+app.include_router(admin_router)
 
 
 @app.on_event("startup")
@@ -505,6 +609,11 @@ async def list_jobs(
     Returns:
       { ok:true, version:"...", rows:[...], total:n }
     """
+    # ✅ Phase 2: อ่านจาก Supabase ก่อน ถ้ายังไม่ได้ import ค่อย fallback ไป Google feed
+    if jobs_db_has_rows():
+        rows = fetch_jobs_db(lang=lang, country=country, department=department, level=level, q=q)
+        return {"ok": True, "version": "db", "rows": rows, "total": len(rows)}
+
     # ✅ อย่าส่ง q ให้ feed (feed ไม่รองรับ q)
     data = await fetch_jobs_feed(lang=lang, country=country, department=department, level=level)
     rows: List[Dict[str, Any]] = data.get("rows", []) or []
@@ -524,8 +633,29 @@ async def list_jobs(
 
 @app.get("/jobs/{job_id}")
 async def job_detail(job_id: str, lang: str = "th") -> Dict[str, Any]:
+    if jobs_db_has_rows():
+        j = fetch_job_db(job_id, lang)
+        if not j:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return {"ok": True, "job": j}
     j = await fetch_job_by_id(job_id=job_id, lang=lang)
     return {"ok": True, "job": j}
+
+
+# ✅ Public CMS content (Phase 3): override ข้อความต่อ key+lang
+@app.get("/content")
+def get_content(lang: str = "th") -> Dict[str, Any]:
+    items: Dict[str, Any] = {}
+    try:
+        sb = supabase_client()
+        res = sb.table("site_content").select("key,value").eq("lang", lang).execute()
+        for r in (_get_res_data(res) or []):
+            k = str(r.get("key", "")).strip()
+            if k:
+                items[k] = r.get("value")
+    except Exception:
+        items = {}  # DB ว่าง/ตารางยังไม่มี -> เว็บใช้ default
+    return {"ok": True, "lang": lang, "items": items}
 
 
 # Apply endpoint -> Supabase + Google Sheet
@@ -561,8 +691,12 @@ async def apply(
     require_env("SUPABASE_SERVICE_ROLE_KEY", SUPABASE_SERVICE_ROLE_KEY)
     require_env("SUPABASE_BUCKET", SUPABASE_BUCKET)
 
-    # Lookup job to prevent tampering
-    job = await fetch_job_by_id(job_id=job_id, lang="en")
+    # Lookup job to prevent tampering (Phase 2: DB ก่อน, fallback feed)
+    job: Optional[Dict[str, Any]] = None
+    if jobs_db_has_rows():
+        job = fetch_job_db(job_id, "en")
+    if not job:
+        job = await fetch_job_by_id(job_id=job_id, lang="en")
     job_country = str(job.get("country", "")).strip()
     job_department = str(job.get("department", "")).strip()
     job_level = str(job.get("level", "")).strip()
