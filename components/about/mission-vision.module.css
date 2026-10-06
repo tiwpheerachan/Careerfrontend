@@ -1,0 +1,194 @@
+/* The old Mission / Vision section's inline <style> block, unchanged. */
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #0f172a;
+}
+.kicker::before {
+  content: '';
+  display: inline-block;
+  width: 44px;
+  height: 1px;
+  background: rgba(15, 23, 42, 0.22);
+}
+.h {
+  color: #0f172a;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-size: 34px;
+}
+@media (min-width: 640px) {
+  .h {
+    font-size: 42px;
+  }
+}
+.p {
+  color: rgba(15, 23, 42, 0.72);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.orbitWrap {
+  position: relative;
+  width: clamp(320px, 42vw, 520px);
+  aspect-ratio: 1 / 1;
+  margin-left: auto;
+  margin-right: auto;
+  transform: translateX(-16px);
+  container-type: size;
+}
+@media (max-width: 1024px) {
+  .orbitWrap {
+    transform: translateX(0);
+  }
+}
+
+.orbitSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.ringStroke {
+  fill: none;
+  stroke: rgba(59, 130, 246, 0.28);
+  stroke-width: 0.78;
+  shape-rendering: geometricPrecision;
+}
+.ringDash {
+  stroke-dasharray: 1 8.6;
+  stroke-linecap: round;
+  opacity: 0.92;
+}
+.ringSolid {
+  stroke: rgba(59, 130, 246, 0.12);
+  opacity: 0.95;
+}
+@keyframes dashMove {
+  to {
+    stroke-dashoffset: -260;
+  }
+}
+.dashAnim {
+  animation: dashMove 88s linear infinite;
+}
+
+.rot {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  animation: spin linear infinite;
+  transform: translateZ(0);
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  transform: translate(-50%, -50%) rotate(var(--a)) translateX(calc(var(--r) * 1cqw));
+  transform-origin: 0 0;
+}
+.sm {
+  width: 38px;
+  height: 38px;
+}
+.xs {
+  width: 34px;
+  height: 34px;
+}
+
+@keyframes faceSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.node img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform-origin: 50% 50%;
+  animation: faceSpin var(--face, 0s) linear infinite;
+}
+
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 92px;
+  height: 92px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+}
+.center img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #b7f000;
+  transform: translate(-50%, -50%) rotate(var(--a)) translateX(calc(var(--r) * 1cqw));
+  transform-origin: 0 0;
+  opacity: 0.95;
+}
+
+.orbitCap {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.45);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@supports not (width: 1cqw) {
+  .node,
+  .dot {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateX(calc(var(--rpx, 180px)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rot {
+    animation: none !important;
+  }
+  .dashAnim {
+    animation: none !important;
+  }
+  .node img {
+    animation: none !important;
+  }
+}

@@ -5,12 +5,47 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
+   Tailwind 3 → 4, without the look changing.
+
+   The public pages were written for Tailwind 3 and moved over with the
+   official upgrade tool (shadow-sm → shadow-xs, backdrop-blur → -sm, …). What
+   the tool cannot move is a DEFAULT, and v4 changed four that the old markup
+   leans on. Each is put back to its v3 value here:
+
+     hover      v4 applies hover only on devices that can hover; v3 on all
+                (the hiring flip cards rely on tap = hover on phones)
+     ring       a ring with no colour class: v3 blue-500 at 50%, v4 currentColor
+                (the navbar's ring-1 has no colour — it was a faint blue ring)
+     border     a border with no colour class: v3 gray-200, v4 currentColor
+                (set by the base layer below, via --border)
+     placeholder v3 gray-400, v4 the text colour at 50%
+     cursor     v3 buttons show a pointer, v4 the default arrow
+     font       v3 ui-sans-serif/system-ui; v4.3 an -apple-system stack
+
+   Fifteen classes that Tailwind 3 never generated (bg-black/18 and friends —
+   v3 had no /18 step) were removed during the port rather than left to start
+   rendering now. See docs/ui-port.md.
+   --------------------------------------------------------------------------- */
+@custom-variant hover (&:hover);
+
+@theme {
+  /* v3's default sans stack. Tailwind 4.3 changed the default to
+     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto… which renders a
+     different face on Windows/Linux and shifts Thai metrics. */
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --default-ring-color: rgb(59 130 246 / 0.5);
+  /* The old tailwind.config.js's one extension. */
+  --shadow-soft: 0 10px 30px rgba(2, 6, 23, 0.1);
+}
+
+/* ---------------------------------------------------------------------------
    Design tokens — shadcn's names, the careers site's colours.
 
-   Starting values only: the blue is the old site's btn-primary (blue-600) and
-   theme-color. The full palette (slate neutrals, the amber accent, the brand
-   brown/gold, glass surfaces) moves in with the public pages, matched against
-   the old frontend/ so the look does not change.
+   Neutrals are the old site's (white page, gray-900 text, gray-200 borders,
+   slate greys); primary is its btn-primary blue-600. shadcn components that
+   ask for --primary or --border get the same colours the hand-written
+   markup uses, so the two can sit side by side.
    --------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
@@ -20,43 +55,24 @@
   --card: #ffffff;
   --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #111827;
+  --popover-foreground: #0f172a;
   --primary: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  --accent: #eff6ff;
-  --accent-foreground: #1d4ed8;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
   --destructive: #e11d48;
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #2563eb;
   --radius: 0.75rem;
-}
 
-.dark {
-  color-scheme: dark;
-
-  --background: #020617;
-  --foreground: #f8fafc;
-  --card: #0f172a;
-  --card-foreground: #f8fafc;
-  --popover: #0f172a;
-  --popover-foreground: #f8fafc;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #172554;
-  --accent-foreground: #bfdbfe;
-  --destructive: #f43f5e;
-  --border: #1e293b;
-  --input: #334155;
-  --ring: #3b82f6;
+  /* The old site's own. */
+  --page-max: 72rem;
+  --page-max-wide: 92rem;
 }
 
 @theme inline {
@@ -88,7 +104,58 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
   body {
-    @apply bg-background text-foreground antialiased;
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Full-bleed sections (w-screen) must not make the page scroll sideways. */
+    overflow-x: hidden;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The old site's component classes (frontend/src/styles.css), the ones the
+   pages still use. Same values, written for v4.
+   --------------------------------------------------------------------------- */
+@utility container-page {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+}
+
+@utility card {
+  @apply rounded-2xl border border-gray-200 bg-white shadow-xs;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition;
+}
+
+@utility btn-primary {
+  @apply btn bg-blue-600 text-white hover:bg-blue-700;
+}
+
+@utility btn-ghost {
+  @apply btn bg-transparent text-gray-900 hover:bg-gray-100;
+}
+
+@utility input {
+  @apply w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-hidden placeholder:text-gray-400 focus:border-blue-600;
+}
+
+/* Horizontal scrollers that hide their bar (carousels, galleries). */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }

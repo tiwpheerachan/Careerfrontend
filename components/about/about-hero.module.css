@@ -1,0 +1,6 @@
+/* The old hero's inline <style>: no mouse parallax for visitors who asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .parallax {
+    transform: none !important;
+  }
+}

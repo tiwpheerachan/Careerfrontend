@@ -29,6 +29,10 @@ services:
       - key: PUPPETEER_SKIP_DOWNLOAD
         value: 'true' # @hrefcl/apidoc (the API docs build) depends on puppeteer; no browser is needed
 
+      # --- The site --------------------------------------------------------
+      - key: SITE_URL
+        sync: false # https://<custom domain> — OpenGraph and canonical urls
+
       # --- Database -------------------------------------------------------
       - key: DATABASE_URL
         sync: false # transaction pooler :6543 with ?pgbouncer=true

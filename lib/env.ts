@@ -27,6 +27,10 @@ const serverSchema = z.object({
   // Session pooler (:5432). Only migrations use it; the app never does.
   DIRECT_URL: optional(postgresUrl),
 
+  // The public origin (https://careers.example.com): absolute urls in
+  // OpenGraph tags, canonical links and the sitemap.
+  SITE_URL: optional(z.url()),
+
   NEXT_PUBLIC_SUPABASE_URL: optional(z.url()),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: optional(z.string().min(1)),
 

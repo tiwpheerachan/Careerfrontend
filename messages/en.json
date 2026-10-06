@@ -3,8 +3,1237 @@
     "title": "SHD Careers",
     "description": "Build your career with SHD Technology"
   },
-  "placeholder": {
-    "heading": "SHD Careers",
-    "body": "This site is moving to its new platform."
+  "brand": "SHD Careers",
+  "nav": {
+    "about": "About",
+    "why": "Why SHD",
+    "jobs": "Jobs",
+    "partners": "Partners",
+    "findJobs": "Find jobs",
+    "menu": "Menu",
+    "language": "Language"
+  },
+  "common": {
+    "applyNow": "Apply now",
+    "viewDetail": "View detail",
+    "search": "Search jobs",
+    "country": "Country",
+    "department": "Department",
+    "level": "Level",
+    "location": "Location",
+    "all": "All",
+    "back": "Back",
+    "loading": "Loading...",
+    "notFound": "Not found",
+    "optional": "optional",
+    "select": "Select...",
+    "preview": "Preview",
+    "remove": "Remove",
+    "add": "Add",
+    "error": "Something went wrong. Please try again."
+  },
+  "home": {
+    "meta": {
+      "title": "SHD Careers",
+      "description": "SHD global recruitment — multi-country, multi-language, responsive."
+    },
+    "brandBadge": "SHD TECHNOLOGY",
+    "headline": "Global • Localization • Growth",
+    "subhead": "We scale brands with local excellence — from OMO & operations to retail and marketplaces, across regions.",
+    "ctaPrimary": "View open roles",
+    "ctaSecondary": "Read our story",
+    "chips": {
+      "jobsLoading": "Loading jobs…",
+      "openings": "{count} openings",
+      "regions": "SEA → Asia → LATAM",
+      "experience": "Premium hiring experience"
+    },
+    "bannerNote": "It only takes a few minutes to find the right role for you.",
+    "features": {
+      "multiCountry": {
+        "title": "Multi-country",
+        "desc": "Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico."
+      },
+      "languages": {
+        "title": "3 languages",
+        "desc": "Thai, English, Chinese — instant switching."
+      },
+      "professional": {
+        "title": "Professional",
+        "desc": "A clean, premium career-site experience."
+      },
+      "structured": {
+        "title": "Structured jobs",
+        "desc": "Filter by Country / Department / Level."
+      }
+    },
+    "offices": {
+      "kicker": "Local and global",
+      "title": "Grow around the world",
+      "subtitle": "Choose a country to explore roles there (4 cards per page).",
+      "dropdownAria": "Select office",
+      "openingsLoading": "Loading…",
+      "openings": "{count} openings",
+      "badges": {
+        "office": "Office",
+        "taglineFallback": "Local excellence to global scale",
+        "openings": "{count} openings"
+      },
+      "cardTitle": "Our offices",
+      "cardSubtitle": "Select a country to explore open roles in that location.",
+      "jobsSkeleton": "Loading roles…",
+      "jobCard": {
+        "deptLevelSep": " • "
+      },
+      "pagination": {
+        "prev": "Prev",
+        "next": "Next",
+        "page": "Page {page} / {total}"
+      },
+      "actions": {
+        "viewAllInOffice": "View all roles in {office}",
+        "goAllJobs": "Go to all jobs"
+      },
+      "noOpenings": "No open roles in {office} right now.",
+      "globe": {
+        "unavailable": "The 3D globe couldn't be displayed.",
+        "unavailableHint": "Choose an office from the list above."
+      },
+      "items": {
+        "TH": {
+          "label": "Thailand",
+          "tagline": "Bangkok • Local excellence to global scale"
+        },
+        "CN": {
+          "label": "China",
+          "tagline": "Innovation hub • Supply chain & product"
+        },
+        "ID": {
+          "label": "Indonesia",
+          "tagline": "SEA growth • Marketplace acceleration"
+        },
+        "PH": {
+          "label": "Philippines",
+          "tagline": "Operations • Customer experience"
+        },
+        "VN": {
+          "label": "Vietnam",
+          "tagline": "Regional team • Logistics & growth"
+        },
+        "BR": {
+          "label": "Brazil",
+          "tagline": "LATAM • Go-to-market & distribution"
+        },
+        "MX": {
+          "label": "Mexico",
+          "tagline": "LATAM expansion • Partnerships"
+        }
+      }
+    },
+    "findYourFit": {
+      "badge": "Find your fit",
+      "title": "Find what fits you",
+      "desc": "Based on real openings — pick a department and see how many roles are open.",
+      "ctaAllJobs": "Go to all jobs",
+      "errorPrefix": "Error:",
+      "noJobs": "No jobs in the system yet.",
+      "card": {
+        "hiring": "Hiring",
+        "roleUnit": "roles",
+        "teamChip": "Team",
+        "openingsChip": "Openings"
+      },
+      "footnote": "* Click a card to open Jobs with the department filter applied.",
+      "otherDepartment": "Other"
+    },
+    "gallery": {
+      "badge": "Partners",
+      "title": "Authorized distributor",
+      "desc": "Authorized distributor of the following trademarks",
+      "imageAltTop": "Gallery top {n}",
+      "imageAltBottom": "Gallery bottom {n}"
+    }
+  },
+  "about": {
+    "title": "About SHD",
+    "kicker": "Company Story",
+    "subtitle": "Global • Localization • Growth",
+    "brand": "SHD Technology",
+    "headline": "Operational excellence—delivered, end to end.",
+    "p1": "SHD builds world-class teams across countries, powered by a results-driven culture and a long-term growth mindset. From sourcing to service, we uphold uncompromising standards so every customer experience feels clear, consistent, and confidently delivered.",
+    "cta": {
+      "primary": "View all open roles",
+      "secondary": "Read our story"
+    },
+    "cards": [
+      {
+        "title": "Vision",
+        "desc": "Build systems and services that raise working standards across countries."
+      },
+      {
+        "title": "Mission",
+        "desc": "Develop people, processes, and technology for sustainable growth."
+      },
+      {
+        "title": "Footprint",
+        "desc": "Thailand, China, Indonesia, Philippines, Vietnam, Brazil, Mexico"
+      }
+    ],
+    "stats": [
+      {
+        "label": "Years of experience",
+        "value": "12",
+        "unit": "years"
+      },
+      {
+        "label": "Brands supported",
+        "value": "20+",
+        "unit": "brands"
+      },
+      {
+        "label": "KA channels",
+        "value": "1000+",
+        "unit": "stores"
+      }
+    ],
+    "capabilities": ["Warehousing", "Local logistics", "After-sales service", "OMO & Operations"],
+    "hero": {
+      "badges": {
+        "companyStory": "Company Story",
+        "globalLocalizationGrowth": "Global • Localization • Growth",
+        "omoOperations": "OMO & Operations"
+      },
+      "companyName": "SHD",
+      "headline": "Operational excellence—delivered, end to end.",
+      "subheadline": "We hold quality from start to finish—so every customer experience is clear and confident.",
+      "cta": {
+        "viewJobs": "View all open roles",
+        "readStory": "Read our story"
+      },
+      "stats": {
+        "years": {
+          "label": "Years of experience",
+          "suffix": "years"
+        },
+        "brands": {
+          "label": "Brands supported",
+          "suffix": "brands"
+        },
+        "ka": {
+          "label": "KA channels",
+          "suffix": "stores"
+        }
+      },
+      "chips": {
+        "warehousing": "Warehousing",
+        "localLogistics": "Local logistics",
+        "afterSales": "After-sales service"
+      }
+    },
+    "offices": {
+      "title": "Our Offices",
+      "desc": "A living wall of our offices.",
+      "items": [
+        "Office 1",
+        "Office 2",
+        "Office 3",
+        "Office 4",
+        "Office 5",
+        "Office 6",
+        "Office 7",
+        "Office 8",
+        "Office 9",
+        "Office 10",
+        "Office 11",
+        "Office 12",
+        "Office 13",
+        "Office 14",
+        "Office 15",
+        "Office 16",
+        "Office 17",
+        "Office 18",
+        "Office 19",
+        "Office 20",
+        "Office 21",
+        "Office 22",
+        "Office 23",
+        "Office 24",
+        "Office 25",
+        "Office 26",
+        "Office 27",
+        "Office 28",
+        "Office 29",
+        "Office 30",
+        "Office 31",
+        "Office 32",
+        "Office 33",
+        "Office 34",
+        "Office 35",
+        "Office 36",
+        "Office 37",
+        "Office 38",
+        "Office 39",
+        "Office 40",
+        "Office 41",
+        "Office 42",
+        "Office 43",
+        "Office 44",
+        "Office 45",
+        "Office 46",
+        "Office 47",
+        "Office 48",
+        "Office 49",
+        "Office 50",
+        "Office 51",
+        "Office 52",
+        "Office 53",
+        "Office 54",
+        "Office 55",
+        "Office 56",
+        "Office 57",
+        "Office 58",
+        "Office 59",
+        "Office 60",
+        "Office 61",
+        "Office 62",
+        "Office 63",
+        "Office 64",
+        "Office 65",
+        "Office 66",
+        "Office 67",
+        "Office 68",
+        "Office 69",
+        "Office 70",
+        "Office 71",
+        "Office 72",
+        "Office 73",
+        "Office 74",
+        "Office 75",
+        "Office 76",
+        "Office 77",
+        "Office 78",
+        "Office 79",
+        "Office 80"
+      ]
+    },
+    "story": {
+      "header": {
+        "kicker": "OUR STORY",
+        "title": "The SHD Story",
+        "desc": "From Shenzhen to Southeast Asia—building a scalable growth engine that helps brands go further, faster, and last longer."
+      },
+      "kicker": "OUR STORY",
+      "title": "The SHD Story",
+      "desc": "From Shenzhen to Southeast Asia—building a scalable growth engine that helps brands go further, faster, and last longer.",
+      "heroBadge": "From 0→1 to 1→100",
+      "heroTitle": "Build local. Scale fast.\nGrow sustainable.",
+      "heroSub": "A system designed to localize brands with precision—and scale with momentum, year after year.",
+      "heroStats": [
+        {
+          "label": "Founded",
+          "value": "2013"
+        },
+        {
+          "label": "Countries",
+          "value": "9"
+        },
+        {
+          "label": "Brands",
+          "value": "20+"
+        }
+      ],
+      "flow": {
+        "header": {
+          "kicker": "SHD STORY FLOW",
+          "titleLine1": "Commitment is what we stand for.",
+          "titleLine2": "Execution is our proof.",
+          "subtitle": "Vision • Action • Scale"
+        },
+        "steps": [
+          {
+            "id": "01",
+            "title": "Founded in Shenzhen, with an ASEAN mission",
+            "meta": "2013 • 12+ years • ASEAN-first",
+            "tag": "Start",
+            "body": "SHD was founded in Shenzhen in 2013 and set its sights on Southeast Asia with one clear purpose: helping brands truly win locally. We combine cross-border expertise with strong on-the-ground teams—guiding brands from 0→1 with clarity, then building the foundation for sustainable scale."
+          },
+          {
+            "id": "02",
+            "title": "Built the infrastructure to scale—properly",
+            "meta": "1,000+ KA • OMO • After-sales",
+            "tag": "Infrastructure",
+            "body": "Growth needs systems that can carry it. We invested in local warehousing, in-country logistics, and after-sales service—then connected online and offline through a full OMO operating model. With 1,000+ KA channel partners and a mature digital marketing engine, we help brands scale faster with quality intact."
+          },
+          {
+            "id": "03",
+            "title": "A 4D growth engine: from 0–1 to 1–100",
+            "meta": "20+ brands • #1 categories • within year one",
+            "tag": "4D Engine",
+            "body": "We run on a four-dimensional operating framework—Brand Positioning → Channel → Marketing → Operations—turning strategy into measurable growth. SHD has enabled 20+ consumer electronics brands to succeed across ASEAN, with several reaching #1 in their categories on major platforms within their first year."
+          }
+        ]
+      },
+      "videoOverlay": {
+        "pill": "From 0→1 to 1→100",
+        "headlineLine1": "Build local. Scale fast.",
+        "headlineLine2": "Grow sustainable.",
+        "desc": "A system designed to localize brands with precision—and scale with momentum, year after year."
+      },
+      "videoStats": [
+        {
+          "label": "Founded",
+          "value": "2013"
+        },
+        {
+          "label": "Countries",
+          "value": "9"
+        },
+        {
+          "label": "Brands",
+          "value": "20+"
+        }
+      ]
+    },
+    "missionVision": {
+      "kicker": "MISSION · VISION",
+      "headline": {
+        "line1": "Creating lasting value",
+        "line2": "with teams that grow together."
+      },
+      "mission": {
+        "kicker": "Our Mission",
+        "title": "MISSION",
+        "subtitle": "Our Mission",
+        "body": "Bring advanced technology closer to everyday life. We elevate quality of life worldwide through intelligent innovations and practical solutions—enabling lifestyles that are easier, healthier, and more vibrant."
+      },
+      "vision": {
+        "kicker": "Our Vision",
+        "title": "VISION",
+        "subtitle": "Our Vision",
+        "body": "To become a new-generation global retail brand—valuable, warm, and trusted. We celebrate cultural diversity, deliver service with care, and build a truly user-centered operating system."
+      },
+      "orbitCaption": "People move. Standards stay."
+    },
+    "whoWeAre": {
+      "tagline": "People move. Standards stay.",
+      "kicker": "WHO WE ARE",
+      "title": "Who We Are",
+      "desc": "SHD is a team that believes in one shared standard: being reliable, accountable, and worthy of trust.",
+      "values": [
+        {
+          "title": "Simplicity",
+          "desc": "We value clarity and honesty—grounded, straightforward, and true to ourselves."
+        },
+        {
+          "title": "Joy",
+          "desc": "We are friendly, energetic, and fun—spreading good spirit to the people around us."
+        },
+        {
+          "title": "Collaboration",
+          "desc": "We grow stronger together, and we cherish the time we share as a team."
+        }
+      ],
+      "cards": [
+        {
+          "title": "Simplicity",
+          "desc": "We value clarity and honesty—grounded, straightforward, and true to ourselves."
+        },
+        {
+          "title": "Joy",
+          "desc": "We are friendly, energetic, and fun—spreading good spirit to the people around us."
+        },
+        {
+          "title": "Collaboration",
+          "desc": "We grow stronger together, and we cherish the time we share as a team."
+        }
+      ]
+    },
+    "journey": {
+      "kicker": "OUR JOURNEY",
+      "title": "Our Growth Journey",
+      "desc": "From a bold beginning to the Co-Brand Building model—and the systems that scale brands across Southeast Asia.",
+      "tags": ["Start", "Local", "Brand", "Co-build", "Scale"],
+      "items": [
+        {
+          "year": "2013",
+          "title": "Founded in Shenzhen",
+          "desc": "Officially established in Shenzhen, grounded in deep experience across the consumer electronics industry.",
+          "tag": "Start"
+        },
+        {
+          "year": "2014–2017",
+          "title": "Rooted in Thailand",
+          "desc": "Chose Thailand as the launchpad—starting offline in Bangkok and expanding a strong local channel network.",
+          "tag": "Local"
+        },
+        {
+          "year": "2018",
+          "title": "Brand-first Operations",
+          "desc": "Shifted beyond traditional distribution—building local teams and partnering deeply with brands for long-term success.",
+          "tag": "Brand"
+        },
+        {
+          "year": "2019–2021",
+          "title": "Co-Brand Building Model",
+          "desc": "Developed a co-building model—from product positioning and channels to marketing strategy and execution.",
+          "tag": "Co-build"
+        },
+        {
+          "year": "2022–Now",
+          "title": "Scale Across Regions",
+          "desc": "Expanded operations with stronger logistics, after-sales capability, and a more powerful digital growth engine.",
+          "tag": "Scale"
+        }
+      ],
+      "header": {
+        "kicker": "OUR JOURNEY",
+        "title": "Our Growth Journey",
+        "desc": "From a bold beginning to the Co-Brand Building model—and the systems that scale brands across Southeast Asia."
+      },
+      "motto": "Build • Scale • Global",
+      "a11y": {
+        "stepper": "Company growth timeline",
+        "goTo": "Go to {label}",
+        "prev": "Previous year",
+        "next": "Next year"
+      }
+    },
+    "awards": {
+      "header": {
+        "kicker": "AWARDS",
+        "title": "AWARDS & RECOGNITION",
+        "desc": "Proof points earned through partnerships and platform execution across multiple countries."
+      },
+      "grid": {
+        "labels": {
+          "highlights": "Highlights",
+          "moments": "Award Moments",
+          "trusted": "Trusted by partners"
+        },
+        "statPill": "Recognition",
+        "statYear": "2024",
+        "statTitle": "Awards across platforms & regions",
+        "statDesc": "Recognition from partners and platforms across markets—built through execution and consistency.",
+        "feature": {
+          "year": "2024",
+          "title": "Best-Selling Product of the Year",
+          "org": "Platform / Partner"
+        },
+        "textTile": {
+          "year": "Year",
+          "title": "Award",
+          "org": "Organization"
+        }
+      },
+      "actions": {
+        "explore": "Explore open roles",
+        "backToTop": "Back to top"
+      },
+      "items": [
+        {
+          "year": "2024",
+          "title": "Highest Customer Satisfaction Brand Award",
+          "org": "Dreame — Shopee Thailand"
+        },
+        {
+          "year": "2021",
+          "title": "Rising Star Seller of the Year",
+          "org": "SUNMOON168 — Shopee Thailand"
+        },
+        {
+          "year": "2023",
+          "title": "Best-Selling Product of the Year",
+          "org": "Thaimall — Shopee Thailand"
+        },
+        {
+          "year": "2023",
+          "title": "Outstanding Seller of the Year",
+          "org": "70mai — Shopee Thailand"
+        }
+      ]
+    },
+    "seo": {
+      "description": "Get to know SHD Technology — our journey from Shenzhen to Southeast Asia, our mission and vision, the people behind our standards, and the awards we have earned with our partners."
+    },
+    "alt": {
+      "shenzhen": "The Shenzhen skyline, where SHD was founded in 2013",
+      "teamCelebration": "The SHD team at the company's annual celebration",
+      "logo": "SHD Technology Co., Ltd. logo",
+      "products": "Consumer electronics from brands SHD supports",
+      "productLineup": "A line-up of consumer electronics products",
+      "teamCenter": "The SHD team",
+      "teamMember": "SHD team member",
+      "award70mai": "70mai receiving the Buyer Satisfaction Excellence award at the Shopee Summit",
+      "summitTeam": "SHD team members with their awards at the Shopee Summit",
+      "awardAnker": "Anker receiving the Buyer Satisfaction Excellence award at the Shopee Summit",
+      "summitWinner": "An SHD team member holding an award at the Shopee Summit"
+    }
+  },
+  "why": {
+    "title": "Why SHD",
+    "p1": "We invest in people and long-term growth, with opportunities at a global scale.",
+    "items": [
+      {
+        "title": "Growth",
+        "desc": "Clear career ladders with continuous development."
+      },
+      {
+        "title": "Global team",
+        "desc": "Collaborate with colleagues across countries."
+      },
+      {
+        "title": "Professional standards",
+        "desc": "Transparent, auditable processes and ownership."
+      },
+      {
+        "title": "Benefits",
+        "desc": "Competitive benefits aligned with local needs."
+      }
+    ],
+    "seo": {
+      "description": "Why join SHD Technology — growth, people, resources, and the stories behind our culture."
+    },
+    "hero": {
+      "kicker": "WHY SHD",
+      "title": "Why join SHD Technology?",
+      "subtitle": "Faster growth, a bigger stage, and stronger resources—turn your capabilities into measurable outcomes.",
+      "ctaPrimary": "View open roles",
+      "ctaSecondary": "Explore the advantages",
+      "chips": {
+        "growth": "Infinite Growth",
+        "people": "Great People",
+        "resources": "Strong Resources"
+      }
+    },
+    "pillars": {
+      "kicker": "CORE ADVANTAGES",
+      "title": "Growth • People • Resources",
+      "subtitle": "Three reasons to move faster, stay stronger, and go further at SHD.",
+      "cards": {
+        "growth": {
+          "title": "Infinite growth",
+          "desc": "Real challenges with clear support—so you level up quickly on high-impact work."
+        },
+        "people": {
+          "title": "Great people",
+          "desc": "Collaborate across countries and build with teammates who get things done."
+        },
+        "resources": {
+          "title": "Strong resources",
+          "desc": "Tools, systems, and cross-team alignment—so you can focus on creating impact."
+        }
+      },
+      "foot": "High-impact teams • Real ownership"
+    },
+    "stories": {
+      "kicker": "TEAM STORIES",
+      "title": "Stories from our people",
+      "subtitle": "Real projects, real growth, real collaboration—straight from the team.",
+      "note": "Scroll through real-life work stories from our representatives.",
+      "badges": {
+        "growth": "Growth",
+        "team": "Team",
+        "impact": "Impact"
+      },
+      "itemTitle": "Team story #{index}",
+      "itemDesc": "Day-to-day • Projects • Growth",
+      "people": {
+        "bo": {
+          "name": "Bo",
+          "role": "E-Commerce Manager",
+          "headline": "Becoming the best version of myself",
+          "quote": "Working here as an E-commerce Manager means becoming the best version of myself. It’s not just about executing tasks—there’s space to think outside the box, experiment, and learn through real action (learning by doing). What truly sets this place apart is the fun—work never feels boring because there are new challenges and new innovations to explore every day. If you want an environment that pushes you to grow while having fun, this is genuinely the right place."
+        },
+        "apple": {
+          "name": "Apple",
+          "role": "Business Development Director",
+          "headline": "A field with no ceiling for ideas",
+          "quote": "As a Business Development Director, what excites me most is being in a field where ideas have no ceiling. We move at high-growth speed, which gives us the freedom to craft strategy and open new waters. We don’t just wait for opportunities—we create them through data analysis and real execution. The focus here is turning ideas into business outcomes with massive impact. If you love challenge in a fast-decision, result-oriented environment, you’ll love working here."
+        },
+        "rodtu": {
+          "name": "Rodtu",
+          "role": "Human Resource Manager",
+          "headline": "Unlocking potential beyond what people expect",
+          "quote": "The most challenging and exciting part of being HR here is working in a fast-paced environment that changes constantly. My role is to discover and push people’s potential beyond what they think is possible. We don’t look for people who only follow instructions—we look for those with drive and the willingness to grow at the speed of the business. Seeing teammates make bold decisions and improve through real work every day proves that our culture truly brings out the best in everyone."
+        }
+      },
+      "cards": {
+        "1": {
+          "name": "Bo",
+          "role": "E-Commerce Manager",
+          "headline": "Becoming the best version of myself",
+          "quote": "Working here as an E-commerce Manager means becoming the best version of myself. It’s not just about executing tasks—there’s space to think outside the box, experiment, and learn through real action (learning by doing). What truly sets this place apart is the fun—work never feels boring because there are new challenges and new innovations to explore every day. If you want an environment that pushes you to grow while having fun, this is genuinely the right place."
+        },
+        "2": {
+          "name": "Apple",
+          "role": "Business Development Director",
+          "headline": "A field with no ceiling for ideas",
+          "quote": "As a Business Development Director, what excites me most is being in a field where ideas have no ceiling. We move at high-growth speed, which gives us the freedom to craft strategy and open new waters. We don’t just wait for opportunities—we create them through data analysis and real execution. The focus here is turning ideas into business outcomes with massive impact. If you love challenge in a fast-decision, result-oriented environment, you’ll love working here."
+        },
+        "3": {
+          "name": "Rodtu",
+          "role": "Human Resource Manager",
+          "headline": "Unlocking potential beyond what people expect",
+          "quote": "The most challenging and exciting part of being HR here is working in a fast-paced environment that changes constantly. My role is to discover and push people’s potential beyond what they think is possible. We don’t look for people who only follow instructions—we look for those with drive and the willingness to grow at the speed of the business. Seeing teammates make bold decisions and improve through real work every day proves that our culture truly brings out the best in everyone."
+        },
+        "4": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "5": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "6": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "7": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "8": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "9": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "10": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "11": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "12": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "13": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        },
+        "14": {
+          "name": "",
+          "role": "",
+          "headline": "",
+          "quote": ""
+        }
+      },
+      "tapToExpand": "Tap to expand",
+      "imageAlt": "Employee story"
+    },
+    "life": {
+      "kicker": "LIFE AT SHD",
+      "title": "Activities & culture",
+      "subtitle": "We value collaboration and growth—and we celebrate moments worth remembering.",
+      "badges": {
+        "event": "Event",
+        "life": "Life"
+      },
+      "itemTitle": "Activity #{index}",
+      "itemDesc": "Culture • Collaboration • Moments that matter",
+      "categories": {
+        "1": "Events & Townhalls",
+        "2": "Culture & Moments",
+        "3": "Team Activities"
+      },
+      "note": "Pick a category to scroll through all its photos.",
+      "viewPhotos": "View photos",
+      "openGallery": "Click to open gallery",
+      "photoAlt": "{title} – photo {index}"
+    },
+    "cta": {
+      "kicker": "JOIN US",
+      "title": "Ready to grow with us?",
+      "subtitle": "If you want real challenges and real growth, we’d love to meet you at SHD Technology.",
+      "ctaPrimary": "View open roles",
+      "ctaSecondary": "Back to advantages",
+      "chips": {
+        "growthFirst": "Growth-first",
+        "greatTeams": "Great teams",
+        "realResources": "Real resources"
+      }
+    },
+    "carousel": {
+      "pause": "Pause",
+      "autoPlay": "Auto play",
+      "leftAria": "Scroll left",
+      "rightAria": "Scroll right"
+    },
+    "common": {
+      "expand": "Expand"
+    },
+    "modal": {
+      "brand": "SHD Careers",
+      "closeAria": "Close",
+      "tapToExplore": "Tap an image to explore",
+      "viewOpenRoles": "View open roles",
+      "hint": "Desktop: press ESC to close • Mobile: tap backdrop to close"
+    }
+  },
+  "jobs": {
+    "title": "Open Positions",
+    "openings": "openings",
+    "filters": "Filters",
+    "empty": "No jobs match your filters.",
+    "applyTitle": "Application",
+    "pagination": {
+      "prev": "Previous page",
+      "next": "Next page",
+      "goTo": "Go to page {page}",
+      "label": "Pagination"
+    },
+    "card": {
+      "position_one": "Position",
+      "position_other": "Positions",
+      "hiring": "Hiring"
+    },
+    "hero": {
+      "badge": "Open positions",
+      "title": "Find your dream job",
+      "subtitle": "Search by keyword • country • department • level — clean UI, fast experience",
+      "searchPlaceholder": "Type to search",
+      "searchAria": "Search jobs",
+      "openCount": "{count} openings",
+      "clearFilters": "Clear filters",
+      "tip": "Tip: Choose country/department/level and results will update instantly."
+    },
+    "filtersLabel": {
+      "country": "Country",
+      "department": "Department",
+      "level": "Level"
+    },
+    "list": {
+      "title": "Open Positions",
+      "subtitle": "{count} openings • {perPage}/page",
+      "pageLabel": "Page",
+      "empty": "No jobs match your filters."
+    },
+    "hiring": {
+      "title": "Our hiring process",
+      "subtitle": "Tap / hover to view details for each step",
+      "ariaStep": "Step {n}",
+      "stepLabel": "Step {n}",
+      "hoverHint": "Hover to view details",
+      "detail": "Details",
+      "tip": "Tip",
+      "footerNote": "* Steps may vary depending on role and seniority.",
+      "steps": {
+        "1": {
+          "frontTitle": "Discover new opportunities",
+          "frontDesc": "Find a role that matches your strengths",
+          "bullets": [
+            "Choose the team/track you’re interested in",
+            "Read the job description carefully",
+            "Check location/work arrangement"
+          ],
+          "backTitle": "Step 1: Choose a role",
+          "backDesc": "Start by finding a position that matches your skills, goals, and preferred working style."
+        },
+        "2": {
+          "frontTitle": "Prepare your resume",
+          "frontDesc": "Update it to be clear and focused",
+          "bullets": ["Quantify impact with numbers", "Highlight key projects", "Attach portfolio links"],
+          "backTitle": "Step 2: Prepare your resume",
+          "backDesc": "A great resume is easy to read, shows outcomes clearly, and stays relevant to the role."
+        },
+        "3": {
+          "frontTitle": "Phone interview",
+          "frontDesc": "Align on goals and fit",
+          "bullets": ["Share your background concisely", "Be clear about your interests", "Ask about next steps"],
+          "backTitle": "Step 3: Phone interview",
+          "backDesc": "Our recruiter will learn about your experience, goals, and overall fit for the role."
+        },
+        "4": {
+          "frontTitle": "Assessment / deep interview",
+          "frontDesc": "Depends on track and seniority",
+          "bullets": ["Prepare cases / portfolio", "Practice structured reasoning", "Review fundamentals"],
+          "backTitle": "Step 4: Deep interview",
+          "backDesc": "You may have an assessment or interview with the hiring team to evaluate depth of skills and thinking."
+        },
+        "5": {
+          "frontTitle": "Offer",
+          "frontDesc": "Confirm details and start your next chapter",
+          "bullets": ["Review offer details", "Confirm start date", "Prepare required documents"],
+          "backTitle": "Step 5: Offer",
+          "backDesc": "If you pass all steps, we’ll send you an offer with start date details and required documentation."
+        }
+      }
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "subtitle": "Choose a category and click to expand",
+      "tabs": {
+        "fulltime": "Full time",
+        "internship": "Internship",
+        "tech": "Tech"
+      },
+      "data": {
+        "fulltime": [
+          {
+            "q": "I want to add more details to my resume. Should I resubmit my application?",
+            "a": "You can email the recruiter who contacted you and request an update to your profile.\n\nAlternatively, you may submit a new application with your updated resume if you applied recently."
+          },
+          {
+            "q": "Can I apply for more than one role at the same time?",
+            "a": "Yes, you can apply to multiple roles. Our recruiters will help identify the best fit for you.\n\nPlease note: you can only be in one interview process at a time."
+          },
+          {
+            "q": "Can I reapply for the same role if I didn’t hear back previously?",
+            "a": "Yes. If the role is still open, you may reapply.\n\nHowever, we recommend improving your skills/experience before applying again."
+          },
+          {
+            "q": "How can I check my application status?",
+            "a": "Our recruiting team will update you via email regarding your status and next steps. Please allow some time for us to get back to you."
+          },
+          {
+            "q": "What do recruiters look for during a phone interview?",
+            "a": "Recruiters want to understand your skills, experience, and motivation to join the company. They also look for enthusiasm and culture fit.\n\nBe yourself—and show genuine interest in the company."
+          }
+        ],
+        "internship": [
+          {
+            "q": "I’m interested in an internship, but I graduated a few months ago. Can I apply?",
+            "a": "We encourage recent graduates to explore full-time roles, where you can take on more meaningful work and learn faster."
+          },
+          {
+            "q": "When is the internship period, and when should I apply?",
+            "a": "We hire interns year-round. There’s no fixed internship season—check job listings for current internship opportunities."
+          },
+          {
+            "q": "How long is the internship? Can I choose my own duration?",
+            "a": "We recommend a minimum of 3 months so you can contribute to meaningful projects.\n\nExtensions may be possible depending on business needs and manager approval."
+          }
+        ],
+        "tech": [
+          {
+            "q": "Do I need a CS/CE degree to apply for tech roles?",
+            "a": "No. We welcome applicants from all backgrounds for tech roles.\n\nHowever, a CS/CE degree can be an advantage."
+          },
+          {
+            "q": "What should I expect from a technical interview?",
+            "a": "You may be assessed on coding skills, logical reasoning, and CS fundamentals. Please prepare accordingly."
+          }
+        ]
+      }
+    },
+    "form": {
+      "personal": "Personal information",
+      "resume": "Resume (PDF/DOC/DOCX ≤ 5MB)",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Current address*",
+      "education": "Education (up to 5 entries)",
+      "addEducation": "Add education",
+      "experience": "Experience (up to 20 entries)",
+      "addExperience": "Add experience",
+      "skills": "Skills (up to 8)",
+      "other": "Other information",
+      "visa": "Do you require immigration/visa support now or in the future?",
+      "availability": "Availability (internship only)",
+      "url": "Website URL (LinkedIn/Github)",
+      "source": "How did you hear about this role?",
+      "attachments": "Attachments (up to 5 files, ≤ 10MB each)",
+      "agree": "I have read and agree to the Terms of Service and Privacy Policy",
+      "submit": "Submit application",
+      "submitting": "Submitting...",
+      "success": "Application submitted!",
+      "fail": "Submission failed. Please try again.",
+      "phoneCode": "Country code",
+      "phoneNumber": "Phone number",
+      "phonePreview": "Preview",
+      "currentAddressCountry": "Current Address (Country)",
+      "addressDetail": "Address detail",
+      "addressDetailPlaceholder": "Address detail (optional)",
+      "addressSavedAs": "Saved as",
+      "educationLevel": "Education Level",
+      "educationSelectLevel": "Select level...",
+      "educationSchool": "School / Institute",
+      "educationFrom": "From",
+      "educationTo": "To",
+      "experienceCompany": "Company",
+      "experienceTitle": "Title",
+      "experienceFrom": "From",
+      "experienceTo": "To",
+      "availableStartDate": "Available Start Date",
+      "skillsSelected": "Selected",
+      "skillsSearchPlaceholder": "Search skills...",
+      "skillsAddCustomPlaceholder": "Add custom skill (optional)",
+      "skillsTip": "Tip: choose up to 8 skills to keep it clear for HR.",
+      "tipsTitle": "Tips",
+      "tipsResume": "Resume file must be PDF/DOC/DOCX and ≤ 5MB",
+      "tipsAttachments": "Up to 5 attachments (PDF/DOC/DOCX/JPG/PNG), ≤ 10MB each",
+      "tipsSkills": "Choose up to 8 skills for clarity"
+    },
+    "detail": {
+      "description": "Description",
+      "qualifications": "Qualifications",
+      "match": "Match",
+      "clickToView": "Click to view details →",
+      "recommendedBadge": "Recommended for you",
+      "recommendedTitle": "Similar openings you may like",
+      "recommendedSubtitle": "Based on country / department / level similarity.",
+      "viewAll": "View all jobs",
+      "jobId": "Job ID",
+      "applyBlurb": "Apply with your basic information and attachments. The admin will receive your application automatically.",
+      "applyBlurbShort": "Apply with your basic information and attachments."
+    }
+  },
+  "partners": {
+    "title": "Partners",
+    "p1": "Our partners help us scale and deliver value across markets.",
+    "list": [
+      {
+        "name": "Partner A",
+        "desc": "Technology & infrastructure"
+      },
+      {
+        "name": "Partner B",
+        "desc": "Logistics & operations"
+      },
+      {
+        "name": "Partner C",
+        "desc": "Marketing & network"
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "Global recruitment experience with multi-language support.",
+    "navigation": "Navigation",
+    "contact": "Contact",
+    "email": "Email"
+  },
+  "apply": {
+    "metaDescription": "Apply for {title} at SHD Technology.",
+    "secureForm": "Secure form",
+    "submitFailed": "Submit failed",
+    "reference": "Application reference: {id}",
+    "required": "required",
+    "otherCountryPlaceholder": "Please specify country (e.g., Singapore)",
+    "otherCountryLabel": "Other country",
+    "countries": {
+      "Thailand": "Thailand",
+      "China": "China",
+      "Indonesia": "Indonesia",
+      "Philippines": "Philippines",
+      "Vietnam": "Vietnam",
+      "Brazil": "Brazil",
+      "Mexico": "Mexico",
+      "SaudiArabia": "Saudi Arabia",
+      "UAE": "Dubai, UAE",
+      "Other": "Other"
+    },
+    "phoneCodes": {
+      "TH": "Thailand (+66)",
+      "CN": "China (+86)",
+      "ID": "Indonesia (+62)",
+      "PH": "Philippines (+63)",
+      "VN": "Vietnam (+84)",
+      "BR": "Brazil (+55)",
+      "MX": "Mexico (+52)",
+      "SA": "Saudi Arabia (+966)",
+      "AE": "UAE (+971)"
+    },
+    "educationLevels": {
+      "HIGH_SCHOOL": "Secondary School / High School",
+      "VOCATIONAL_CERT": "Vocational Certificate (Voc. Cert.)",
+      "HIGHER_VOCATIONAL_CERT": "Higher Vocational Certificate (High Voc. Cert.)",
+      "DIPLOMA": "Diploma / Associate Degree",
+      "BACHELOR": "Bachelor’s Degree",
+      "MASTER": "Master’s Degree",
+      "DOCTORATE": "Doctoral Degree (PhD / DBA / EdD)",
+      "STUDYING": "Currently Studying",
+      "INCOMPLETE": "Incomplete / Did Not Graduate",
+      "OTHER": "Other / Equivalent"
+    },
+    "picker": {
+      "selectMonth": "Select month…",
+      "selectStart": "Select start…",
+      "selectEnd": "Select end…",
+      "year": "Year",
+      "month": "Month",
+      "clear": "Clear",
+      "thisMonth": "This month",
+      "apply": "Apply",
+      "tip": "Tip: pick the “year” and “month” directly (no day calendar)"
+    },
+    "skills": {
+      "categoriesTitle": "Skill Categories",
+      "pickGroup": "Pick a group",
+      "chooseUpTo": "Choose up to 8",
+      "removeSkill": "Remove {skill}",
+      "groups": {
+        "office": {
+          "title": "Office & Productivity",
+          "items": [
+            "Excel",
+            "Google Sheets",
+            "PowerPoint",
+            "Word",
+            "Data Entry",
+            "Documentation",
+            "Reporting",
+            "Presentation",
+            "Email Communication",
+            "Calendar & Scheduling"
+          ]
+        },
+        "customer": {
+          "title": "Customer & Operations",
+          "items": [
+            "Customer Service",
+            "Sales Support",
+            "Operations",
+            "Process Improvement",
+            "Logistics",
+            "Inventory Management",
+            "Order Management",
+            "Vendor Management",
+            "Quality Assurance",
+            "Problem Solving"
+          ]
+        },
+        "data": {
+          "title": "Data & Analytics",
+          "items": [
+            "Data Analytics",
+            "SQL",
+            "Python",
+            "Power BI",
+            "Tableau",
+            "Google Looker Studio",
+            "A/B Testing",
+            "Forecasting",
+            "Dashboarding",
+            "KPI Tracking"
+          ]
+        },
+        "engineering": {
+          "title": "Engineering",
+          "items": [
+            "JavaScript",
+            "TypeScript",
+            "React",
+            "Next.js",
+            "Node.js",
+            "REST APIs",
+            "Git",
+            "Testing",
+            "CI/CD",
+            "System Design"
+          ]
+        },
+        "business": {
+          "title": "Business & Leadership",
+          "items": [
+            "Project Management",
+            "Stakeholder Management",
+            "Communication",
+            "Leadership",
+            "Teamwork",
+            "Time Management",
+            "Negotiation",
+            "Public Speaking",
+            "Business Analysis",
+            "Strategy"
+          ]
+        },
+        "ecommerce": {
+          "title": "E-commerce & Marketing",
+          "items": [
+            "E-commerce",
+            "Shopee",
+            "Lazada",
+            "TikTok Shop",
+            "Product Listing",
+            "Ads Optimization",
+            "SEO",
+            "Content Writing",
+            "Social Media",
+            "Campaign Planning"
+          ]
+        }
+      }
+    },
+    "visaNo": "No",
+    "visaYes": "Yes",
+    "files": {
+      "size": "{size} KB",
+      "totals": "Total files: {count} • Total size: {size} MB (limit 5 files, 10MB each)"
+    },
+    "submitNote": "By submitting, you confirm the information is accurate and you agree to our policies.",
+    "sidebar": {
+      "job": "Job",
+      "tipMonths": "From/To are picked as “month + year” only (simpler)",
+      "privacyTitle": "Privacy",
+      "privacyBody": "Your information is used only for recruitment and will be handled securely."
+    },
+    "modal": {
+      "titleSubmitting": "Submitting your application",
+      "titleDone": "Application submitted",
+      "titleError": "Something went wrong",
+      "stepValidate": "Validate",
+      "stepUpload": "Upload",
+      "stepSend": "Send",
+      "hintValidating": "Checking required fields…",
+      "hintUploading": "Uploading your files… {percent}%",
+      "hintSending": "Submitting application… Please don’t close this page.",
+      "hintDone": "Submitted successfully.",
+      "wait": "Please wait…",
+      "waitBody": "Do not close or refresh this page while we’re processing.",
+      "okTitle": "We’ve received your application.",
+      "okBody": "You can close this popup. We’ll contact you if your profile matches.",
+      "failTitle": "We couldn’t submit your application.",
+      "close": "Close"
+    },
+    "errors": {
+      "required": "This field is required.",
+      "email": "Please enter a valid email address.",
+      "phone": "Please enter a valid phone number.",
+      "url": "Please enter a valid web address (http:// or https://).",
+      "date": "Please enter a valid date.",
+      "tooLong": "This is too long.",
+      "invalid": "This value is not valid.",
+      "monthOrder": "The end month is before the start month.",
+      "resumeRequired": "Please attach your résumé.",
+      "resumeType": "{name} is not a PDF, DOC or DOCX file.",
+      "resumeSize": "{name} is larger than 5MB.",
+      "attachmentType": "{name} is not a PDF, DOC, DOCX, JPG or PNG file.",
+      "attachmentSize": "{name} is larger than 10MB.",
+      "attachmentCount": "You can attach up to 5 files.",
+      "terms": "Please accept the terms to continue.",
+      "turnstile": "Please complete the verification check.",
+      "fixFields": "Please correct the highlighted fields.",
+      "rateLimited": "Too many applications were sent from your connection. Please wait {minutes, plural, one {# minute} other {# minutes}} and try again.",
+      "notFound": "This job is no longer accepting applications.",
+      "unavailable": "The service is temporarily unavailable. Please try again in a few minutes.",
+      "network": "Could not reach the server. Check your connection and try again."
+    }
   }
 }

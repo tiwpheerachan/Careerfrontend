@@ -1,16 +1,47 @@
-import { useTranslations } from 'next-intl';
-import { setRequestLocale } from 'next-intl/server';
-import { use } from 'react';
+import type { Metadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { FindYourFit, topDepartments } from '@/components/home/find-your-fit';
+import { Gallery } from '@/components/home/gallery';
+import { Hero } from '@/components/home/hero';
+import { Offices } from '@/components/home/offices';
+import type { HomeJob } from '@/components/home/offices-data';
+import type { Locale } from '@/lib/i18n/routing';
+import { store } from '@/lib/store';
 
-/** Placeholder until the home page is ported from frontend/src/pages/HomePage.tsx. */
-export default function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  setRequestLocale(use(params).locale);
-  const t = useTranslations('placeholder');
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'home.meta' });
+  const title = t('title');
+  const description = t('description');
+  return {
+    title: { absolute: title },
+    description,
+    openGraph: { title, description, type: 'website', locale },
+  };
+}
+
+/** The home page (old frontend/src/pages/HomePage.tsx): hero, offices globe, departments, partners. */
+export default async function HomePage({ params }: Props) {
+  const { locale } = (await params) as { locale: Locale };
+  setRequestLocale(locale);
+
+  const jobs = await store().jobs.listPublic({ locale });
+  const homeJobs: HomeJob[] = jobs.map(({ code, title, countryCode, department, level }) => ({
+    code,
+    title,
+    countryCode,
+    department,
+    level,
+  }));
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-3xl flex-col items-start justify-center gap-3 px-4">
-      <h1 className="text-4xl font-black tracking-tight">{t('heading')}</h1>
-      <p className="text-muted-foreground">{t('body')}</p>
-    </main>
+    <>
+      <Hero openings={jobs.length} />
+      <Offices jobs={homeJobs} />
+      <FindYourFit departments={topDepartments(jobs.map((j) => j.department))} />
+      <Gallery />
+    </>
   );
 }

@@ -1,0 +1,259 @@
+/*
+ * The old ApplyPage's inline <style> block, moved here as it was.
+ *
+ * Like the old block (which came after the site stylesheet), these rules are
+ * unlayered, so they win over Tailwind's layered utilities — which is how the
+ * old page actually looked: `.input`'s padding beat `pl-10`, its 16px radius
+ * beat the global `.input`'s 12px, and so on.
+ */
+
+/* --------- Back button not under the navbar --------- */
+.applySection {
+  --navbar-h: 78px;
+  scroll-margin-top: calc(var(--navbar-h) + 18px);
+}
+.backWrap {
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + var(--navbar-h) + 10px);
+  z-index: 90;
+  pointer-events: none;
+  margin-top: 6px;
+}
+.backWrap > * {
+  pointer-events: auto;
+}
+
+/* Background */
+.applyBg {
+  position: relative;
+  isolation: isolate;
+}
+.applyBg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 520px at 18% 10%, rgba(99, 102, 241, 0.16), transparent 55%),
+    radial-gradient(700px 520px at 82% 22%, rgba(14, 165, 233, 0.14), transparent 55%),
+    radial-gradient(600px 420px at 60% 95%, rgba(16, 185, 129, 0.1), transparent 60%);
+  pointer-events: none;
+  z-index: -2;
+}
+.applyBg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.98));
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glassCard {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+.softHr {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.4), transparent);
+}
+.hoverLift {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.hoverLift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.1);
+}
+
+/* The page's own `.input` (it redefined the site-wide one). */
+.input {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+}
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+.input[aria-invalid='true'],
+.input[data-invalid='true'] {
+  border-color: rgba(225, 29, 72, 0.6);
+}
+.input[aria-invalid='true']:focus,
+.input[aria-invalid='true']:focus-visible,
+.input[data-invalid='true']:focus,
+.input[data-invalid='true']:focus-visible {
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.18);
+}
+
+/* The skills search box: room for its magnifier (the old `pl-10` lost to `.input`'s padding). */
+.searchInput {
+  padding-left: 40px;
+}
+
+/* shadcn Select triggers dressed as the old native <select class="input">. */
+.selectTrigger {
+  height: 42px;
+  color: rgb(17, 24, 39);
+  line-height: normal;
+}
+.selectTrigger[data-placeholder] {
+  color: rgb(17, 24, 39);
+}
+.selectTrigger > svg {
+  color: rgb(15, 23, 42);
+  opacity: 0.9;
+}
+.selectTriggerSm {
+  height: 40px;
+}
+
+.skillsGrid {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .skillsGrid {
+    grid-template-columns: 260px 1fr;
+    align-items: start;
+  }
+}
+.tabsRow {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.tabsRow::-webkit-scrollbar {
+  display: none;
+}
+
+.frameTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.55);
+}
+.frameTitle strong {
+  font-size: 12px;
+  color: rgb(71, 85, 105);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.frameBody {
+  padding: 12px;
+}
+
+/* Skills show their full text (no truncation, width by text). */
+.skillPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+.skillPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  font-size: 13px;
+  color: rgb(30, 41, 59);
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+.skillPill:hover {
+  background: rgba(241, 245, 249, 0.92);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+.skillPillOn {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(239, 246, 255, 0.95);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.12);
+}
+.skillPillDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/*
+ * The old markup used a `.badge` class that no stylesheet defined, so the
+ * chips and the phone-width category tabs rendered as plain text with only
+ * their colour utilities. This keeps that look on purpose.
+ */
+.badge {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/*
+ * The native file inputs kept the browser's own "Choose File" button on the
+ * old site (Tailwind 3's reset left it alone; v4's strips it). Put back.
+ */
+.fileInput::file-selector-button {
+  border: 2px outset rgb(0, 0, 0);
+  background-color: rgb(239, 239, 239);
+  color: rgb(0, 0, 0);
+  padding: 1px 6px;
+  margin: 0 4px 0 0;
+  border-radius: 0;
+}
+
+/* Files list */
+.fileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(255, 255, 255, 0.85);
+}
+.fileMeta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fileName {
+  font-weight: 700;
+  font-size: 13px;
+  color: rgb(15, 23, 42);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fileSize {
+  font-size: 11px;
+  color: rgb(100, 116, 139);
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hoverLift,
+  .skillPill {
+    transition: none;
+  }
+}

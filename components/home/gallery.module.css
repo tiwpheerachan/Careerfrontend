@@ -1,0 +1,40 @@
+/* The gallery's two marquee rows (the old inline <style> block). */
+@keyframes marquee-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.left {
+  animation: marquee-left 34s linear infinite;
+}
+
+.right {
+  animation: marquee-right 36s linear infinite;
+}
+
+/* Hovering anywhere over the section pauses both rows. */
+.section:hover .left,
+.section:hover .right {
+  animation-play-state: paused;
+}
+
+/* No autoplay for people who asked for less motion; the rows still scroll by hand. */
+@media (prefers-reduced-motion: reduce) {
+  .left,
+  .right {
+    animation: none;
+  }
+}
