@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { testDb } from '@/tests/support/db';
 import { applicationInput, jobInput, openJob, repos } from '@/tests/support/fixtures';
 
 describe('jobs: admin', () => {
@@ -144,5 +146,19 @@ describe('jobs: subqueries find the right job', () => {
 
     const { publishedWithoutApplicants } = await repos.applications.analytics({ days: 7, timeZone: 'Asia/Bangkok' });
     expect(publishedWithoutApplicants.find((j) => j.id === lone.id)?.title).toBe('Lighthouse Keeper');
+  });
+});
+
+describe('jobs: old links', () => {
+  it('finds the new code for an old job id, ignoring case and the spaces it was typed with', async () => {
+    const job = await repos.jobs.create(jobInput({ code: 'SHD-TH-ACCOUNTING-AP' }), null);
+    await testDb.execute(sql`update jobs set legacy_code = 'SHD-TH- Accounting - AP' where id = ${job.id}`);
+
+    expect(await repos.jobs.codeForLegacy('SHD-TH- Accounting - AP')).toBe('SHD-TH-ACCOUNTING-AP');
+    expect(await repos.jobs.codeForLegacy('  shd-th- accounting - ap ')).toBe('SHD-TH-ACCOUNTING-AP');
+    expect(await repos.jobs.codeForLegacy('SHD-TH- Something else')).toBeUndefined();
+
+    await repos.jobs.softDelete(job.id, null);
+    expect(await repos.jobs.codeForLegacy('SHD-TH- Accounting - AP')).toBeUndefined();
   });
 });

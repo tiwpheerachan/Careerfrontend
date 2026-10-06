@@ -229,6 +229,20 @@ export function createJobRepository(db: Database) {
       };
     },
 
+    /**
+     * The current code of a job the old system knew by `legacy` — for
+     * redirecting old links. Matched case-insensitively and ignoring the
+     * surrounding spaces the old ids were typed with.
+     */
+    async codeForLegacy(legacy: string): Promise<string | undefined> {
+      const [row] = await db
+        .select({ code: jobs.code })
+        .from(jobs)
+        .where(and(live, sql`lower(btrim(${jobs.legacyCode})) = lower(btrim(${legacy}))`))
+        .limit(1);
+      return row?.code;
+    },
+
     /** The pk of a job that is accepting applications, or undefined. Used by the apply path only. */
     async openJobPk(code: string): Promise<number | undefined> {
       const [row] = await db

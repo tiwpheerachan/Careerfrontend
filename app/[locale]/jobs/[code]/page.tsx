@@ -11,6 +11,7 @@ import { cx } from '@/lib/cx';
 import { Link } from '@/lib/i18n/navigation';
 import type { Locale } from '@/lib/i18n/routing';
 import type { PublicJob } from '@/lib/repositories/jobs';
+import { redirectLegacyJob } from '@/lib/legacy-links';
 import { store } from '@/lib/store';
 
 type Props = { params: Promise<{ locale: string; code: string }> };
@@ -52,7 +53,11 @@ export default async function JobDetailPage({ params }: Props) {
   setRequestLocale(locale);
 
   const job = await loadJob(code, locale);
-  if (!job) notFound();
+  if (!job) {
+    // An old site link (its job_id in the url) goes to the job's new address.
+    await redirectLegacyJob(code, locale);
+    notFound();
+  }
 
   const t = await getTranslations('jobs.detail');
   const tc = await getTranslations('common');

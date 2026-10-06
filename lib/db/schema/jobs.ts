@@ -31,6 +31,8 @@ export const jobs = pgTable(
     publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
     createdBy: text('created_by'),
     updatedBy: text('updated_by'),
+    /** The old system's job_id, for redirecting old links (migration 0003). */
+    legacyCode: text('legacy_code'),
     ...timestamps(),
   },
   (table) => [
