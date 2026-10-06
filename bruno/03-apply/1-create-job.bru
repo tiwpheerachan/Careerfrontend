@@ -1,0 +1,29 @@
+meta {
+  name: Create a published job
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/jobs
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "code": "BRUNO-APPLY-{{$timestamp}}",
+    "publishState": "PUBLISHED",
+    "countryCode": "TH",
+    "translations": { "en": { "title": "Bruno apply test" } }
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  bru.setVar("applyJobId", res.getBody().job.id);
+  bru.setVar("applyJobCode", res.getBody().job.code);
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Publish it
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/admin/jobs/{{jobId}}/publish-state
+  body: json
+  auth: none
+}
+
+body:json {
+  { "publishState": "PUBLISHED" }
+}
+
+assert {
+  res.status: eq 200
+  res.body.job.publishState: eq PUBLISHED
+}

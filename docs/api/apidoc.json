@@ -1,0 +1,25 @@
+{
+  "name": "SHD Careers API",
+  "version": "1.0.0",
+  "title": "SHD Careers API",
+  "description": "ตำแหน่งงาน ใบสมัคร และข้อความบนเว็บไซต์สมัครงาน SHD · Jobs, applications and site text for the SHD careers site",
+  "template": {
+    "showRequiredLabels": true,
+    "withGenerator": false
+  },
+  "header": {
+    "title": "SHD Careers",
+    "content": "<p><strong>SHD Careers API</strong> — อ่านตำแหน่งงาน รับใบสมัคร และจัดการผู้สมัคร · Read jobs, take applications and manage applicants.</p><p>เริ่มที่ / Start with: <em>🇹🇭 เริ่มต้นใช้งาน</em> · <em>🇬🇧 Getting started</em></p>"
+  },
+  "footer": {
+    "title": "Support",
+    "content": "<p>แจ้งปัญหา: ติดต่อทีมพัฒนา SHD · For problems: contact the SHD development team.</p>"
+  },
+  "i18n": {
+    "enabled": true,
+    "defaultLang": "th",
+    "availableLangs": ["th", "en"],
+    "showLanguageSelector": true,
+    "fallbackToDefault": true
+  }
+}

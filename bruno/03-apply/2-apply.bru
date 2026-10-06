@@ -1,0 +1,32 @@
+meta {
+  name: Apply with a résumé
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/jobs/{{applyJobCode}}/applications
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  locale: en
+  firstName: Bruno
+  lastName: Tester
+  email: bruno@example.com
+  phone: +66 80 000 0000
+  sourceChannel: Bruno
+  termsAccepted: true
+  skills: ["API testing"]
+  educations: [{"level":"BACHELOR","institute":"Test University","startMonth":"2018-06","endMonth":"2022-05"}]
+  resume: @file(fixtures/resume.pdf)
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:post-response {
+  bru.setVar("applicationId", res.getBody().id);
+}

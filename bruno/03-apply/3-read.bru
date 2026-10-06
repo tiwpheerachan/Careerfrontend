@@ -1,0 +1,17 @@
+meta {
+  name: Read it in the admin
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/applications/{{applicationId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.application.firstName: eq Bruno
+  res.body.application.files.length: eq 1
+}

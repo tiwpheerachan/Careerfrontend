@@ -1,0 +1,16 @@
+meta {
+  name: Site content (th)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/content?locale=th
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.locale: eq th
+}

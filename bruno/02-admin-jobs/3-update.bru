@@ -1,0 +1,27 @@
+meta {
+  name: Replace it
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/v1/admin/jobs/{{jobId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "code": "{{jobCode}}",
+    "countryCode": "TH",
+    "department": "Testing",
+    "level": null,
+    "quantity": null,
+    "translations": { "en": { "title": "Bruno test job (edited)" } }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.job.level: isNull
+}

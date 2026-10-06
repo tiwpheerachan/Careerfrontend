@@ -1,0 +1,23 @@
+docs {
+  # SHD Careers API — Bruno collection
+
+  - `01-smoke` — GETs on the public API only; safe against any environment.
+  - `02-admin-jobs` — creates, edits and deletes a test job. Local only.
+  - `03-apply` — creates a job, applies to it with a file, cleans up. Local only.
+
+  The admin endpoints need no sign-in in development (SSO is not built yet)
+  and answer 503 in production, so only `01-smoke` runs against prod.
+
+  The `prod` environment is read-only: the script below refuses anything but
+  GET and HEAD against it.
+
+  The full spec of every endpoint: `GET /api/v1/openapi.json` (and `/api-docs`).
+}
+
+script:pre-request {
+  // The prod environment is read-only — see the docs above.
+  const method = req.getMethod().toUpperCase();
+  if (bru.getEnvName() === 'prod' && method !== 'GET' && method !== 'HEAD') {
+    throw new Error(`Refusing ${method} ${req.getUrl()} against prod: the prod environment is read-only.`);
+  }
+}

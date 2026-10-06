@@ -1,0 +1,16 @@
+meta {
+  name: Read it
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/jobs/{{jobId}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.job.applicantCount: eq 0
+}

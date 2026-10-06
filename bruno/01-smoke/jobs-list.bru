@@ -1,0 +1,23 @@
+meta {
+  name: Published jobs
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/jobs?locale=en
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("lists jobs with facets", () => {
+    const body = res.getBody();
+    expect(body.jobs).to.be.an("array");
+    expect(body.facets.countryCodes).to.be.an("array");
+  });
+}
