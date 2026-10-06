@@ -1,0 +1,30 @@
+# Local Postgres for the test suite — wiped every run.
+#
+# Tests never run against Supabase: the suite truncates between every test.
+# Port 55435 sits next to the dev database's 55434 and clear of shd_onelink's.
+#
+# The Debian image, NOT postgres:17-alpine: Alpine is musl, which has no locale
+# collation, so en_US.UTF-8 there silently sorts like COLLATE "C" and a sort
+# regression would pass here and change behaviour on Supabase.
+name: shd-career-test
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: shd-career-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shd_career_test
+      LANG: en_US.utf8
+      POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8 --encoding=UTF8'
+    ports:
+      - '127.0.0.1:55435:5432'
+    # No volume: the database is disposable and starting clean is a feature.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d shd_career_test']
+      interval: 1s
+      timeout: 3s
+      retries: 60
