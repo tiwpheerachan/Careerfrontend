@@ -1,0 +1,11 @@
+# Generated, vendored or not ours to restyle.
+.next
+coverage
+drizzle/meta
+package-lock.json
+next-env.d.ts
+tsconfig.tsbuildinfo
+# The old app, kept as a reference while it is ported.
+frontend
+backend
+legacy

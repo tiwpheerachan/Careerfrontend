@@ -1,0 +1,82 @@
+# Render blueprint (Blueprints > New Blueprint Instance). Nothing here is read at runtime.
+#
+#   User -> Cloudflare (custom domain) -> Render -> Next.js -> Supabase
+#
+# The database is Supabase, not Render, so there is only the web service.
+
+services:
+  - type: web
+    name: shd-careers
+    runtime: node
+    plan: starter
+
+    # --include=dev is not optional: Render sets NODE_ENV=production, npm then
+    # skips devDependencies, and `next build` finds no typescript.
+    buildCommand: npm ci --include=dev && npm run build
+    # Migrations run on every deploy, before the new instance takes traffic.
+    # A failed migration stops the deploy and the old version keeps serving.
+    preDeployCommand: npm run db:migrate:deploy
+    startCommand: npm run start
+
+    # Answers 200 even when Postgres is unreachable (the failure is in the
+    # body), so a database blip does not make Render cycle the instance.
+    healthCheckPath: /api/v1/health
+
+    envVars:
+      # Pinned with .nvmrc and package.json "engines" — the same LTS major everywhere.
+      - key: NODE_VERSION
+        value: '24'
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: 'true' # @hrefcl/apidoc (the API docs build) depends on puppeteer; no browser is needed
+
+      # --- Database -------------------------------------------------------
+      - key: DATABASE_URL
+        sync: false # transaction pooler :6543 with ?pgbouncer=true
+      - key: DIRECT_URL
+        sync: false # session pooler :5432 — the pre-deploy migration uses it
+
+      # --- Supabase ---------------------------------------------------------
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+
+      # --- Résumés: a PRIVATE Supabase Storage bucket --------------------------
+      # Render's disk is wiped on every deploy, so production must use Supabase
+      # (lib/env.ts refuses STORAGE_DRIVER=local in production).
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: STORAGE_BUCKET
+        value: applications
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # the secret key; server only
+
+      # --- The application form ------------------------------------------------
+      # Client IP for the per-IP limit. Behind Cloudflare -> Render the visitor is
+      # an entry of X-Forwarded-For counted from the right. RE-MEASURE on the
+      # real deployment: log the header once and count the entries.
+      #   too high -> no IP found, the limit is skipped (logged as a warning)
+      #   too low  -> a caller can pick their own bucket
+      - key: TRUST_PROXY_HEADER
+        value: X-Forwarded-For
+      - key: TRUST_PROXY_HOPS
+        value: '3'
+      # Cloudflare Turnstile — both or neither. The site key is read at build time.
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        sync: false
+      # HR's Google Sheet (old Apps Script). Empty = off.
+      - key: APPLY_SHEET_WEBHOOK_URL
+        sync: false
+      - key: APPLY_SHEET_API_KEY
+        sync: false
+
+      # --- Error reporting: empty = off, nothing is sent ---------------------
+      - key: SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+
+      - key: LOG_LEVEL
+        value: info

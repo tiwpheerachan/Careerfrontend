@@ -10,7 +10,32 @@
 **/__pycache__/
 **/*.pyc
 
-# env
+# env — real values never leave the machine; only the *.example files are committed
 .env
 frontend/.env
 backend/.env
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# Next.js app
+.next
+out
+coverage
+next-env.d.ts
+
+# python venv / local db / vite temp (old backend & frontend)
+**/.venv/
+**/*.db
+**/vite.config.ts.timestamp-*.mjs
+
+# OS / editor
+.DS_Store
+.idea/
+# uploaded files in development / tests (STORAGE_DRIVER=local)
+.storage/
+.storage-test/
+
+# built API docs (npm run docs:api)
+/.apidoc
