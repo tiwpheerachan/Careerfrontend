@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 
 /**
  * Every key the code asks for must exist in every language.
@@ -10,10 +10,23 @@ import { join } from 'node:path';
  * "about.journey.header.title" on screen, which is exactly what the old site
  * shipped with.
  *
- * Same approach as shd_onelink's script; the locales are this site's.
+ * Two catalogues, checked separately (lib/i18n/request.ts loads one or the
+ * other):
+ *   the public site   app/**, components/**      messages/{th,en,zh}.json
+ *   the admin         app/admin/**, components/admin/**   messages/admin/{th,en}.json
+ *
+ * Same approach as shd_onelink's script.
  */
-const LOCALES = ['th', 'en', 'zh'];
-const messages = Object.fromEntries(LOCALES.map((l) => [l, JSON.parse(readFileSync(`messages/${l}.json`, 'utf8'))]));
+const CATALOGUES = {
+  site: { locales: ['th', 'en', 'zh'], file: (l) => `messages/${l}.json` },
+  admin: { locales: ['th', 'en'], file: (l) => `messages/admin/${l}.json` },
+};
+const messages = Object.fromEntries(
+  Object.entries(CATALOGUES).map(([name, c]) => [
+    name,
+    Object.fromEntries(c.locales.map((l) => [l, JSON.parse(readFileSync(c.file(l), 'utf8'))])),
+  ]),
+);
 
 function walk(dir) {
   if (!existsSync(dir)) return [];
@@ -24,11 +37,14 @@ function walk(dir) {
   });
 }
 
-const lookup = (locale, path) =>
-  path.split('.').reduce((node, part) => (node == null ? undefined : node[part]), messages[locale]);
+const isAdmin = (file) => file.startsWith(`app${sep}admin${sep}`) || file.startsWith(`components${sep}admin${sep}`);
+
+const lookup = (catalogue, locale, path) =>
+  path.split('.').reduce((node, part) => (node == null ? undefined : node[part]), messages[catalogue][locale]);
 
 const problems = [];
 for (const file of [...walk('app'), ...walk('components')]) {
+  const catalogue = isAdmin(file) ? 'admin' : 'site';
   const source = readFileSync(file, 'utf8');
   // const t = useTranslations('jobs') / await getTranslations('jobs')
   // -> t('title') is jobs.title. An alias may be bound to several namespaces in
@@ -43,9 +59,9 @@ for (const file of [...walk('app'), ...walk('components')]) {
   for (const [alias, candidates] of namespaces) {
     const calls = new RegExp(`\\b${alias}(?:\\.rich|\\.raw)?\\('([\\w.]+)'`, 'g');
     for (const [, key] of source.matchAll(calls)) {
-      for (const locale of LOCALES) {
-        const found = candidates.some((ns) => lookup(locale, `${ns}.${key}`) !== undefined);
-        if (!found) problems.push(`${file}: ${locale} has no ${candidates.join('|')}.${key}`);
+      for (const locale of CATALOGUES[catalogue].locales) {
+        const found = candidates.some((ns) => lookup(catalogue, locale, `${ns}.${key}`) !== undefined);
+        if (!found) problems.push(`${file}: ${catalogue}/${locale} has no ${candidates.join('|')}.${key}`);
       }
     }
   }
@@ -56,4 +72,4 @@ if (problems.length) {
   for (const p of problems) console.error('  ' + p);
   process.exit(1);
 }
-console.log(`ทุก key ที่โค้ดเรียก มีครบทั้ง ${LOCALES.length} ภาษา (${LOCALES.join(', ')})`);
+console.log('ทุก key ที่โค้ดเรียก มีครบ: เว็บ (th, en, zh) · admin (th, en)');

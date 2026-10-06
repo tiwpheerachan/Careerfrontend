@@ -10,7 +10,7 @@ import {
   type Locale,
 } from '@/lib/db/schema';
 import { NotFoundError, translatePgError } from '@/lib/errors';
-import { isUuid, likePattern, pickTranslation } from './support';
+import { isUuid, JOBS_PK, likePattern, pickTranslation } from './support';
 
 /** The text of a job in one language. */
 export interface JobText {
@@ -183,7 +183,7 @@ export function createJobRepository(db: Database) {
             ilike(jobs.code, pattern),
             ilike(jobs.department, pattern),
             ilike(jobs.level, pattern),
-            sql`exists (select 1 from ${jobTranslations} t where t.jobs_pk = ${jobs.pk}
+            sql`exists (select 1 from ${jobTranslations} t where t.jobs_pk = ${JOBS_PK}
                         and (t.title ilike ${pattern} or t.location ilike ${pattern}))`,
           )!,
         );
@@ -252,7 +252,7 @@ export function createJobRepository(db: Database) {
             ilike(jobs.department, pattern),
             ilike(jobs.level, pattern),
             ilike(jobs.countryCode, pattern),
-            sql`exists (select 1 from ${jobTranslations} t where t.jobs_pk = ${jobs.pk} and t.title ilike ${pattern})`,
+            sql`exists (select 1 from ${jobTranslations} t where t.jobs_pk = ${JOBS_PK} and t.title ilike ${pattern})`,
           )!,
         );
       }

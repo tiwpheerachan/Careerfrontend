@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import type { Locale } from '@/lib/db/schema';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,3 +35,13 @@ export interface Page {
 }
 
 export const offsetOf = ({ page, pageSize }: Page) => (page - 1) * pageSize;
+
+/**
+ * `"jobs"."pk"`, written out in full — for correlated subqueries.
+ *
+ * Drizzle renders `${jobs.pk}` as a bare `"pk"` when the outer query reads from
+ * `jobs` alone, and inside `select … from job_translations t where t.jobs_pk = "pk"`
+ * Postgres resolves that bare name to the SUBQUERY's own pk. The query still
+ * runs and returns another job's row — a wrong title, a missed search hit.
+ */
+export const JOBS_PK = sql`${sql.identifier('jobs')}.${sql.identifier('pk')}`;

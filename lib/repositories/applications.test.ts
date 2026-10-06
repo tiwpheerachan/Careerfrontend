@@ -154,3 +154,23 @@ describe('applications: analytics', () => {
     expect(a.publishedWithoutApplicants.map((j) => j.code)).toEqual(['JOB-EMPTY']);
   });
 });
+
+describe('applications: sorting', () => {
+  it('sorts by name, stage or job, both ways, with a stable tie-break', async () => {
+    const { pk } = await openJob({ code: 'JOB-B' });
+    const other = await openJob({ code: 'JOB-A' });
+    const zed = await repos.applications.create(pk, applicationInput({ firstName: 'Zed', email: 'z@example.com' }));
+    await repos.applications.create(pk, applicationInput({ firstName: 'Anna', email: 'a@example.com' }));
+    await repos.applications.create(other.pk, applicationInput({ firstName: 'mia', email: 'm@example.com' }));
+    await repos.applications.setStage(zed.id, 'HIRED', null);
+
+    const names = async (sort: 'name' | 'stage' | 'job', dir?: 'asc' | 'desc') =>
+      (await repos.applications.list({ page: 1, pageSize: 10, sort, dir })).rows.map((r) => r.firstName);
+
+    // C collation: upper case before lower case.
+    expect(await names('name')).toEqual(['Anna', 'Zed', 'mia']);
+    expect(await names('name', 'desc')).toEqual(['mia', 'Zed', 'Anna']);
+    expect((await names('stage')).at(-1)).toBe('Zed'); // HIRED is the last stage
+    expect((await names('job'))[0]).toBe('mia'); // JOB-A first
+  });
+});

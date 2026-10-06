@@ -1,5 +1,5 @@
 import 'server-only';
-import type { z } from 'zod';
+import { z } from 'zod';
 import {
   BadRequestError,
   ConflictError,
@@ -109,6 +109,30 @@ export function handler<P = unknown>(
   };
 }
 
+/**
+ * The language validation messages are written in: the admin's chosen
+ * language (admin_locale cookie) on /api/v1/admin, otherwise the `locale` the
+ * request names (?locale= or the form field), else English. Messages written
+ * into a schema itself stay as written.
+ */
+const LOCALE_ERRORS = {
+  th: z.locales.th().localeError,
+  zh: z.locales.zhCN().localeError,
+  en: z.locales.en().localeError,
+} as const;
+
+export function validationLanguage(request: Request, declared?: unknown): keyof typeof LOCALE_ERRORS {
+  const known = (value: unknown) => (value === 'th' || value === 'zh' || value === 'en' ? value : undefined);
+  const url = new URL(request.url);
+  if (url.pathname.startsWith('/api/v1/admin')) {
+    const cookie = /(?:^|;\s*)admin_locale=(\w+)/.exec(request.headers.get('cookie') ?? '')?.[1];
+    return cookie === 'en' ? 'en' : 'th';
+  }
+  return known(declared) ?? known(url.searchParams.get('locale')) ?? 'en';
+}
+
+export const errorMapFor = (language: keyof typeof LOCALE_ERRORS) => LOCALE_ERRORS[language];
+
 /** Turns zod issues into the `issues` list of a 400. */
 function issuesOf(zodError: z.ZodError): Array<{ path: string; message: string }> {
   return zodError.issues.map((issue) => ({ path: issue.path.join('.') || '(body)', message: issue.message }));
@@ -122,7 +146,7 @@ export async function parseBody<S extends z.ZodType>(request: Request, schema: S
   } catch {
     throw new BadRequestError('Request body must be valid JSON.');
   }
-  const parsed = schema.safeParse(raw);
+  const parsed = schema.safeParse(raw, { error: errorMapFor(validationLanguage(request)) });
   if (!parsed.success) throw new BadRequestError('The request body is not valid.', issuesOf(parsed.error));
   return parsed.data;
 }
@@ -148,7 +172,7 @@ export type RouteParams<K extends string> = { params: Promise<Record<K, string>>
 /** Validates the query string against the endpoint's schema. Invalid → 400. */
 export function parseQuery<S extends z.ZodType>(request: Request, schema: S): z.infer<S> {
   const params = Object.fromEntries(new URL(request.url).searchParams);
-  const parsed = schema.safeParse(params);
+  const parsed = schema.safeParse(params, { error: errorMapFor(validationLanguage(request)) });
   if (!parsed.success) throw new BadRequestError('The query string is not valid.', issuesOf(parsed.error));
   return parsed.data;
 }

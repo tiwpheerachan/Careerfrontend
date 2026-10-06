@@ -2,6 +2,7 @@ import 'server-only';
 import { afterResponse } from '@/lib/api/after';
 import { clientIp } from '@/lib/api/client-ip';
 import { pushToApplySheet } from '@/lib/api/apply-sheet';
+import { errorMapFor, validationLanguage } from '@/lib/api/http';
 import { ApplicationFields } from '@/lib/api/schemas';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import type { ApplicationFileKind } from '@/lib/db/schema';
@@ -110,7 +111,9 @@ export async function submitApplication(request: Request, code: string, log: Log
     throw new BadRequestError('Send the application as multipart/form-data.');
   }
 
-  const parsed = ApplicationFields.safeParse(fieldsOf(form));
+  const raw = fieldsOf(form);
+  // Field messages in the language the form was filled in.
+  const parsed = ApplicationFields.safeParse(raw, { error: errorMapFor(validationLanguage(request, raw.locale)) });
   const { issues: fileIssues, accepted } = await checkFiles(filesOf(form));
   const issues: Issue[] = [
     ...(parsed.success ? [] : parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message }))),

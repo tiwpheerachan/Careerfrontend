@@ -124,3 +124,25 @@ describe('jobs: public', () => {
     });
   });
 });
+
+describe('jobs: subqueries find the right job', () => {
+  // Job pks and translation pks drift apart as soon as a job has more than one
+  // translation. A subquery that compared t.jobs_pk with an UNQUALIFIED "pk"
+  // matched the translation's own pk and returned another job's title.
+  it('title search and titles in analytics follow the job, not a translation that shares its pk', async () => {
+    await repos.jobs.create(jobInput({ code: 'MANY-LANGS' }), null); // job pk 1, translations pk 1 and 2
+    const lone = await repos.jobs.create(
+      jobInput({
+        code: 'LONE-JOB',
+        translations: { en: { title: 'Lighthouse Keeper', location: null, description: null, qualifications: null } },
+      }),
+      null,
+    ); // job pk 2, translation pk 3
+
+    expect((await repos.jobs.listPublic({ locale: 'en', q: 'lighthouse' })).map((j) => j.code)).toEqual(['LONE-JOB']);
+    expect((await repos.jobs.list({ q: 'lighthouse' })).map((j) => j.code)).toEqual(['LONE-JOB']);
+
+    const { publishedWithoutApplicants } = await repos.applications.analytics({ days: 7, timeZone: 'Asia/Bangkok' });
+    expect(publishedWithoutApplicants.find((j) => j.id === lone.id)?.title).toBe('Lighthouse Keeper');
+  });
+});

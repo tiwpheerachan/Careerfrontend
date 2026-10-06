@@ -1,0 +1,350 @@
+{
+  "meta": {
+    "title": "SHDcareers · Admin"
+  },
+  "brand": {
+    "console": "Admin Console"
+  },
+  "nav": {
+    "menu": "เมนู",
+    "dashboard": "ภาพรวม",
+    "jobs": "ประกาศงาน",
+    "applications": "ผู้สมัคร",
+    "content": "เนื้อหาเว็บ",
+    "viewSite": "ดูเว็บไซต์จริง",
+    "openMenu": "เปิดเมนู",
+    "headerNote": "ระบบจัดการหลังบ้าน · SHDcareers",
+    "signedInAs": "เข้าสู่ระบบอยู่",
+    "devUser": "แอดมิน (dev)",
+    "signOut": "ออกจากระบบ",
+    "signOutSoon": "ออกจากระบบ — ใช้ได้เมื่อเปิด SSO",
+    "language": "ภาษา",
+    "unsavedTitle": "มีการแก้ไขที่ยังไม่ได้บันทึก",
+    "unsavedBody": "ถ้าออกจากหน้านี้ การแก้ไขที่ยังไม่บันทึกจะหายไป",
+    "stay": "อยู่หน้านี้ต่อ",
+    "leave": "ออกโดยไม่บันทึก"
+  },
+  "stage": {
+    "NEW": "ใหม่",
+    "REVIEWING": "กำลังพิจารณา",
+    "SHORTLISTED": "เข้ารอบ",
+    "REJECTED": "ไม่ผ่าน",
+    "HIRED": "รับเข้าทำงาน"
+  },
+  "publishState": {
+    "DRAFT": "ฉบับร่าง",
+    "PUBLISHED": "เผยแพร่",
+    "CLOSED": "ปิดรับ"
+  },
+  "common": {
+    "all": "ทั้งหมด",
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก…",
+    "saved": "บันทึกแล้ว",
+    "cancel": "ยกเลิก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "loading": "กำลังโหลด…",
+    "noData": "ยังไม่มีข้อมูล",
+    "back": "กลับ",
+    "search": "ค้นหา",
+    "prev": "ก่อนหน้า",
+    "next": "ถัดไป",
+    "error": "เกิดข้อผิดพลาด",
+    "retry": "ลองอีกครั้ง",
+    "confirm": "ยืนยัน"
+  },
+  "unavailable": {
+    "title": "ระบบหลังบ้านยังไม่เปิดใช้งาน",
+    "body": "ต้องตั้งค่าการเข้าสู่ระบบ (SSO) ก่อน จึงจะเปิดใช้งานบน production ได้"
+  },
+  "applications": {
+    "list": {
+      "title": "ผู้สมัคร",
+      "total": "ทั้งหมด {count} รายการ",
+      "export": "Export CSV",
+      "searchPlaceholder": "ค้นหาชื่อ / อีเมล / เบอร์โทร…",
+      "allJobs": "ทุกตำแหน่งงาน",
+      "jobSearch": "ค้นหาตำแหน่ง / รหัสงาน…",
+      "jobEmpty": "ไม่พบตำแหน่งงาน",
+      "applicantCount": "{count} คน",
+      "stageFilter": "กรองตามสถานะ",
+      "filteringByJob": "กำลังดูผู้สมัครตำแหน่ง",
+      "clearFilter": "ล้างตัวกรอง",
+      "empty": "ไม่พบผู้สมัคร",
+      "emptyHint": "ลองเปลี่ยนคำค้นหาหรือตัวกรอง",
+      "columns": {
+        "name": "ชื่อ",
+        "job": "ตำแหน่ง / แผนก",
+        "contact": "ติดต่อ",
+        "stage": "สถานะ",
+        "applied": "สมัครเมื่อ"
+      },
+      "sortBy": "เรียงตาม {column}",
+      "pageOf": "หน้า {page} / {pages}",
+      "range": "{from}–{to} จาก {total}",
+      "pageSize": "ต่อหน้า",
+      "perPage": "{count} / หน้า",
+      "morePages": "หน้าอื่น ๆ"
+    },
+    "detail": {
+      "back": "กลับไปรายชื่อผู้สมัคร",
+      "appliedFor": "สมัครตำแหน่ง",
+      "appliedAt": "เมื่อ {date}",
+      "contact": "ข้อมูลติดต่อ",
+      "email": "อีเมล",
+      "phone": "เบอร์โทร",
+      "address": "ที่อยู่",
+      "website": "เว็บไซต์ / พอร์ต",
+      "position": "รายละเอียดตำแหน่ง",
+      "jobCountry": "ประเทศ",
+      "department": "แผนก",
+      "level": "ระดับ",
+      "residenceCountry": "ประเทศที่พำนัก",
+      "visaRequired": "ต้องการวีซ่า",
+      "yes": "ใช่",
+      "no": "ไม่",
+      "availableFrom": "เริ่มงานได้",
+      "source": "ช่องทางที่รู้จัก",
+      "formLanguage": "ภาษาที่กรอกใบสมัคร",
+      "skills": "ทักษะ",
+      "education": "การศึกษา",
+      "gpa": "GPA {gpa}",
+      "experience": "ประสบการณ์ทำงาน",
+      "educationLevel": {
+        "HIGH_SCHOOL": "มัธยมศึกษาตอนปลาย",
+        "VOCATIONAL_CERT": "ประกาศนียบัตรวิชาชีพ (ปวช.)",
+        "HIGHER_VOCATIONAL_CERT": "ประกาศนียบัตรวิชาชีพชั้นสูง (ปวส.)",
+        "DIPLOMA": "อนุปริญญา",
+        "BACHELOR": "ปริญญาตรี",
+        "MASTER": "ปริญญาโท",
+        "DOCTORATE": "ปริญญาเอก",
+        "STUDYING": "กำลังศึกษาอยู่",
+        "INCOMPLETE": "ศึกษาแต่ยังไม่สำเร็จการศึกษา",
+        "OTHER": "อื่น ๆ (เทียบเท่า)"
+      },
+      "stagePanel": "จัดการสถานะ",
+      "stage": "สถานะ",
+      "stageSaved": "เปลี่ยนสถานะเป็น “{stage}” แล้ว",
+      "stageUnchanged": "สถานะยังเหมือนเดิม",
+      "stageFailed": "เปลี่ยนสถานะไม่สำเร็จ",
+      "lastUpdated": "อัปเดตล่าสุด {date}",
+      "notes": "โน้ตภายใน",
+      "notePlaceholder": "บันทึกความเห็น / ผลสัมภาษณ์…",
+      "addNote": "เพิ่มโน้ต",
+      "noteAdded": "เพิ่มโน้ตแล้ว",
+      "noteFailed": "เพิ่มโน้ตไม่สำเร็จ",
+      "noNotes": "ยังไม่มีโน้ต",
+      "deleteNote": "ลบโน้ต",
+      "deleteNoteTitle": "ลบโน้ตนี้?",
+      "deleteNoteBody": "โน้ตจะถูกลบออกจากประวัติของผู้สมัครคนนี้",
+      "noteDeleted": "ลบโน้ตแล้ว",
+      "noteDeleteFailed": "ลบโน้ตไม่สำเร็จ",
+      "history": "ประวัติสถานะ",
+      "received": "ได้รับใบสมัคร",
+      "byApplicant": "ผู้สมัคร",
+      "bySystem": "ระบบ",
+      "by": "โดย {who}",
+      "documents": "เอกสาร",
+      "fileKind": {
+        "RESUME": "Resume / CV",
+        "TRANSCRIPT": "Transcript",
+        "ATTACHMENT": "ไฟล์แนบ"
+      },
+      "noResume": "ไม่มีเรซูเม่",
+      "noDocuments": "ไม่มีเอกสาร",
+      "download": "ดาวน์โหลด {name}",
+      "deleteApplication": "ลบใบสมัคร",
+      "deleteTitle": "ลบใบสมัครของ {name}?",
+      "deleteBody": "ใบสมัครจะหายไปจากรายชื่อผู้สมัครและสถิติทั้งหมด",
+      "deleted": "ลบใบสมัครแล้ว",
+      "deleteFailed": "ลบใบสมัครไม่สำเร็จ",
+      "notFoundTitle": "ไม่พบใบสมัคร",
+      "notFoundBody": "ใบสมัครนี้อาจถูกลบไปแล้ว หรือลิงก์ไม่ถูกต้อง"
+    }
+  },
+  "dashboard": {
+    "title": "ภาพรวม",
+    "subtitle": "วิเคราะห์งานและผู้สมัครเพื่อประเมิน/พัฒนาเว็บ",
+    "allApplicants": "ผู้สมัครทั้งหมด",
+    "kpi": {
+      "applications": "ผู้สมัครทั้งหมด",
+      "publishedJobs": "งานเปิดรับ",
+      "hireRate": "อัตรารับเข้า (hire rate)",
+      "avgPerJob": "เฉลี่ยผู้สมัคร/งานเปิดรับ"
+    },
+    "trend": {
+      "title": "ผู้สมัครย้อนหลัง {days} วัน",
+      "subtitle": "รวม {count} ใบในช่วงนี้",
+      "badge": "{days} วัน",
+      "today": "วันนี้"
+    },
+    "byStage": {
+      "title": "ตามสถานะ",
+      "subtitle": "กดเพื่อกรองผู้สมัคร"
+    },
+    "topJobs": {
+      "title": "งานยอดนิยม",
+      "subtitle": "ผู้สมัครมากที่สุด"
+    },
+    "byDepartment": {
+      "title": "ตามแผนก",
+      "subtitle": "ผู้สมัครต่อแผนก"
+    },
+    "bySource": {
+      "title": "ช่องทางที่รู้จัก",
+      "subtitle": "ช่องทางที่ผู้สมัครรู้จักเรา"
+    },
+    "zeroJobs": {
+      "title": "งานที่เปิดรับแต่ยังไม่มีผู้สมัคร",
+      "subtitle": "ลองปรับชื่อ/รายละเอียด หรือโปรโมตเพิ่ม"
+    },
+    "notSpecified": "ไม่ระบุ",
+    "untitled": "(ไม่มีชื่อตำแหน่ง)"
+  },
+  "content": {
+    "title": "เนื้อหาเว็บ",
+    "subtitle": "แก้ข้อความบนหน้าเว็บได้ทุกจุด · แก้ทับไว้ {count} รายการ",
+    "siteLanguage": "ภาษาของหน้าเว็บ",
+    "searchPlaceholder": "ค้นหา key หรือข้อความ… (เช่น nav, about, hero)",
+    "showing": "แสดง {shown} จาก {total} รายการ",
+    "noMatch": "ไม่พบข้อความที่ตรงกับ “{q}”",
+    "edited": "แก้ไขแล้ว",
+    "unsaved": "ยังไม่บันทึก",
+    "unsavedCount": "{count} รายการยังไม่บันทึก",
+    "sectionCount": "{count} รายการ",
+    "sectionEdited": "แก้ไข {count}",
+    "lastChanged": "แก้ไขล่าสุดโดย {by} · {at}",
+    "lastChangedAt": "แก้ไขล่าสุด {at}",
+    "revert": "คืนค่าเดิม",
+    "revertTitle": "คืนค่าข้อความเดิม?",
+    "revertBody": "ข้อความที่แก้ไว้ของ {key} ({lang}) จะถูกลบ และหน้าเว็บจะกลับไปใช้ข้อความเดิม",
+    "reverted": "คืนค่าข้อความเดิมแล้ว",
+    "revertFailed": "คืนค่าเดิมไม่สำเร็จ",
+    "savedToast": "บันทึกแล้ว",
+    "saveFailed": "บันทึกไม่สำเร็จ",
+    "discardTitle": "ทิ้งการแก้ไขที่ยังไม่บันทึก?",
+    "discardBody": "มี {count} รายการที่ยังไม่บันทึก ถ้าเปลี่ยนภาษา การแก้ไขเหล่านี้จะหายไป",
+    "discard": "ทิ้งและเปลี่ยนภาษา",
+    "keepEditing": "แก้ไขต่อ",
+    "sections": {
+      "meta": "ข้อมูลหน้าเว็บ (SEO)",
+      "brand": "แบรนด์",
+      "nav": "เมนูนำทาง",
+      "common": "ข้อความทั่วไป",
+      "home": "หน้าแรก",
+      "about": "เกี่ยวกับเรา",
+      "why": "ทำไมต้อง SHD",
+      "jobs": "ตำแหน่งงาน",
+      "partners": "พาร์ทเนอร์",
+      "footer": "ส่วนท้ายเว็บ",
+      "apply": "ฟอร์มสมัครงาน"
+    }
+  },
+  "jobs": {
+    "list": {
+      "title": "ประกาศงาน",
+      "total": "ทั้งหมด {total} ตำแหน่ง",
+      "showing": "แสดง {shown} จาก {total} ตำแหน่ง",
+      "create": "สร้างงานใหม่",
+      "searchPlaceholder": "ค้นหาชื่อตำแหน่ง / job id / แผนก…",
+      "stateFilter": "กรองตามสถานะ",
+      "columns": {
+        "title": "ตำแหน่ง",
+        "deptLevel": "แผนก / ระดับ",
+        "openings": "รับ",
+        "applicants": "ผู้สมัคร",
+        "status": "สถานะ",
+        "updated": "แก้ไขล่าสุด",
+        "actions": "จัดการ"
+      },
+      "sortBy": "เรียงตาม{column}",
+      "applicantCount": "{count} คน",
+      "viewApplicants": "ดูผู้สมัครของงานนี้",
+      "empty": "ยังไม่มีประกาศงาน — กด “สร้างงานใหม่” เพื่อเริ่ม",
+      "noMatch": "ไม่พบงานที่ตรงกับการค้นหา",
+      "clearFilters": "ล้างตัวกรอง",
+      "actionsFor": "ตัวเลือกของ {code}",
+      "setState": "เปลี่ยนสถานะ",
+      "stateChanged": "“{title}” เปลี่ยนเป็น “{state}” แล้ว",
+      "stateFailed": "เปลี่ยนสถานะไม่สำเร็จ"
+    },
+    "delete": {
+      "action": "ลบงาน",
+      "title": "ลบงานนี้?",
+      "body": "“{title}” ({code}) จะถูกนำออกจากเว็บไซต์และรายการงาน",
+      "applicantsKept": "{count, plural, =0 {งานนี้ยังไม่มีผู้สมัคร} other {ผู้สมัคร # คนของงานนี้ยังอยู่ในระบบ ไม่ถูกลบ}}",
+      "confirm": "ลบงาน",
+      "deleting": "กำลังลบ…",
+      "done": "ลบ “{title}” แล้ว",
+      "failed": "ลบไม่สำเร็จ"
+    },
+    "editor": {
+      "back": "กลับไปรายการงาน",
+      "titleNew": "สร้างงานใหม่",
+      "titleEdit": "แก้ไขงาน",
+      "subtitleNew": "กรอกรายละเอียดงานทั้ง 3 ภาษา",
+      "basic": "ข้อมูลทั่วไป",
+      "code": "Job ID",
+      "codeHint": "รหัสงาน ห้ามซ้ำ",
+      "codeLocked": "แก้ไขไม่ได้ (ใช้ในลิงก์ของประกาศ)",
+      "openings": "จำนวนที่รับ",
+      "openingsHint": "เว้นว่าง = ไม่ระบุ",
+      "department": "แผนก",
+      "departmentPlaceholder": "เช่น Marketing, Offline",
+      "level": "ระดับ",
+      "levelPlaceholder": "เช่น Officer, Senior",
+      "country": "ประเทศ",
+      "combo": {
+        "search": "ค้นหา หรือพิมพ์ค่าใหม่…",
+        "inUse": "ค่าที่ใช้อยู่",
+        "use": "ใช้ “{value}”",
+        "clear": "ไม่ระบุ",
+        "empty": "ยังไม่มีค่า — พิมพ์เพื่อเพิ่ม"
+      },
+      "content": "เนื้อหาประกาศ",
+      "languages": {
+        "th": "ไทย",
+        "en": "EN",
+        "zh": "中文"
+      },
+      "hasTitle": "มีชื่อตำแหน่งแล้ว",
+      "noTitle": "ยังไม่มีชื่อตำแหน่ง",
+      "jobTitle": "ชื่อตำแหน่ง ({lang})",
+      "jobTitlePlaceholder": "เช่น HR Business Partner",
+      "location": "สถานที่ ({lang})",
+      "locationPlaceholder": "เช่น ไทย - กรุงเทพฯ",
+      "description": "รายละเอียดงาน ({lang})",
+      "qualifications": "คุณสมบัติ ({lang})",
+      "fallbackHint": "💡 ถ้าภาษาใดเว้นว่าง เว็บจะใช้ภาษาอื่นแทนให้อัตโนมัติ (EN → TH → ZH)",
+      "publishing": "การเผยแพร่",
+      "stateHelp": {
+        "DRAFT": "📝 ฉบับร่าง — ยังไม่แสดงบนเว็บ",
+        "PUBLISHED": "✅ งานนี้จะแสดงบนเว็บไซต์สาธารณะ",
+        "CLOSED": "🔒 ปิดรับ — ไม่แสดงบนเว็บ แต่ข้อมูลและผู้สมัครยังอยู่"
+      },
+      "create": "สร้างงาน",
+      "creating": "กำลังสร้าง…",
+      "saveChanges": "บันทึกการแก้ไข",
+      "unsaved": "มีการแก้ไขที่ยังไม่ได้บันทึก",
+      "created": "สร้างงาน {code} แล้ว",
+      "saved": "บันทึก {code} แล้ว",
+      "saveFailed": "บันทึกไม่สำเร็จ",
+      "discard": {
+        "title": "ทิ้งการแก้ไข?",
+        "body": "การแก้ไขที่ยังไม่ได้บันทึกจะหายไป",
+        "confirm": "ทิ้งการแก้ไข",
+        "stay": "แก้ไขต่อ"
+      },
+      "errors": {
+        "codeRequired": "กรุณากรอก Job ID",
+        "codePattern": "ใช้ได้เฉพาะ A–Z, 0–9, - และ _ (2–64 ตัวอักษร)",
+        "codeTaken": "มีงานที่ใช้รหัสนี้อยู่แล้ว",
+        "titleRequired": "กรุณากรอกชื่อตำแหน่งอย่างน้อย 1 ภาษา",
+        "titleMissing": "ใส่ชื่อตำแหน่ง ไม่เช่นนั้นเนื้อหาภาษานี้จะไม่ถูกบันทึก",
+        "openings": "จำนวนที่รับต้องเป็นจำนวนเต็ม 0–10,000",
+        "fixFields": "กรุณาแก้ไขช่องที่มีข้อความสีแดง"
+      }
+    }
+  }
+}

@@ -15,6 +15,13 @@
       "when": 1791262800000,
       "tag": "0001_careers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791349200000,
+      "tag": "0002_application_sort_indexes",
+      "breakpoints": true
     }
   ]
 }

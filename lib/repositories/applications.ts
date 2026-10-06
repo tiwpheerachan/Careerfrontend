@@ -16,7 +16,7 @@ import {
   type Locale,
 } from '@/lib/db/schema';
 import { NotFoundError } from '@/lib/errors';
-import { isUuid, likePattern, offsetOf, type Page } from './support';
+import { isUuid, JOBS_PK, likePattern, offsetOf, type Page } from './support';
 
 // --- Inputs --------------------------------------------------------------------
 
@@ -63,11 +63,17 @@ export interface ApplicationInput {
   files: ApplicationFileInput[];
 }
 
+export const APPLICATION_SORTS = ['createdAt', 'name', 'stage', 'job'] as const;
+export type ApplicationSort = (typeof APPLICATION_SORTS)[number];
+
 export interface ApplicationFilter extends Page {
   q?: string;
   stage?: ApplicationStage;
   /** The job's public id. */
   jobId?: string;
+  /** Newest first unless said otherwise. */
+  sort?: ApplicationSort;
+  dir?: 'asc' | 'desc';
 }
 
 // --- Outputs -------------------------------------------------------------------
@@ -144,9 +150,26 @@ const fromMonthDate = (date: string | null) => (date ? date.slice(0, 7) : null);
 
 const live = ne(applications.status, 'DELETED');
 
+/**
+ * ORDER BY for a list. Names sort in C collation (byte order, with an index
+ * behind it — same rule as onelink) and every order ends on pk, so a page
+ * boundary never moves between two rows that tie.
+ */
+function orderOf(sort: ApplicationSort = 'createdAt', dir: 'asc' | 'desc' = sort === 'createdAt' ? 'desc' : 'asc') {
+  const by = dir === 'asc' ? asc : desc;
+  const keys = {
+    createdAt: [by(applications.createdAt)],
+    name: [by(sql`${applications.firstName} collate "C"`), by(sql`${applications.lastName} collate "C"`)],
+    // The enum's own order: NEW → REVIEWING → SHORTLISTED → REJECTED → HIRED.
+    stage: [by(applications.stage), desc(applications.createdAt)],
+    job: [by(sql`${jobs.code} collate "C"`), desc(applications.createdAt)],
+  }[sort];
+  return [...keys, by(applications.pk)];
+}
+
 /** A job's title for admin lists: Thai, else English, else Chinese. */
 const jobTitle = sql<string | null>`(
-  select t.title from ${jobTranslations} t where t.jobs_pk = ${jobs.pk}
+  select t.title from ${jobTranslations} t where t.jobs_pk = ${JOBS_PK}
   order by array_position(array['th','en','zh']::locale[], t.locale) limit 1
 )`;
 
@@ -281,7 +304,7 @@ export function createApplicationRepository(db: Database) {
           .from(applications)
           .innerJoin(jobs, eq(jobs.pk, applications.jobsPk))
           .where(where)
-          .orderBy(desc(applications.createdAt), desc(applications.pk))
+          .orderBy(...orderOf(filter.sort, filter.dir))
           .limit(filter.pageSize)
           .offset(offsetOf(filter)),
         db.select({ n: count() }).from(applications).innerJoin(jobs, eq(jobs.pk, applications.jobsPk)).where(where),
@@ -311,7 +334,7 @@ export function createApplicationRepository(db: Database) {
         .from(applications)
         .innerJoin(jobs, eq(jobs.pk, applications.jobsPk))
         .where(conditions(filter, true))
-        .orderBy(desc(applications.createdAt), desc(applications.pk));
+        .orderBy(...orderOf(filter.sort, filter.dir));
     },
 
     async get(id: string): Promise<ApplicationDetail> {
@@ -530,7 +553,7 @@ export function createApplicationRepository(db: Database) {
             and(
               ne(jobs.status, 'DELETED'),
               eq(jobs.publishState, 'PUBLISHED'),
-              sql`not exists (select 1 from ${applications} a where a.jobs_pk = ${jobs.pk} and a.status <> 'DELETED')`,
+              sql`not exists (select 1 from ${applications} a where a.jobs_pk = ${JOBS_PK} and a.status <> 'DELETED')`,
             ),
           )
           .orderBy(asc(jobs.code)),

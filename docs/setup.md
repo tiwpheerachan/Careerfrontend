@@ -61,6 +61,16 @@ those same schemas. `tests/api/contracts.test.ts` fails if the two lists differ.
 The admin endpoints have **no sign-in yet** (SSO comes later): open in development, `503` in production.
 `lib/auth/admin.ts` is the one place that changes when SSO lands.
 
+## The admin
+
+`http://localhost:3100/admin` — overview, jobs, applicants, site text. Thai or English (header picker, a cookie;
+no url prefix). Its text is in `messages/admin/{th,en}.json`, separate from the public site's.
+
+**No sign-in yet** (SSO comes later, as in onelink). Development: open, acting as `dev@localhost`.
+Production: closed — `proxy.ts` answers every `/admin` url with 503 before any page runs, the API answers 503,
+and every admin page calls `requireAdminPage()` before reading data (`tests/api/admin-gate.test.ts` enforces it).
+When SSO lands, `lib/auth/admin.ts` and the `/admin` branch of `proxy.ts` are the two places that change.
+
 ## Checks (the same ones CI runs on every PR)
 
 ```bash

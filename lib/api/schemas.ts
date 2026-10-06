@@ -264,6 +264,11 @@ export const AdminApplicationsQuery = z.object({
   q: z.string().trim().max(100).optional().meta({ description: 'Name, email or phone.' }),
   stage: ApplicationStage.optional(),
   jobId: Id.optional().meta({ description: 'Only applications for this job (its public id).' }),
+  sort: z
+    .enum(['createdAt', 'name', 'stage', 'job'])
+    .optional()
+    .meta({ description: 'Default: createdAt (newest first).' }),
+  dir: z.enum(['asc', 'desc']).optional().meta({ description: 'Default: desc for createdAt, asc otherwise.' }),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
