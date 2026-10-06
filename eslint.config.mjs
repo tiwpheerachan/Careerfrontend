@@ -28,17 +28,5 @@ export default defineConfig([
     rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
   prettier,
-  globalIgnores([
-    '.next/**',
-    'out/**',
-    'build/**',
-    'next-env.d.ts',
-    'coverage/**',
-    'drizzle/meta/**',
-    // The old Vite frontend and FastAPI backend, kept only as a reference while
-    // they are ported. Not part of this app.
-    'frontend/**',
-    'backend/**',
-    'legacy/**',
-  ]),
+  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'coverage/**', 'drizzle/meta/**']),
 ]);

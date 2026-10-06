@@ -1,1 +1,0 @@
-<canvas width="1908" height="1698" style="width: 1908.67px; height: 1698.23px;"></canvas>

@@ -1,7 +1,8 @@
 # SHD Careers — local setup
 
 Next.js 16 (App Router) + Drizzle + Postgres 17. One app for the public site, the admin and the API.
-`frontend/` and `backend/` are the old Vite + FastAPI app, kept only as a reference while it is ported.
+It replaced an older Vite + FastAPI app (removed after the port; still in git history before the
+`chore: remove the old Vite frontend and FastAPI backend` commit).
 
 ## Prerequisites
 

@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "SHD Careers — Next.js + Drizzle + Supabase Postgres. Replaces the Vite frontend and FastAPI backend (frontend/, backend/).",
+  "description": "SHD Careers — the careers site, its admin and API: Next.js + Drizzle + Supabase Postgres.",
   "scripts": {
     "predev": "npm run docs:api",
     "dev": "next dev -p 3100",

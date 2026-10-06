@@ -27,7 +27,7 @@ export function cleanJobCode(oldJobId: string): string {
 
 const COUNTRY_CODES: Record<string, string> = {
   thailand: 'TH',
-  'ประเทศไทย': 'TH',
+  ประเทศไทย: 'TH',
   ไทย: 'TH',
   china: 'CN',
   indonesia: 'ID',

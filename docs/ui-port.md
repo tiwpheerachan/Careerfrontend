@@ -1,5 +1,9 @@
 # Porting the public pages (frontend/ → app/[locale])
 
+> The old `frontend/` and `backend/` were removed once the port was done. The `ported from
+frontend/src/…` comments in the code point at files that are still in git history
+> (e.g. `git show 8aac944b:frontend/src/pages/HomePage.tsx`).
+
 The look must not change. Decisions (agreed with the project owner):
 
 1. **Tailwind 3 → 4, look locked.** Sources were run through the official `@tailwindcss/upgrade`
