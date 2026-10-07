@@ -151,15 +151,21 @@ const fromMonthDate = (date: string | null) => (date ? date.slice(0, 7) : null);
 const live = ne(applications.status, 'DELETED');
 
 /**
- * ORDER BY for a list. Names sort in C collation (byte order, with an index
- * behind it — same rule as onelink) and every order ends on pk, so a page
+ * ORDER BY for a list. Names sort case-insensitively in C collation (byte
+ * order of the lower-cased name — same rule as onelink, without upper case
+ * coming before all of lower case) and every order ends on pk, so a page
  * boundary never moves between two rows that tie.
  */
 function orderOf(sort: ApplicationSort = 'createdAt', dir: 'asc' | 'desc' = sort === 'createdAt' ? 'desc' : 'asc') {
   const by = dir === 'asc' ? asc : desc;
   const keys = {
     createdAt: [by(applications.createdAt)],
-    name: [by(sql`${applications.firstName} collate "C"`), by(sql`${applications.lastName} collate "C"`)],
+    // Case-insensitive ("anna" beside "Anna"), still byte order within that.
+    name: [
+      by(sql`lower(${applications.firstName}) collate "C"`),
+      by(sql`lower(${applications.lastName}) collate "C"`),
+      by(sql`${applications.firstName} collate "C"`),
+    ],
     // The enum's own order: NEW → REVIEWING → SHORTLISTED → REJECTED → HIRED.
     stage: [by(applications.stage), desc(applications.createdAt)],
     job: [by(sql`${jobs.code} collate "C"`), desc(applications.createdAt)],
@@ -561,6 +567,23 @@ export function createApplicationRepository(db: Database) {
 
       const byStage = Object.fromEntries(STAGES.map((s) => [s, 0])) as Record<ApplicationStage, number>;
       for (const { stage, n } of stageRows) byStage[stage] = n;
+
+      // Typed by hand, so "LinkedIn" and "Linkedin " are one channel: grouped
+      // ignoring case (SQL already trimmed), named by its most used spelling.
+      function groupSources(rows: Array<{ name: string | null; n: number }>) {
+        const groups = new Map<string, { name: string | null; count: number; top: number }>();
+        for (const { name, n } of rows) {
+          const id = name === null ? '' : name.toLocaleLowerCase('en');
+          const group = groups.get(id);
+          if (!group) groups.set(id, { name, count: n, top: n });
+          else {
+            group.count += n;
+            if (n > group.top) Object.assign(group, { name, top: n });
+          }
+        }
+        return [...groups.values()].sort((x, y) => y.count - x.count).map(({ name, count }) => ({ name, count }));
+      }
+
       const total = STAGES.reduce((sum, s) => sum + byStage[s], 0);
       const publishedJobs = publishedRows[0]?.n ?? 0;
 
@@ -574,7 +597,7 @@ export function createApplicationRepository(db: Database) {
         },
         byStage,
         byDepartment: departmentRows.map((r) => ({ name: r.name, count: r.n })),
-        bySource: sourceRows.map((r) => ({ name: r.name, count: r.n })),
+        bySource: groupSources(sourceRows),
         byJob: jobRows.map((r) => ({ id: r.id, code: r.code, title: r.title, count: r.n })),
         daily: dailyRows.map((r) => ({ date: r.date, count: Number(r.count) })),
         publishedWithoutApplicants: emptyRows,

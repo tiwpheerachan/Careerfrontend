@@ -50,6 +50,20 @@
       "when": 1791694800000,
       "tag": "0006_interview_evaluations",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791781200000,
+      "tag": "0007_interview_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791867600000,
+      "tag": "0008_interview_review_fixes",
+      "breakpoints": true
     }
   ]
 }

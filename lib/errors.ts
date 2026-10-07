@@ -7,6 +7,7 @@
  *   ForbiddenError         403   known caller, not allowed (never an empty 200)
  *   NotFoundError          404
  *   ConflictError          409   unique violation, state clash
+ *   GoneError              410   it existed, and no longer works (an expired link)
  *   TooManyRequestsError   429   + Retry-After
  *   UnavailableError       503   a dependency (SSO, storage) is down or unconfigured
  *
@@ -78,6 +79,17 @@ export class ConflictError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'ConflictError';
+  }
+}
+
+export class GoneError extends Error {
+  static [Symbol.hasInstance](value: unknown): value is GoneError {
+    return named(value, 'GoneError');
+  }
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoneError';
   }
 }
 

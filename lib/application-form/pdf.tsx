@@ -34,6 +34,12 @@ export interface PrintableForm {
   /** Null without consent — or for an admin without manage, who prints without it. */
   sensitive: ApplicationFormSensitive | null;
   submittedAt: Date;
+  /**
+   * For someone who is only interviewing: no address, phone or email, no
+   * family or emergency contact, and the age instead of the birth date. What
+   * the applicant can do stays; how to reach them, and their family, does not.
+   */
+  redact?: boolean;
 }
 
 const ASSETS = path.join(process.cwd(), 'assets');
@@ -79,8 +85,8 @@ const str = (value: string | number | null | undefined) =>
 
 type Placed = { kind: 'text'; text: string; line: Line } | { kind: 'tick'; box: Box };
 
-/** Everything to write, at its place on the SHD template. */
-function placements(form: PrintableForm): Placed[] {
+/** Everything to write, at its place on the SHD template. Exported for the tests. */
+export function placements(form: PrintableForm): Placed[] {
   const a = form.answers;
   const out: Placed[] = [];
   const put = (line: Line, value: string | number | null | undefined) => {
@@ -100,22 +106,26 @@ function placements(form: PrintableForm): Placed[] {
   put(L.nickname, a.nickname);
   if (a.gender) tick(L.gender[a.gender]);
 
-  put(L.houseNo, a.address.houseNo);
-  put(L.moo, a.address.moo);
-  put(L.soi, a.address.soi);
-  put(L.road, a.address.road);
+  const hide = Boolean(form.redact);
+  // Leaves a line blank when the form is redacted.
+  const own = (line: Line, value: string | number | null | undefined) => put(line, hide ? null : value);
+
+  own(L.houseNo, a.address.houseNo);
+  own(L.moo, a.address.moo);
+  own(L.soi, a.address.soi);
+  own(L.road, a.address.road);
   put(L.subdistrict, a.address.subdistrict);
   put(L.district, a.address.district);
   put(L.province, a.address.province);
   put(L.postalCode, a.address.postalCode);
-  put(L.homePhone, a.homePhone);
-  put(L.mobile, a.mobile);
-  put(L.email, a.email);
+  own(L.homePhone, a.homePhone);
+  own(L.mobile, a.mobile);
+  own(L.email, a.email);
 
   const [year, month, day] = a.birthDate.split('-').map(Number);
-  put(L.birthDay, day);
-  put(L.birthMonth, month);
-  put(L.birthYear, year! + 543);
+  own(L.birthDay, day);
+  own(L.birthMonth, month);
+  own(L.birthYear, year! + 543);
   put(L.age, ageOn(a.birthDate, form.submittedAt));
   put(L.nationality, a.nationality);
   if (form.sensitive) {
@@ -126,18 +136,18 @@ function placements(form: PrintableForm): Placed[] {
     put(L.religion, form.sensitive.religion);
   }
 
-  put(L.fatherName, a.family.fatherName);
-  put(L.fatherOccupation, a.family.fatherOccupation);
-  put(L.motherName, a.family.motherName);
-  put(L.motherOccupation, a.family.motherOccupation);
-  put(L.siblings, a.family.siblings);
-  put(L.birthOrder, a.family.birthOrder);
+  own(L.fatherName, a.family.fatherName);
+  own(L.fatherOccupation, a.family.fatherOccupation);
+  own(L.motherName, a.family.motherName);
+  own(L.motherOccupation, a.family.motherOccupation);
+  own(L.siblings, a.family.siblings);
+  own(L.birthOrder, a.family.birthOrder);
 
   if (a.marriage.status) tick(L.marital[a.marriage.status]);
-  put(L.spouseName, a.marriage.spouseName);
-  put(L.spouseMaidenName, a.marriage.spouseMaidenName);
-  put(L.children, a.marriage.children);
-  put(L.spouseWorkplace, a.marriage.spouseWorkplace);
+  own(L.spouseName, a.marriage.spouseName);
+  own(L.spouseMaidenName, a.marriage.spouseMaidenName);
+  own(L.children, a.marriage.children);
+  own(L.spouseWorkplace, a.marriage.spouseWorkplace);
 
   if (a.military) tick(L.military[a.military]);
 
@@ -182,9 +192,9 @@ function placements(form: PrintableForm): Placed[] {
     put(L.previousReason, before.reasonForLeaving);
   }
 
-  put(L.emergencyName, a.emergency.name);
-  put(L.emergencyRelationship, a.emergency.relationship);
-  put(L.emergencyPhone, a.emergency.phone);
+  own(L.emergencyName, a.emergency.name);
+  own(L.emergencyRelationship, a.emergency.relationship);
+  own(L.emergencyPhone, a.emergency.phone);
 
   put(L.signedName, a.nameTh);
   const d = form.submittedAt;

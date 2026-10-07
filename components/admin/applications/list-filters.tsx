@@ -4,10 +4,11 @@ import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useState, useTransition, type FormEvent } from 'react';
+import { useState, useTransition } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useRequestedState, useUrlSearch } from '@/lib/admin/search';
 import { APPLICATION_STAGES } from '@/lib/constants';
 import type { ApplicationStage } from '@/lib/constants-types';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,12 @@ export interface JobOption {
   applicantCount: number;
 }
 
-/** Search box, job combobox and stage chips — every change goes to the url. */
+/**
+ * Search box, job combobox and stage chips — every change goes to the url.
+ * The search goes as you type (useUrlSearch, like the jobs list); each change
+ * starts from what was last asked for, so a chip clicked while the search is
+ * still waiting is kept.
+ */
 export function ListFilters({
   query,
   jobs,
@@ -36,13 +42,16 @@ export function ListFilters({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  const go = (patch: Partial<ListQuery>) => startTransition(() => router.push(listHref(query, patch)));
+  const requestedRef = useRequestedState(query, !pending);
 
-  const onSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const q = String(new FormData(event.currentTarget).get('q') ?? '').trim();
-    if (q !== query.q) go({ q });
+  // A filter is a step in the history (Back undoes it); typing is not, so the search replaces.
+  const go = (patch: Partial<ListQuery>, how: 'push' | 'replace' = 'push') => {
+    const href = listHref(requestedRef.current, patch);
+    requestedRef.current = { ...requestedRef.current, ...patch, ...('page' in patch ? {} : { page: 1 }) };
+    startTransition(() => (how === 'push' ? router.push(href) : router.replace(href)));
   };
+
+  const search = useUrlSearch(query.q, (q) => go({ q }, 'replace'), !pending);
 
   const allCount = APPLICATION_STAGES.reduce((sum, s) => sum + stageCounts[s], 0);
 
@@ -54,13 +63,20 @@ export function ListFilters({
       )}
       aria-busy={pending}
     >
-      {/* key: the box follows the url — back/forward puts the old search back in it. */}
-      <form key={query.q} onSubmit={onSearch} role="search" className="relative md:min-w-64 md:flex-1">
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          search.flush();
+        }}
+        className="relative md:min-w-64 md:flex-1"
+      >
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           name="q"
           type="search"
-          defaultValue={query.q}
+          value={search.value}
+          onChange={(e) => search.setValue(e.target.value)}
           aria-label={tCommon('search')}
           placeholder={t('searchPlaceholder')}
           className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-hidden placeholder:text-gray-400 focus:border-blue-600"
@@ -118,6 +134,7 @@ function JobCombobox({
   const t = useTranslations('applications.list');
   const [open, setOpen] = useState(false);
   const selected = jobs.find((j) => j.id === value);
+  const shown = selected ? selected.title : value ? value : t('allJobs');
 
   const pick = (jobId: string | null) => {
     setOpen(false);
@@ -130,11 +147,13 @@ function JobCombobox({
         <button
           type="button"
           role="combobox"
+          // The visible text is only the choice; the name says what it chooses.
+          aria-label={`${t('jobFilter')}: ${shown}`}
           aria-expanded={open}
           aria-controls="job-filter-list"
           className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-900 outline-hidden focus-visible:border-blue-600 md:w-72 md:shrink-0"
         >
-          <span className="truncate">{selected ? selected.title : value ? value : t('allJobs')}</span>
+          <span className="truncate">{shown}</span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400" />
         </button>
       </PopoverTrigger>

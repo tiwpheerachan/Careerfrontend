@@ -89,7 +89,8 @@ export function Offices({ jobs }: { jobs: HomeJob[] }) {
 
             {/* header */}
             <div className="relative z-10">
-              <div className="container-page px-4 pt-10 md:pt-14">
+              {/* pt-24 on phones: room for the floating country chips above the heading */}
+              <div className="container-page px-4 pt-24 md:pt-14">
                 <div className="mx-auto max-w-[1020px] text-center">
                   <div className="text-xs font-semibold tracking-wide text-emerald-700">{t('kicker')}</div>
 
@@ -274,46 +275,50 @@ export function Offices({ jobs }: { jobs: HomeJob[] }) {
                           </div>
                         )}
 
-                        <div className="mt-4 flex items-center justify-between">
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => setPage(Math.max(1, current - 1))}
-                            disabled={current <= 1}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            {t('pagination.prev')}
-                          </button>
+                        {officeJobs.length > 0 && (
+                          <div className="mt-4 flex items-center justify-between">
+                            <button
+                              type="button"
+                              className="btn btn-ghost disabled:opacity-40 disabled:hover:bg-transparent"
+                              onClick={() => setPage(Math.max(1, current - 1))}
+                              disabled={current <= 1}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                              {t('pagination.prev')}
+                            </button>
 
-                          <div className="text-xs font-semibold text-slate-800">
-                            {t('pagination.page', { page: current, total: totalPages })}
+                            <div className="text-xs font-semibold text-slate-800">
+                              {t('pagination.page', { page: current, total: totalPages })}
+                            </div>
+
+                            <button
+                              type="button"
+                              className="btn btn-ghost disabled:opacity-40 disabled:hover:bg-transparent"
+                              onClick={() => setPage(Math.min(totalPages, current + 1))}
+                              disabled={current >= totalPages}
+                            >
+                              {t('pagination.next')}
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
                           </div>
-
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => setPage(Math.min(totalPages, current + 1))}
-                            disabled={current >= totalPages}
-                          >
-                            {t('pagination.next')}
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        </div>
+                        )}
 
                         <div className="mt-3 flex flex-wrap gap-3">
-                          <Link
-                            href={{ pathname: '/jobs', query: { country: officeCode } }}
-                            className={cx(
-                              'inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black',
-                              'bg-[#cd902e] text-white',
-                              'shadow-[0_18px_60px_rgba(111,87,48,0.35)]',
-                              'transition hover:-translate-y-0.5 hover:bg-[#c39227e2]',
-                              'active:scale-[0.98]',
-                            )}
-                          >
-                            {t('actions.viewAllInOffice', { office: label })}
-                            <ArrowRight className="h-4 w-4" />
-                          </Link>
+                          {officeJobs.length > 0 && (
+                            <Link
+                              href={{ pathname: '/jobs', query: { country: officeCode } }}
+                              className={cx(
+                                'inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black',
+                                'bg-[#cd902e] text-white',
+                                'shadow-[0_18px_60px_rgba(111,87,48,0.35)]',
+                                'transition hover:-translate-y-0.5 hover:bg-[#c39227e2]',
+                                'active:scale-[0.98]',
+                              )}
+                            >
+                              {t('actions.viewAllInOffice', { office: label })}
+                              <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          )}
 
                           <Link
                             href="/jobs"

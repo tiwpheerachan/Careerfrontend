@@ -3,9 +3,10 @@
 import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cx } from '@/lib/cx';
+import { previousPageIsOnSite } from '@/components/site/nav-history';
 import { useRouter } from '@/lib/i18n/navigation';
 
-/** "Back": to the previous page when there is one (keeps the visitor's filters), else to the job list. */
+/** "Back": to the previous page of this site when there is one (keeps the visitor's filters), else to the job list. */
 export function BackButton() {
   const t = useTranslations('common');
   const router = useRouter();
@@ -13,7 +14,7 @@ export function BackButton() {
   return (
     <button
       type="button"
-      onClick={() => (window.history.length > 1 ? router.back() : router.push('/jobs'))}
+      onClick={() => (previousPageIsOnSite() ? router.back() : router.push('/jobs'))}
       className={cx(
         'inline-flex items-center gap-2 rounded-xl px-3 py-2',
         'text-sm font-semibold text-slate-700',

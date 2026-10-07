@@ -23,7 +23,16 @@ import {
   type Errors,
   type Step,
 } from './draft';
-import { ContactStep, EducationStep, FamilyStep, PersonalStep, PositionStep, WorkStep, type JobOption } from './steps';
+import {
+  ContactStep,
+  EducationStep,
+  FamilyStep,
+  jobsFor,
+  PersonalStep,
+  PositionStep,
+  WorkStep,
+  type JobOption,
+} from './steps';
 
 /**
  * The company's paper application form (ใบสมัครงาน), online: one section at a
@@ -40,6 +49,8 @@ const STORAGE_KEY = 'shd.applicationForm.draft.v1';
 interface Saved {
   draft: Draft;
   step: number;
+  /** The furthest step reached: the stepper can jump forward to it again. */
+  furthest?: number;
 }
 
 type Outcome = { kind: 'sent'; id: string } | { kind: 'failed'; message: string };
@@ -50,6 +61,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
   const locale = useLocale();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [step, setStep] = useState(0);
+  const [furthest, setFurthest] = useState(0);
   const [errors, setErrors] = useState<Errors>({});
   const [restored, setRestored] = useState(false);
   const [sending, setSending] = useState(false);
@@ -57,6 +69,10 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileReset, setTurnstileReset] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
+  // Screen readers: on a step change the new step's heading takes focus; on sending, the success heading.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const successRef = useRef<HTMLHeadingElement>(null);
+  const focusHeading = useRef(false);
 
   // Restore the tab's draft once, after the first render (the server has no sessionStorage).
   useEffect(() => {
@@ -68,7 +84,9 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
         // Merged over a fresh draft, so a field added since the draft was saved still has its default.
         // eslint-disable-next-line react-hooks/set-state-in-effect -- reading browser storage, once
         setDraft({ ...fresh, ...saved.draft });
-        setStep(Math.min(Math.max(0, saved.step), STEPS.length - 1));
+        const savedStep = Math.min(Math.max(0, saved.step), STEPS.length - 1);
+        setStep(savedStep);
+        setFurthest(Math.min(Math.max(savedStep, saved.furthest ?? 0), STEPS.length - 1));
       }
     } catch {
       /* no storage, or an old shape: start empty */
@@ -79,14 +97,32 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
   useEffect(() => {
     if (!restored || outcome?.kind === 'sent') return;
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, step } satisfies Saved));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ draft, step, furthest } satisfies Saved));
     } catch {
       /* storage full or blocked: the form still works, it just will not survive a refresh */
     }
-  }, [draft, step, restored, outcome]);
+  }, [draft, step, furthest, restored, outcome]);
+
+  useEffect(() => {
+    if (!focusHeading.current) return;
+    focusHeading.current = false;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [step]);
+
+  useEffect(() => {
+    if (outcome?.kind === 'sent') successRef.current?.focus({ preventScroll: true });
+  }, [outcome]);
 
   const set = (path: string, value: unknown) => {
-    setDraft((current) => write(current, path, value));
+    setDraft((current) => {
+      const next = write(current, path, value);
+      // A company letterhead lists only its country's jobs: a job from elsewhere is unchosen.
+      const fits =
+        !next.jobCode ||
+        next.jobCode === OTHER_JOB ||
+        jobsFor(jobs, next.letterhead).some((j) => j.code === next.jobCode);
+      return path === 'letterhead' && !fits ? write(next, 'jobCode', '') : next;
+    });
     // Choosing a job answers the "a job or a position" error, which is kept on positionOther.
     const answers = path === 'jobCode' ? [path, 'positionOther'] : [path];
     setErrors((current) => {
@@ -113,16 +149,22 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
 
   const goTo = (index: number) => {
     setStep(index);
+    setFurthest((f) => Math.max(f, index));
     setOutcome(null);
+    focusHeading.current = true;
     scrollTop();
   };
 
-  const next = () => {
+  /** Forward only once this step is right; back (or to the same step) any time. */
+  const moveTo = (index: number) => {
+    if (index <= step) return goTo(index);
     const found = validate(draft, locale, current);
     setErrors(found);
     if (Object.keys(found).length) return focusFirst(found);
-    goTo(step + 1);
+    goTo(index);
   };
+
+  const next = () => moveTo(step + 1);
 
   const submit = async () => {
     const found = validate(draft, locale);
@@ -193,6 +235,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
     setErrors({});
     setOutcome(null);
     setStep(0);
+    setFurthest(0);
     scrollTop();
   };
 
@@ -200,7 +243,12 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
     return (
       <div ref={topRef} className={cx(s.glassCard, 'rounded-3xl p-6 text-center sm:p-10')}>
         <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" aria-hidden="true" />
-        <h1 className="mt-4 text-xl font-black tracking-tight text-slate-900 sm:text-2xl" role="status">
+        <h1
+          ref={successRef}
+          tabIndex={-1}
+          className="mt-4 text-xl font-black tracking-tight text-slate-900 outline-none sm:text-2xl"
+          role="status"
+        >
           {t('success.title')}
         </h1>
         <p className="mt-2 text-sm text-slate-600">{t('success.body')}</p>
@@ -233,11 +281,13 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
           </div>
         </div>
 
-        <Progress step={step} onJump={(index) => index < step && goTo(index)} />
+        <Progress step={step} furthest={furthest} onJump={moveTo} />
 
         <div className={cx('mt-6', s.softHr)} />
 
-        <h2 className="mt-6 text-base font-black text-slate-900">{t(`steps.${current}`)}</h2>
+        <h2 ref={headingRef} tabIndex={-1} className="mt-6 text-base font-black text-slate-900 outline-none">
+          {t(`steps.${current}`)}
+        </h2>
 
         <div className="mt-4">
           {current === 'position' && <PositionStep jobs={jobs} />}
@@ -308,10 +358,22 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
               {sending ? t('submitting') : t('submit')}
             </button>
           ) : (
-            <button type="button" className="btn btn-primary inline-flex items-center gap-2" onClick={next}>
-              {t('next')}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {/* Came here with "Edit" from the review: straight back to it. */}
+              {furthest === STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost inline-flex items-center gap-2"
+                  onClick={() => moveTo(STEPS.length - 1)}
+                >
+                  {t('backToReview')}
+                </button>
+              ) : null}
+              <button type="button" className="btn btn-primary inline-flex items-center gap-2" onClick={next}>
+                {t('next')}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
           )}
         </div>
 
@@ -326,8 +388,8 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
   );
 }
 
-/** "Step 2 of 7", a bar, and the step names (done ones can be jumped back to). */
-function Progress({ step, onJump }: { step: number; onJump: (index: number) => void }) {
+/** "Step 2 of 7", a bar, and the step names (any step already reached can be jumped to). */
+function Progress({ step, furthest, onJump }: { step: number; furthest: number; onJump: (index: number) => void }) {
   const t = useTranslations('applicationForm');
   const percent = Math.round(((step + 1) / STEPS.length) * 100);
   return (
@@ -351,14 +413,15 @@ function Progress({ step, onJump }: { step: number; onJump: (index: number) => v
           <li key={name} className="min-w-0 flex-1">
             <button
               type="button"
-              disabled={index >= step}
+              disabled={index === step || index > furthest}
               onClick={() => onJump(index)}
               aria-current={index === step ? 'step' : undefined}
               className={cx(
-                'w-full truncate rounded-lg px-1 py-1 text-[11px] font-semibold transition',
+                // Wraps instead of truncating ("การศึกษาและความสามารถ" was cut even at 1440px).
+                'h-full w-full rounded-lg px-1 py-1 text-[11px] leading-tight font-semibold wrap-break-word transition',
                 index === step && 'text-blue-700',
-                index < step && 'text-slate-600 hover:bg-slate-100',
-                index > step && 'text-slate-400',
+                index !== step && index <= furthest && 'text-slate-600 hover:bg-slate-100',
+                index > furthest && 'text-slate-400',
               )}
             >
               {t(`steps.${name}`)}
@@ -491,7 +554,7 @@ function Review({
             {rows.map(([label, value]) => (
               <div key={label} className="contents">
                 <dt className="text-slate-500">{label}</dt>
-                <dd className="min-w-0 font-medium break-words text-slate-900">{value.trim() || f('none')}</dd>
+                <dd className="min-w-0 font-normal break-words text-slate-900">{value.trim() || f('none')}</dd>
               </div>
             ))}
           </dl>

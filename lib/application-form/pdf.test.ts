@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { APPLICATION_FORM_LETTERHEADS } from '@/lib/constants';
 import { applicationFormInput } from '@/tests/support/application-form';
 import { splitSaraAm } from '@/lib/pdf/thai';
-import { renderApplicationFormPdf } from './pdf';
+import { placements, renderApplicationFormPdf } from './pdf';
 import { ApplicationFormInput } from './schema';
 
 /**
@@ -43,6 +43,36 @@ describe('the application form PDF', () => {
       if (process.env.PREVIEW_DIR) writeFileSync(path.join(process.env.PREVIEW_DIR, `${letterhead}.pdf`), bytes);
     });
   }
+
+  it('redacted (for an invited interviewer): no contact, family or birth date; the age and work stay', () => {
+    const form = {
+      letterhead: APPLICATION_FORM_LETTERHEADS[0],
+      position: positionOther!,
+      answers,
+      sensitive: null,
+      submittedAt: new Date('2026-10-07T10:00:00+07:00'),
+    };
+    const texts = (redact: boolean) =>
+      placements({ ...form, redact }).flatMap((p) => (p.kind === 'text' ? [p.text] : []));
+    const full = texts(false);
+    const redacted = texts(true);
+    const hidden = [
+      answers.mobile,
+      answers.email,
+      answers.address.houseNo,
+      answers.family.fatherName,
+      answers.emergency.name,
+      answers.emergency.phone,
+    ].filter((v): v is string => Boolean(v));
+    expect(hidden.length).toBeGreaterThan(3);
+    for (const value of hidden) {
+      expect(full).toContain(value);
+      expect(redacted).not.toContain(value);
+    }
+    expect(redacted).toContain(answers.nameTh);
+    expect(redacted).toContain(positionOther);
+    expect(redacted.length).toBeGreaterThan(10);
+  });
 });
 
 describe('splitSaraAm', () => {

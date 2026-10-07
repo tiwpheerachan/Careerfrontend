@@ -69,6 +69,12 @@ function standardErrors(endpoint: Endpoint): Record<number, string> {
       : 'Signed in, without access to the admin.';
     errors[503] = 'The central permission system did not answer, or sign-in (SSO) is not set up in production.';
   }
+  if (endpoint.auth === 'invitee') {
+    errors[401] = 'Not signed in.';
+    errors[403] = 'Signed in as someone who is not on this link.';
+    errors[409] = 'Already sent through this link.';
+    errors[410] = 'The link expired or was switched off.';
+  }
   if (endpoint.params) errors[404] = 'Not found.';
   return errors;
 }
@@ -117,7 +123,7 @@ function operation(endpoint: Endpoint) {
             .join('\n\n'),
         }
       : {}),
-    security: endpoint.auth === 'admin' ? [{ session: [] }] : [],
+    security: endpoint.auth === 'public' ? [] : [{ session: [] }],
     parameters: [...parameters(endpoint.params, 'path'), ...parameters(endpoint.query, 'query')],
     ...(endpoint.body
       ? {

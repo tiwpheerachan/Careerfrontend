@@ -1,4 +1,4 @@
-import { boolean, date, index, pgEnum, pgTable, smallint, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, date, index, pgEnum, pgTable, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
 import { applicationForms } from './application-forms';
 import { applications } from './applications';
@@ -36,6 +36,11 @@ export const interviewEvaluations = pgTable(
     result: evaluationResult('result').notNull(),
     failReason: text('fail_reason'),
     comment: text('comment'),
+    /** The invitation it came through (lib/db/schema/interview-invitations.ts), if any. No .references(): the two tables point at each other. */
+    invitationsPk: refPk('interview_invitations_pk'),
+    /** Someone other than the evaluator (manage) changed it: who, and when. */
+    editedBy: text('edited_by'),
+    editedAt: timestamp('edited_at', { withTimezone: true, mode: 'date' }),
     ...timestamps(),
   },
   (table) => [

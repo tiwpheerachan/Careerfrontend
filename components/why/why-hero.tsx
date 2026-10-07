@@ -60,7 +60,7 @@ export function WhyHero() {
         <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/35 to-transparent" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-[1280px] px-4 py-14 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
+      <div className="relative mx-auto w-full max-w-[1280px] px-4 pt-24 pb-14 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
         <div className="mx-auto max-w-[1040px] text-center text-white">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white/95 backdrop-blur-sm">
             <Sparkles className="h-4 w-4" />

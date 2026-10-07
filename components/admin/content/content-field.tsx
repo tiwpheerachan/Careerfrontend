@@ -2,12 +2,14 @@
 
 import { Loader2, RotateCcw, Save } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { memo, type KeyboardEvent } from 'react';
+import { memo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime } from '@/lib/admin/format';
+import { checkOverride, describeProblem } from '@/lib/content/validate';
 import type { AdminLocale } from '@/lib/i18n/admin';
+import { cn } from '@/lib/utils';
 import type { ContentOverride } from './content-editor';
 import { useAbilities } from '@/components/admin/shell/abilities';
 
@@ -15,26 +17,37 @@ import { useAbilities } from '@/components/admin/shell/abilities';
 const MULTILINE_FROM = 60;
 
 const fieldClass =
-  'rounded-xl border-gray-200 bg-white px-3 text-sm placeholder:text-gray-400 focus-visible:border-blue-600 focus-visible:ring-blue-600/15 md:text-sm';
+  'rounded-xl border-gray-200 bg-white px-3 text-sm placeholder:text-gray-400 focus-visible:border-blue-600 focus-visible:ring-blue-600/15 aria-invalid:border-red-400 aria-invalid:ring-0 md:text-sm';
 
-/** One message key: its key, the "edited" pill, the field, revert and save. */
+/**
+ * One message key: its key, the "edited" pill, the field, revert and save.
+ * Saving checks the text first (lib/content/validate.ts — the server checks
+ * the same): a text the public site could not render stays here, with what is
+ * wrong under the field, until it is fixed.
+ */
 export const ContentField = memo(function ContentField({
   messageKey,
+  siteLocale,
   defaultText,
   value,
   dirty,
   override,
   busy,
+  serverError,
   onChange,
   onSave,
   onRevert,
 }: {
   messageKey: string;
+  /** The website language being edited (plural rules depend on it). */
+  siteLocale: string;
   defaultText: string;
   value: string;
   dirty: boolean;
   override: ContentOverride | null;
   busy: boolean;
+  /** What the server said about the last save of this key, if it refused it. */
+  serverError?: string;
   onChange: (key: string, value: string) => void;
   onSave: (key: string, value: string) => void;
   onRevert: (key: string) => void;
@@ -46,13 +59,40 @@ export const ContentField = memo(function ContentField({
   const id = `content-${messageKey}`;
   // View-only access: the text is shown, not editable, and nothing saves.
   const canEdit = useAbilities().content.edit;
+  const field = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  // After a refused save the check follows the typing, so the message goes as soon as the text is fixed.
+  const [checked, setChecked] = useState(false);
+  const problem = checked && dirty ? checkOverride(value, defaultText, siteLocale) : null;
+  const error = problem ? describeProblem(problem, (key, values) => t(key, values)) : dirty ? serverError : undefined;
+  const errorId = `${id}-error`;
+
+  const save = () => {
+    if (!canEdit || !dirty || busy) return;
+    if (checkOverride(value, defaultText, siteLocale)) {
+      setChecked(true);
+      field.current?.focus();
+      return;
+    }
+    onSave(messageKey, value);
+  };
 
   // Enter saves a one-line field; Ctrl/⌘+Enter saves a textarea.
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
     if (multiline && !(event.metaKey || event.ctrlKey)) return;
     event.preventDefault();
-    if (canEdit && dirty && !busy) onSave(messageKey, value);
+    save();
+  };
+
+  const fieldProps = {
+    id,
+    ref: field,
+    value,
+    readOnly: !canEdit,
+    'aria-invalid': error ? true : undefined,
+    'aria-describedby': error ? errorId : undefined,
+    onChange: (e: { target: { value: string } }) => onChange(messageKey, e.target.value),
+    onKeyDown,
   };
 
   return (
@@ -74,23 +114,14 @@ export const ContentField = memo(function ContentField({
       </div>
 
       {multiline ? (
-        <Textarea
-          id={id}
-          className={`${fieldClass} min-h-[70px] resize-y py-2`}
-          value={value}
-          readOnly={!canEdit}
-          onChange={(e) => onChange(messageKey, e.target.value)}
-          onKeyDown={onKeyDown}
-        />
+        <Textarea {...fieldProps} className={cn(fieldClass, 'min-h-[70px] resize-y py-2')} />
       ) : (
-        <Input
-          id={id}
-          className={`${fieldClass} h-auto py-2`}
-          value={value}
-          readOnly={!canEdit}
-          onChange={(e) => onChange(messageKey, e.target.value)}
-          onKeyDown={onKeyDown}
-        />
+        <Input {...fieldProps} className={cn(fieldClass, 'h-auto py-2')} />
+      )}
+      {error && (
+        <p id={errorId} role="alert" className="mt-1.5 text-xs font-medium text-red-600">
+          {error}
+        </p>
       )}
 
       <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
@@ -114,7 +145,7 @@ export const ContentField = memo(function ContentField({
         {canEdit && (
           <Button
             type="button"
-            onClick={() => onSave(messageKey, value)}
+            onClick={save}
             disabled={!dirty || busy}
             className="h-auto gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
           >

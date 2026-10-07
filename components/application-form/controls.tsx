@@ -125,7 +125,10 @@ export function Choices({
   const { draft, set } = useForm();
   const t = useTranslations('apply');
   const id = fieldId(path);
-  const error = useError(path);
+  const { errors } = useForm();
+  const te = useTranslations('applicationForm.errors');
+  // A choice is chosen, not filled in: "please choose" rather than "please fill in".
+  const error = errors[path] === 'required' ? te('choose') : errors[path] ? te(errors[path]) : undefined;
   const value = read(draft, path);
   return (
     <fieldset className={cx('space-y-2', className)} id={id} tabIndex={-1} {...invalidProps(id, error)}>

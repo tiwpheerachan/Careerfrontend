@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, FileDown, Search, SearchX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, FileDown, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ApplicationViewTabs } from '@/components/admin/applications/view-tabs';
 import { DeleteApplicationForm } from '@/components/admin/applications/delete-form';
+import { FormsSearch } from '@/components/admin/applications/forms-search';
 import { PageHeader } from '@/components/admin/ui';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDateTime } from '@/lib/admin/format';
@@ -47,24 +48,7 @@ export default async function ApplicationFormsPage({ searchParams }: PageProps<'
       />
       <ApplicationViewTabs current="forms" />
 
-      <form className="mb-4 flex gap-2" action="/admin/applications/forms">
-        <div className="relative max-w-md flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder={t('searchPlaceholder')}
-            aria-label={t('searchPlaceholder')}
-            className="h-10 w-full rounded-xl border border-gray-200 bg-white pr-3 pl-9 text-sm outline-hidden focus:border-blue-600"
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          {t('search')}
-        </button>
-      </form>
+      <FormsSearch q={q} placeholder={t('searchPlaceholder')} />
 
       {!manage && <p className="mb-3 text-xs text-gray-500">{t('sensitiveHidden')}</p>}
 
@@ -129,7 +113,7 @@ export default async function ApplicationFormsPage({ searchParams }: PageProps<'
                       </a>
                       {abilitiesOf(actor).applications.edit && (
                         <Link
-                          href={`/admin/interviews/new?candidate=${encodeURIComponent(`form:${form.id}`)}`}
+                          href={`/admin/interviews/candidate/${encodeURIComponent(`form:${form.id}`)}`}
                           className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 transition hover:bg-gray-50"
                         >
                           <ClipboardCheck className="h-4 w-4 text-blue-600" />

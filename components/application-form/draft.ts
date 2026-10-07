@@ -262,7 +262,22 @@ export function stepOf(path: string): Step {
 }
 
 export type ErrorKey =
-  'required' | 'invalid' | 'phone' | 'email' | 'birthDate' | 'postalCode' | 'position' | 'certify' | 'number';
+  | 'required'
+  | 'choose'
+  | 'invalid'
+  | 'phone'
+  | 'email'
+  | 'birthDate'
+  | 'birthDateFuture'
+  | 'birthDateYoung'
+  | 'postalCode'
+  | 'position'
+  | 'certify'
+  | 'number'
+  | 'salary'
+  | 'gpa'
+  | 'year'
+  | 'birthOrder';
 
 /** Field path → which message to show. Paths name draft fields (education by level, not by index). */
 export type Errors = Record<string, ErrorKey>;
@@ -283,6 +298,65 @@ function errorKey(path: string, issue: z.core.$ZodIssue, empty: boolean): ErrorK
   if (path.endsWith('postalCode')) return 'postalCode';
   if (issue.code === 'invalid_type' && issue.expected === 'number') return 'number';
   return empty ? 'required' : 'invalid';
+}
+
+/** Why a birth date was refused, when it is a date at all: in the future, or under 15. */
+function birthDateKey(value: unknown): ErrorKey {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'birthDate';
+  const born = new Date(`${value}T00:00:00Z`).getTime();
+  if (Number.isNaN(born)) return 'birthDate';
+  if (born > Date.now()) return 'birthDateFuture';
+  const age = (Date.now() - born) / (365.25 * 24 * 3600 * 1000);
+  return age < 15 ? 'birthDateYoung' : 'birthDate';
+}
+
+/*
+ * Checks the shared schema does not make (it keeps these as free text, as on
+ * paper) but that catch plain typos before HR sees them. Client-side only:
+ * the server still accepts them — see lib/application-form/schema.ts.
+ */
+/**
+ * An amount or a range of amounts: "25000", "25,000", "25,000 - 30,000", "25k",
+ * "฿25,000", "25,000 บาท". Only checked when there are digits: words alone
+ * ("ตามตกลง", "ตามโครงสร้างบริษัท") are an answer, as on paper.
+ */
+const AMOUNT = '\\d[\\d,.\\s]*(?:k|K)?';
+const MONEY = new RegExp(`^(?:฿\\s*)?${AMOUNT}(?:\\s*[-–~]\\s*(?:฿\\s*)?${AMOUNT})?\\s*(?:บาท|baht|thb|元|฿)?$`, 'i');
+/** A grade point average: a number from 0 to 100 (4.00 here; other scales abroad). */
+const isGpa = (v: string) => /^\d{1,3}(\.\d{1,2})?$/.test(v) && Number(v) <= 100;
+/** A year as written on paper: Buddhist (2400–2700) or Christian (1950–2100) era, 4 digits. */
+const isYear = (v: string) => /^\d{4}$/.test(v) && ((+v >= 1950 && +v <= 2100) || (+v >= 2400 && +v <= 2700));
+
+function extraChecks(draft: Draft): Errors {
+  const errors: Errors = {};
+  const money = (path: string, value: string) => {
+    if (/\d/.test(value) && !MONEY.test(value.trim())) errors[path] = 'salary';
+  };
+  money('expectedSalary', draft.expectedSalary);
+  for (const which of ['currentJob', 'previousJob'] as const) {
+    if (which === 'currentJob' ? !draft.hasCurrentJob : !draft.hasPreviousJob) continue;
+    money(`${which}.lastSalary`, draft[which].lastSalary);
+    money(`${which}.otherIncome`, draft[which].otherIncome);
+    money(`${which}.totalIncome`, draft[which].totalIncome);
+  }
+  for (const level of FORM_EDUCATION_LEVELS) {
+    const row = draft.education[level];
+    if (row.gpa.trim() && !isGpa(row.gpa.trim())) errors[`education.${level}.gpa`] = 'gpa';
+    if (row.graduationYear.trim() && !isYear(row.graduationYear.trim()))
+      errors[`education.${level}.graduationYear`] = 'year';
+  }
+  const siblings = Number(draft.family.siblings);
+  const order = Number(draft.family.birthOrder);
+  if (
+    draft.family.siblings.trim() &&
+    draft.family.birthOrder.trim() &&
+    Number.isInteger(siblings) &&
+    Number.isInteger(order) &&
+    siblings > 0 &&
+    order > siblings
+  )
+    errors['family.birthOrder'] = 'birthOrder';
+  return errors;
 }
 
 /** Reads a value out of the draft by a dotted path, for "was it empty". */
@@ -311,6 +385,10 @@ export function validate(draft: Draft, locale: string, only?: Step): Errors {
       const value = valueAt(draft, path);
       errors[path] ??= errorKey(path, issue, value === '' || value === undefined || value === null);
     }
+  }
+  if (errors.birthDate === 'birthDate') errors.birthDate = birthDateKey(draft.birthDate);
+  for (const [path, key] of Object.entries(extraChecks(draft))) {
+    if (!only || stepOf(path) === only) errors[path] ??= key;
   }
   // The schema checks "a job or a position" only once everything else passes; the wizard needs it on step 1.
   if (

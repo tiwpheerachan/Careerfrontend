@@ -461,6 +461,88 @@ export const adminEvaluationPdf = endpoint({
   responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
 });
 
+export const adminSearchPeople = endpoint({
+  method: 'get',
+  path: '/admin/people',
+  tag: 'Admin · Interviews',
+  summary: 'Find people in the company directory',
+  description: 'The central directory (directory:read:people), for inviting evaluators. 503 without CENTRAL_API_KEY.',
+  auth: 'admin',
+  permission: 'applications.edit',
+  query: S.PeopleQuery,
+  responses: { 200: { description: 'Matches with an email.', schema: S.PeopleList } },
+});
+
+export const adminListInvitations = endpoint({
+  method: 'get',
+  path: '/admin/interview-invitations',
+  tag: 'Admin · Interviews',
+  summary: 'One candidate’s invitation links',
+  auth: 'admin',
+  permission: 'applications.view',
+  query: S.InvitationsQuery,
+  responses: { 200: { description: 'Newest first, with who opened and who sent.', schema: S.InvitationsList } },
+});
+
+export const adminCreateInvitation = endpoint({
+  method: 'post',
+  path: '/admin/interview-invitations',
+  tag: 'Admin · Interviews',
+  summary: 'Invite people to evaluate',
+  description:
+    'One link for the people chosen. Opening it needs an SSO sign-in as one of them — no role needed. ' +
+    '24 hours unopened; 6 hours once someone opens it; each person sends once.',
+  auth: 'admin',
+  permission: 'applications.edit',
+  body: { schema: S.InvitationInput, type: 'application/json' },
+  responses: { 201: { description: 'The invitation and its link.', schema: z.object({ invitation: S.Invitation }) } },
+});
+
+export const adminRevokeInvitation = endpoint({
+  method: 'delete',
+  path: '/admin/interview-invitations/{id}',
+  tag: 'Admin · Interviews',
+  summary: 'Switch an invitation link off',
+  auth: 'admin',
+  permission: 'applications.edit',
+  params: S.IdParams,
+  responses: { 204: { description: 'Switched off.' } },
+});
+
+export const inviteeSubmit = endpoint({
+  method: 'post',
+  path: '/evaluate/{token}',
+  tag: 'Invited evaluators',
+  summary: 'Send an evaluation through an invitation link',
+  description: 'The candidate, round and side are the link’s; the evaluator is the signed-in person. Once per person.',
+  auth: 'invitee',
+  params: S.TokenParams,
+  body: { schema: S.GuestEvaluationInput, type: 'application/json' },
+  responses: { 201: { description: 'Sent.', schema: z.object({ evaluationId: z.uuid() }) } },
+});
+
+export const inviteeFile = endpoint({
+  method: 'get',
+  path: '/evaluate/{token}/files/{fileId}',
+  tag: 'Invited evaluators',
+  summary: 'Open one of the candidate’s files',
+  description: 'Only files of the applicant the link is for.',
+  auth: 'invitee',
+  params: S.TokenFileParams,
+  responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
+});
+
+export const inviteeApplicationForm = endpoint({
+  method: 'get',
+  path: '/evaluate/{token}/application-form',
+  tag: 'Invited evaluators',
+  summary: 'The candidate’s application form as a PDF',
+  description: 'For a link made from an application form. The sensitive fields are left blank.',
+  auth: 'invitee',
+  params: S.TokenParams,
+  responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
+});
+
 export const adminSearchCandidates = endpoint({
   method: 'get',
   path: '/admin/interview-candidates',
@@ -506,6 +588,13 @@ export const ENDPOINTS = [
   adminDeleteEvaluation,
   adminEvaluationPdf,
   adminSearchCandidates,
+  adminSearchPeople,
+  adminListInvitations,
+  adminCreateInvitation,
+  adminRevokeInvitation,
+  inviteeSubmit,
+  inviteeFile,
+  inviteeApplicationForm,
   adminAnalytics,
   adminListContent,
   adminSetContent,
@@ -520,5 +609,6 @@ export const TAGS = [
   { name: 'Admin · Jobs', description: 'Create and manage jobs.' },
   { name: 'Admin · Applications', description: 'Review applicants.' },
   { name: 'Admin · Interviews', description: 'Interview evaluations (HR and the hiring department).' },
+  { name: 'Invited evaluators', description: 'Evaluating through an invitation link: SSO sign-in, no role.' },
   { name: 'Admin · Site content', description: 'Edit the site’s text.' },
 ];

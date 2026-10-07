@@ -1,4 +1,4 @@
-import { ArrowRight, Briefcase, Users } from 'lucide-react';
+import { ArrowRight, Briefcase } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { cx } from '@/lib/cx';
 import { Link } from '@/lib/i18n/navigation';
@@ -97,15 +97,6 @@ export async function FindYourFit({ departments }: { departments: DepartmentCoun
                 >
                   <ArrowRight className="h-4 w-4" />
                 </div>
-              </div>
-
-              <div className="relative mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
-                  <Users className="h-3.5 w-3.5" /> {t('card.teamChip')}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
-                  <Briefcase className="h-3.5 w-3.5" /> {t('card.openingsChip')}
-                </span>
               </div>
             </Link>
           ))

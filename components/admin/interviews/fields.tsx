@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 
 /** The admin's input look (as in the job editor). */
 export const FIELD =
@@ -34,6 +34,31 @@ export function Labeled({
   );
 }
 
+/**
+ * A radio group's keys, as a native one has them: one Tab stop for the group
+ * (radioTabIndex), and the arrows (Home, End) move to the next choice and
+ * choose it. Put on the element with role="radiogroup".
+ */
+export function onRadioKeyDown(event: KeyboardEvent<HTMLElement>) {
+  const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+  if (step === undefined && event.key !== 'Home' && event.key !== 'End') return;
+  const radios = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]:not(:disabled)')];
+  if (!radios.length) return;
+  event.preventDefault();
+  const at = radios.indexOf(document.activeElement as HTMLButtonElement);
+  const next =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? radios.length - 1
+        : (Math.max(at, 0) + step! + radios.length) % radios.length;
+  radios[next]!.focus();
+  radios[next]!.click();
+}
+
+/** The one Tab stop: the chosen radio, or the first when none is. */
+export const radioTabIndex = (on: boolean, index: number, anyOn: boolean) => (on || (!anyOn && index === 0) ? 0 : -1);
+
 /** Two or more choices as one segmented control (a radio group). */
 export function Segmented<T extends string | number>({
   label,
@@ -55,8 +80,9 @@ export function Segmented<T extends string | number>({
         className="inline-flex w-full rounded-xl border border-gray-200 bg-gray-50 p-1"
         role="radiogroup"
         aria-label={label}
+        onKeyDown={onRadioKeyDown}
       >
-        {options.map((option) => {
+        {options.map((option, index) => {
           const on = option.value === value;
           return (
             <button
@@ -64,6 +90,11 @@ export function Segmented<T extends string | number>({
               type="button"
               role="radio"
               aria-checked={on}
+              tabIndex={radioTabIndex(
+                on,
+                index,
+                options.some((o) => o.value === value),
+              )}
               disabled={disabled}
               onClick={() => onChange(option.value)}
               className={

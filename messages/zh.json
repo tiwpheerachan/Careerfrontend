@@ -31,7 +31,12 @@
     "preview": "预览",
     "remove": "删除",
     "add": "添加",
-    "error": "出了点问题，请稍后重试。"
+    "error": "出了点问题，请稍后重试。",
+    "notFoundPage": {
+      "body": "找不到该页面，或该职位已停止招聘。",
+      "jobs": "查看开放职位",
+      "home": "返回首页"
+    }
   },
   "home": {
     "meta": {
@@ -71,7 +76,7 @@
     "offices": {
       "kicker": "立足本地，放眼全球",
       "title": "在全球范围成长",
-      "subtitle": "选择国家，查看该国家开放岗位（每页显示 4 个）。",
+      "subtitle": "选择国家，查看该国家的开放岗位。",
       "dropdownAria": "选择办公室",
       "openingsLoading": "加载中…",
       "openings": "{count} 个职位开放",
@@ -140,11 +145,9 @@
       "noJobs": "系统中暂无职位。",
       "card": {
         "hiring": "正在招聘",
-        "roleUnit": "个岗位",
-        "teamChip": "团队",
-        "openingsChip": "岗位"
+        "roleUnit": "个岗位"
       },
-      "footnote": "* 点击卡片将进入 Jobs 页面并自动应用部门筛选。",
+      "footnote": "点击部门即可查看该部门的开放岗位。",
       "otherDepartment": "其他"
     },
     "gallery": {
@@ -771,7 +774,7 @@
     "hero": {
       "badge": "正在招聘",
       "title": "寻找你的理想工作",
-      "subtitle": "按关键词 • 国家 • 部门 • 级别搜索 —— 简洁界面，快速体验",
+      "subtitle": "按关键词 • 国家 • 部门 • 级别搜索",
       "searchPlaceholder": "输入关键词搜索",
       "searchAria": "搜索职位",
       "openCount": "共 {count} 个职位",
@@ -1038,7 +1041,7 @@
       "clear": "清除",
       "thisMonth": "本月",
       "apply": "确定",
-      "tip": "提示：直接选择“年”和“月”（无需按日选择）"
+      "tip": "选择年份和月份即可（无需具体日期）"
     },
     "skills": {
       "categoriesTitle": "技能分类",
@@ -1147,7 +1150,7 @@
     "submitNote": "提交即表示你确认所填信息真实准确，并同意我们的相关政策。",
     "sidebar": {
       "job": "职位",
-      "tipMonths": "开始/结束时间只需选择“年 + 月”（更简单）",
+      "tipMonths": "“开始”和“结束”只需选择年和月，无需具体日期。",
       "privacyTitle": "隐私",
       "privacyBody": "你的信息仅用于招聘，并将得到安全妥善的处理。"
     },
@@ -1191,6 +1194,15 @@
       "notFound": "该职位已停止接受申请。",
       "unavailable": "服务暂时不可用，请几分钟后再试。",
       "network": "无法连接服务器。请检查网络后重试。"
+    },
+    "success": {
+      "title": "申请已提交",
+      "body": "感谢你有意加入我们。HR 会审核你的申请，并通过你留下的邮箱或电话与你联系。",
+      "jobs": "查看其他职位"
+    },
+    "draft": {
+      "note": "已填写的内容会保存在此标签页中，直到提交或关闭标签页（附件除外）。",
+      "filesAgain": "已为你恢复填写的内容，但附件无法保留——请重新上传简历和材料。"
     }
   },
   "applicationForm": {
@@ -1230,7 +1242,14 @@
       "rateLimited": "提交过于频繁，请稍后再试",
       "failed": "提交失败，请重试",
       "network": "无法连接，请检查网络后重试",
-      "verify": "请完成人机验证"
+      "verify": "请完成人机验证",
+      "choose": "请选择一项",
+      "birthDateFuture": "出生日期不能晚于今天",
+      "birthDateYoung": "申请人须年满 15 周岁",
+      "salary": "请输入金额，例如 25,000 或 25,000-30,000",
+      "gpa": "请以数字填写平均成绩，例如 3.25",
+      "year": "请填写 4 位年份，例如 2022",
+      "birthOrder": "排行不能大于兄弟姐妹总数"
     },
     "success": {
       "title": "申请已提交",
@@ -1295,7 +1314,7 @@
       "fatherOccupation": "父亲职业",
       "motherName": "母亲姓名",
       "motherOccupation": "母亲职业",
-      "siblings": "兄弟姐妹人数",
+      "siblings": "兄弟姐妹人数（含本人）",
       "birthOrder": "您排行第几",
       "marital": "婚姻状况",
       "maritals": {
@@ -1372,6 +1391,7 @@
       "reviewHint": "提交前请核对，点击“修改”可返回该步骤。",
       "signNote": "面试当天请在打印的申请表上签名并贴上照片。",
       "none": "—"
-    }
+    },
+    "backToReview": "返回核对页面"
   }
 }

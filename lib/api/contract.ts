@@ -15,8 +15,11 @@ export interface Endpoint {
   tag: string;
   summary: string;
   description?: string;
-  /** public = anyone; admin = the admin gate (lib/auth/admin.ts). */
-  auth: 'public' | 'admin';
+  /**
+   * public = anyone; admin = the admin gate (lib/auth/admin.ts); invitee =
+   * signed in with SSO as someone on that invitation link (lib/auth/invitee.ts).
+   */
+  auth: 'public' | 'admin' | 'invitee';
   /**
    * Admin only: the permission it needs from the central system,
    * "resource.level" (lib/auth/permissions.ts). Absent = any access to the admin.

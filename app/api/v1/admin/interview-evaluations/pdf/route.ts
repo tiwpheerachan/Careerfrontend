@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/v1/admin/interview-evaluations/pdf?candidate=&role=&lang= — one
- * candidate's paper form for one side, the two rounds side by side.
+ * candidate's paper form for one side, the two rounds side by side (with a
+ * summary page first when a round has several evaluators — lib/interview/pdf.tsx).
  */
 export const GET = handler(async (request, { log }) => {
   await requireAdmin(request, { resource: 'applications', level: 'view' });
@@ -18,17 +19,15 @@ export const GET = handler(async (request, { log }) => {
   const ref = parseCandidateKey(candidate);
   if (!ref) throw new NotFoundError('candidate', candidate);
 
-  // Round 1 first, newest first within a round: the first of each round is the one printed.
   const mine = (await store().interviewEvaluations.forCandidate(ref)).filter((e) => e.evaluatorRole === role);
   if (!mine.length) throw new NotFoundError('evaluation', `${candidate} (${role})`);
-  const rounds = { 1: mine.find((e) => e.round === 1), 2: mine.find((e) => e.round === 2) };
   const latest = [...mine].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0]!;
 
   const pdf = await renderInterviewPdf({
     language: lang,
     role,
     candidate: latest.candidate,
-    rounds,
+    evaluations: mine,
     printedAt: new Date(),
   });
   log.info({ candidate: ref.kind, role, lang }, 'interview evaluation PDF');

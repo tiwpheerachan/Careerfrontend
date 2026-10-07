@@ -35,7 +35,7 @@ export default async function ApplicationFormPage({ params }: Props) {
     <section className={cx('container-page pt-24 pb-14 sm:pt-28', s.applyBg, s.applySection)}>
       <div className="mx-auto max-w-3xl">
         <ApplicationFormWizard
-          jobs={jobs.map((job) => ({ code: job.code, title: job.title }))}
+          jobs={jobs.map((job) => ({ code: job.code, title: job.title, countryCode: job.countryCode }))}
           turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined}
         />
       </div>

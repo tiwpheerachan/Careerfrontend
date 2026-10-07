@@ -3,7 +3,7 @@
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState, useTransition, type FormEvent } from 'react';
+import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -44,6 +44,9 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
   const [adding, setAdding] = useState(false);
   const [toDelete, setToDelete] = useState<Note | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // The deleted note's button goes with it, so focus goes to the new-note box instead.
+  const justDeleted = useRef(false);
+  const textarea = useRef<HTMLTextAreaElement>(null);
   const [refreshing, startTransition] = useTransition();
   const can = useAbilities();
 
@@ -71,6 +74,7 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
     setDeleting(true);
     try {
       await adminFetch(`/applications/${applicationId}/notes/${toDelete.id}`, { method: 'DELETE' });
+      justDeleted.current = true;
       setToDelete(null);
       toast.success(t('noteDeleted'));
       startTransition(() => router.refresh());
@@ -89,6 +93,7 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
             {t('notes')}
           </label>
           <textarea
+            ref={textarea}
             id="note-body"
             value={body}
             onChange={(e) => {
@@ -144,13 +149,20 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
       </div>
 
       <AlertDialog open={!!toDelete} onOpenChange={(open) => !open && !deleting && setToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          onCloseAutoFocus={(event) => {
+            if (!justDeleted.current) return;
+            justDeleted.current = false;
+            event.preventDefault();
+            textarea.current?.focus();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>{t('deleteNoteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>{t('deleteNoteBody')}</AlertDialogDescription>
           </AlertDialogHeader>
           {toDelete && (
-            <p className="line-clamp-3 rounded-lg bg-gray-50 px-3 py-2 text-sm whitespace-pre-wrap text-gray-700">
+            <p className="line-clamp-3 min-w-0 rounded-lg bg-gray-50 px-3 py-2 text-sm break-words whitespace-pre-wrap text-gray-700">
               {toDelete.body}
             </p>
           )}

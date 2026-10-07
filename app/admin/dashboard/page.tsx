@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { BarList, Sparkbars } from '@/components/admin/charts';
 import { Kpi } from '@/components/admin/dashboard/kpi';
+import { jobTitle, stateToParam } from '@/components/admin/jobs/job-utils';
 import { PageHeader, Panel, STAGE_TONE, ToneBadge } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/admin/format';
@@ -23,12 +24,20 @@ const STAGES: ApplicationStage[] = ['NEW', 'REVIEWING', 'SHORTLISTED', 'REJECTED
 export default async function DashboardPage() {
   await requireAdminPage({ resource: 'applications', level: 'view' });
   const locale = (await getLocale()) as AdminLocale;
-  const [t, tStage, tCommon, a] = await Promise.all([
+  const [t, tStage, tCommon, a, jobs] = await Promise.all([
     getTranslations('dashboard'),
     getTranslations('stage'),
     getTranslations('common'),
     store().applications.analytics({ days: DAYS, timeZone: 'Asia/Bangkok' }),
+    store().jobs.list(),
   ]);
+  // Jobs named as everywhere else in the admin: the admin's language first (the analytics carry the Thai title).
+  const titles = new Map(jobs.map((job) => [job.id, jobTitle(job, locale)]));
+  const titleOf = (job: { id: string; code: string; title: string | null }) => {
+    const title = titles.get(job.id);
+    // jobTitle ends on the code; here a job without any title says so.
+    return title && title !== job.code ? title : job.title;
+  };
 
   const number = new Intl.NumberFormat(intlLocale(locale));
   const periodTotal = a.daily.reduce((sum, d) => sum + d.count, 0);
@@ -69,7 +78,7 @@ export default async function DashboardPage() {
             tone="bg-indigo-50"
             label={t('kpi.publishedJobs')}
             value={number.format(a.totals.publishedJobs)}
-            href="/admin/jobs"
+            href={`/admin/jobs?state=${stateToParam('PUBLISHED')}`}
           />
           <Kpi
             icon={<Target className="h-5 w-5 text-emerald-700" />}
@@ -122,7 +131,7 @@ export default async function DashboardPage() {
             <BarList
               emptyText={tCommon('noData')}
               items={a.byJob.slice(0, TOP).map((job) => ({
-                label: job.title ?? job.code,
+                label: titleOf(job) ?? job.code,
                 value: job.count,
                 sublabel: job.code,
                 href: `/admin/applications?jobId=${encodeURIComponent(job.id)}`,
@@ -163,7 +172,7 @@ export default async function DashboardPage() {
                   href={`/admin/jobs/${encodeURIComponent(job.id)}`}
                   className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:border-amber-300 hover:bg-amber-50"
                 >
-                  {job.title ?? t('untitled')} <span className="text-xs text-gray-400">· {job.code}</span>
+                  {titleOf(job) ?? t('untitled')} <span className="text-xs text-gray-400">· {job.code}</span>
                 </Link>
               ))}
             </div>

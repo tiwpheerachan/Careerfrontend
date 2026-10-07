@@ -70,7 +70,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                   </SidebarInset>
                 </SidebarProvider>
               </AbilitiesProvider>
-              <Toaster position="bottom-right" richColors theme="light" />
+              {/* Phones: above the bottom bars (the interview form's score and save button). */}
+              <Toaster position="bottom-right" mobileOffset={{ bottom: 96 }} richColors theme="light" />
             </TooltipProvider>
           ) : blocked === 'access' || blocked === 'unavailable' ? (
             <NoAccess email={email} reason={blocked} />

@@ -3,18 +3,19 @@
 import { Loader2, Search } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useRequestedState, useUrlSearch } from '@/lib/admin/search';
 import type { JobPublishState } from '@/lib/constants-types';
 import { PUBLISH_STATES, stateToParam } from './job-utils';
-
-const SEARCH_DELAY = 250;
 
 /**
  * The search box and the status chips above the jobs table. Both write to the
  * url (?q=, ?state=) and the server page re-reads; the search waits 250ms
- * after the last key, as the old one did.
+ * after the last key (useUrlSearch, as every admin list does). Each change
+ * starts from what was last asked for, so a chip clicked while the search is
+ * still waiting is not undone by it.
  */
 export function JobsToolbar({
   q,
@@ -31,36 +32,21 @@ export function JobsToolbar({
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
-  const [value, setValue] = useState(q);
-  const sent = useRef(q);
-
-  // The url changed from elsewhere ("clear filters", back button): show it.
-  useEffect(() => {
-    if (q !== sent.current) {
-      sent.current = q;
-      setValue(q);
-    }
-  }, [q]);
+  const requestedRef = useRequestedState<{ q?: string; state?: string }>(
+    { q: q || undefined, state: state ? stateToParam(state) : undefined },
+    !pending,
+  );
 
   const navigate = (patch: { q?: string; state?: string }) => {
-    const current = { q: sent.current || undefined, state: state ? stateToParam(state) : undefined };
+    const nextState = { ...requestedRef.current, ...patch };
+    requestedRef.current = nextState;
     const next = new URLSearchParams();
-    for (const [key, val] of Object.entries({ ...current, ...patch })) if (val) next.set(key, val);
+    for (const [key, val] of Object.entries(nextState)) if (val) next.set(key, val);
     const query = next.toString();
     startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
   };
 
-  useEffect(() => {
-    const term = value.trim();
-    if (term === sent.current) return;
-    const timer = setTimeout(() => {
-      sent.current = term;
-      navigate({ q: term || undefined });
-    }, SEARCH_DELAY);
-    return () => clearTimeout(timer);
-    // navigate is rebuilt every render; the value is what matters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  const search = useUrlSearch(q, (term) => navigate({ q: term || undefined }), !pending);
 
   const chip =
     'h-auto min-w-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-normal text-gray-700 hover:bg-gray-50 hover:text-gray-700 data-[state=on]:border-blue-600 data-[state=on]:bg-blue-50 data-[state=on]:text-blue-700';
@@ -79,8 +65,9 @@ export function JobsToolbar({
           type="search"
           aria-label={common('search')}
           placeholder={t('searchPlaceholder')}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
+          value={search.value}
+          onChange={(e) => search.setValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && search.flush()}
           className="h-auto rounded-xl border-gray-200 bg-white py-2 pr-3 pl-9 text-sm focus-visible:border-blue-600 focus-visible:ring-0"
         />
       </div>

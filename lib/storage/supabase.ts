@@ -1,4 +1,4 @@
-import { UnavailableError } from '@/lib/errors';
+import { NotFoundError, UnavailableError } from '@/lib/errors';
 import type { ObjectStore } from './index';
 
 /**
@@ -54,7 +54,14 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ expiresIn: 60 }),
       });
-      if (!response.ok) throw new Error(`Storage sign failed (${response.status}): ${await response.text()}`);
+      if (!response.ok) {
+        const body = await response.text();
+        // A row whose object is gone (removed by hand, or never uploaded): Storage
+        // answers 400 with a "not_found" body, or 404 — the file, not the server, is missing.
+        if (response.status === 404 || (response.status === 400 && /not.?found/i.test(body)))
+          throw new NotFoundError('file', objectPath);
+        throw new Error(`Storage sign failed (${response.status}): ${body}`);
+      }
       const { signedURL } = (await response.json()) as { signedURL: string };
       // `download=` makes the browser save it under its real name.
       const url = new URL(`${base}${signedURL}`);

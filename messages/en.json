@@ -31,7 +31,12 @@
     "preview": "Preview",
     "remove": "Remove",
     "add": "Add",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "notFoundPage": {
+      "body": "We couldn't find this page, or the job is no longer open.",
+      "jobs": "See open jobs",
+      "home": "Back to home"
+    }
   },
   "home": {
     "meta": {
@@ -71,7 +76,7 @@
     "offices": {
       "kicker": "Local and global",
       "title": "Grow around the world",
-      "subtitle": "Choose a country to explore roles there (4 cards per page).",
+      "subtitle": "Choose a country to explore the roles open there.",
       "dropdownAria": "Select office",
       "openingsLoading": "Loading…",
       "openings": "{count} openings",
@@ -140,11 +145,9 @@
       "noJobs": "No jobs in the system yet.",
       "card": {
         "hiring": "Hiring",
-        "roleUnit": "roles",
-        "teamChip": "Team",
-        "openingsChip": "Openings"
+        "roleUnit": "roles"
       },
-      "footnote": "* Click a card to open Jobs with the department filter applied.",
+      "footnote": "Pick a department to see its open roles.",
       "otherDepartment": "Other"
     },
     "gallery": {
@@ -816,12 +819,12 @@
     "hero": {
       "badge": "Open positions",
       "title": "Find your dream job",
-      "subtitle": "Search by keyword • country • department • level — clean UI, fast experience",
+      "subtitle": "Search by keyword • country • department • level",
       "searchPlaceholder": "Type to search",
       "searchAria": "Search jobs",
       "openCount": "{count} openings",
       "clearFilters": "Clear filters",
-      "tip": "Tip: Choose country/department/level and results will update instantly."
+      "tip": "Choose a country, department or level and the results update instantly."
     },
     "filtersLabel": {
       "country": "Country",
@@ -1082,7 +1085,7 @@
       "clear": "Clear",
       "thisMonth": "This month",
       "apply": "Apply",
-      "tip": "Tip: pick the “year” and “month” directly (no day calendar)"
+      "tip": "Pick a year and a month (no day needed)."
     },
     "skills": {
       "categoriesTitle": "Skill Categories",
@@ -1191,7 +1194,7 @@
     "submitNote": "By submitting, you confirm the information is accurate and you agree to our policies.",
     "sidebar": {
       "job": "Job",
-      "tipMonths": "From/To are picked as “month + year” only (simpler)",
+      "tipMonths": "“Start” and “End” take a month and a year only — no day needed.",
       "privacyTitle": "Privacy",
       "privacyBody": "Your information is used only for recruitment and will be handled securely."
     },
@@ -1235,6 +1238,15 @@
       "notFound": "This job is no longer accepting applications.",
       "unavailable": "The service is temporarily unavailable. Please try again in a few minutes.",
       "network": "Could not reach the server. Check your connection and try again."
+    },
+    "success": {
+      "title": "Application sent",
+      "body": "Thank you for your interest in joining us. HR will review your application and contact you by the email or phone number you gave.",
+      "jobs": "See other jobs"
+    },
+    "draft": {
+      "note": "What you type is kept in this tab until you send it or close the tab (attached files are not).",
+      "filesAgain": "Your answers were restored, but attached files cannot be kept — please attach your résumé and documents again."
     }
   },
   "applicationForm": {
@@ -1274,7 +1286,14 @@
       "rateLimited": "Too many attempts — please try again shortly",
       "failed": "Could not send — please try again",
       "network": "No connection — check your internet and try again",
-      "verify": "Please confirm you are not a robot"
+      "verify": "Please confirm you are not a robot",
+      "choose": "Please choose one",
+      "birthDateFuture": "The birth date can't be in the future",
+      "birthDateYoung": "Applicants must be at least 15 years old",
+      "salary": "Enter an amount, e.g. 25,000 or 25,000-30,000",
+      "gpa": "Enter the GPA as a number, e.g. 3.25",
+      "year": "Enter a 4-digit year, e.g. 2022",
+      "birthOrder": "Can't be more than the number of siblings"
     },
     "success": {
       "title": "Application sent",
@@ -1339,7 +1358,7 @@
       "fatherOccupation": "Father’s occupation",
       "motherName": "Mother’s name",
       "motherOccupation": "Mother’s occupation",
-      "siblings": "Number of siblings",
+      "siblings": "Number of siblings, including you",
       "birthOrder": "You are child no.",
       "marital": "Marital status",
       "maritals": {
@@ -1416,6 +1435,7 @@
       "reviewHint": "Check before sending — “Edit” takes you back to that step.",
       "signNote": "You will sign the printed form and attach a photo at the interview.",
       "none": "—"
-    }
+    },
+    "backToReview": "Back to review"
   }
 }

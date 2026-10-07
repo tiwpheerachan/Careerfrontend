@@ -85,7 +85,9 @@
       "range": "{from}–{to} of {total}",
       "pageSize": "Per page",
       "perPage": "{count} / page",
-      "morePages": "More pages"
+      "morePages": "More pages",
+      "showing": "Showing {shown} of {total}",
+      "jobFilter": "Filter by job"
     },
     "detail": {
       "back": "Back to applicants",
@@ -202,6 +204,30 @@
       "prev": "Previous",
       "next": "Next",
       "evaluate": "Evaluate interview"
+    },
+    "export": {
+      "columns": {
+        "id": "Application ID",
+        "createdAt": "Applied at (Bangkok time)",
+        "stage": "Stage",
+        "jobCode": "Job code",
+        "jobTitle": "Job title",
+        "department": "Department",
+        "level": "Level",
+        "country": "Job country",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "residenceCountry": "Country of residence",
+        "address": "Address",
+        "visaRequired": "Visa required",
+        "availableFrom": "Available from",
+        "websiteUrl": "Website",
+        "sourceChannel": "Source channel"
+      },
+      "yes": "Yes",
+      "no": "No"
     }
   },
   "dashboard": {
@@ -279,7 +305,14 @@
       "jobs": "Jobs",
       "partners": "Partners",
       "footer": "Footer",
-      "apply": "Application form"
+      "apply": "Job application",
+      "applicationForm": "Application form (paper form)"
+    },
+    "errors": {
+      "empty": "Text cannot be empty — to go back to the built-in text, use “Revert to default”.",
+      "syntax": "This text is not valid — check that every curly brace is opened and closed.",
+      "missing": "Keep {names} from the built-in text — the page fills in a value there.",
+      "unknown": "{names} cannot be used here — the built-in text has no such value."
     }
   },
   "jobs": {
@@ -308,7 +341,12 @@
       "actionsFor": "Actions for {code}",
       "setState": "Set status",
       "stateChanged": "“{title}” is now {state}",
-      "stateFailed": "Could not change the status"
+      "stateFailed": "Could not change the status",
+      "unpublish": {
+        "title": "Change to {state}?",
+        "body": "“{title}” has {count, plural, one {# applicant} other {# applicants}}. As {state} it is no longer shown on the site or open for applications; its applicants are kept.",
+        "confirm": "Change to {state}"
+      }
     },
     "delete": {
       "action": "Delete job",
@@ -516,8 +554,24 @@
         "interviewDate": "Choose the interview date",
         "scores": "Score every item",
         "result": "Choose a result",
-        "fix": "Please fix the fields marked in red"
-      }
+        "fix": "Please fix the fields marked in red",
+        "signedOut": "Your sign-in has expired — sign in again and retry",
+        "forbidden": "This account may not save this evaluation",
+        "duplicate": "You have already evaluated this candidate for this round and side — edit that one instead",
+        "alreadySent": "You have already sent your evaluation through this link",
+        "gone": "This link has expired or was switched off"
+      },
+      "send": "Send evaluation",
+      "confirmTitle": "Send the evaluation?",
+      "confirmBody": "Total {total} / {max} · Result: {result} — once sent it cannot be changed, and this link closes for you",
+      "confirmCancel": "Go back",
+      "confirmSend": "Send",
+      "backToCandidate": "Back to the candidate",
+      "openExisting": "Open the existing one",
+      "viaInvitation": "Sent via invitation link",
+      "editedBy": "Last edited by {who} · {date}",
+      "nameFromRecord": "The name from the candidate’s record — unlink to type another",
+      "seniorSetByHr": "Set by HR"
     },
     "items": {
       "fieldKnowledge": "General knowledge of the field",
@@ -574,7 +628,14 @@
       "comment": "Comments",
       "signature": "Signature",
       "date": "Date",
-      "printed": "Printed from SHDcareers on {date}"
+      "printed": "Printed from SHDcareers on {date}",
+      "summaryTitle": "Average scores",
+      "summaryNote": "{count} evaluators — each one’s form follows on the next pages",
+      "average": "average",
+      "evaluators": "Evaluators",
+      "evaluator": "Evaluator",
+      "editedBy": "Edited by {who} on {date}",
+      "viaInvitation": "via invitation link"
     },
     "candidate": {
       "back": "Back to evaluations",
@@ -595,6 +656,112 @@
       },
       "open": "Open",
       "viewAll": "All of this candidate’s evaluations"
+    },
+    "invite": {
+      "title": "Invite evaluators",
+      "hint": "Send a link to people without access to evaluate this candidate — only the invited accounts can open it, signed in with SSO",
+      "invite": "Invite evaluators",
+      "none": "No invitation links yet",
+      "states": {
+        "PENDING": "Not opened yet",
+        "OPEN": "In use",
+        "COMPLETED": "All sent",
+        "EXPIRED": "Expired",
+        "REVOKED": "Switched off"
+      },
+      "until": "Works until {time}",
+      "madeBy": "Made by {who} · {time}",
+      "copyLink": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "Could not copy — select the text and copy it",
+      "revoke": "Switch off",
+      "revokeTitle": "Switch this link off?",
+      "revokeBody": "The {which} link — people who have not sent yet can no longer open it. What was sent stays.",
+      "revoked": "Link switched off",
+      "revokeFailed": "Could not switch it off",
+      "person": {
+        "sent": "sent",
+        "opened": "opened",
+        "notYet": "not opened"
+      },
+      "makeNew": "This link no longer works — press “Invite evaluators” to make a new one",
+      "dialogTitle": "Invite evaluators",
+      "dialogBody": "Choose the round, the side, and who should evaluate {name}",
+      "people": "Evaluators (from the company directory)",
+      "searchPeople": "Search people",
+      "searchPlaceholder": "Type a name or email, at least 2 characters…",
+      "searching": "Searching…",
+      "noMatch": "Nobody found",
+      "remove": "Remove {name}",
+      "directoryOff": "The company directory is not connected yet — tell the system admin",
+      "directoryFailed": "Could not search the directory — try again",
+      "pickSomeone": "Choose at least one evaluator",
+      "rules": "One link for everyone chosen · works for 1 day until someone opens it · 6 hours from the first opening · each person sends once",
+      "create": "Make link",
+      "cancel": "Cancel",
+      "createFailed": "Could not make the link",
+      "madeTitle": "Link made",
+      "madeBody": "Copy it and send it to the evaluators (LINE, email…)",
+      "linkLabel": "Invitation link",
+      "done": "Done",
+      "rolesShort": {
+        "HR": "HR",
+        "DEPARTMENT": "Department"
+      },
+      "keep": "Keep the link"
     }
+  },
+  "invitee": {
+    "metaTitle": "Interview evaluation · SHDcareers",
+    "brand": "Invited evaluator",
+    "title": "Interview evaluation",
+    "intro": "You have been invited to evaluate this candidate. Read the application below, then score and send (once).",
+    "openUntil": "Link works until {time}",
+    "materials": {
+      "title": "The candidate’s application",
+      "applicationFormPdf": "Open the application form (PDF)",
+      "present": "present"
+    },
+    "refused": {
+      "signIn": {
+        "title": "Please sign in",
+        "body": "This link needs you to sign in with the company account that was invited"
+      },
+      "notFound": {
+        "title": "Link not found",
+        "body": "The link may be cut off or wrong — copy it again from the message you got"
+      },
+      "notInvited": {
+        "title": "This account was not invited",
+        "body": "This link is for the evaluators HR chose. If another account of yours was invited, sign out and sign in with that one."
+      },
+      "expired": {
+        "title": "This link has expired",
+        "body": "Please ask HR for a new link"
+      },
+      "revoked": {
+        "title": "This link was switched off",
+        "body": "Please contact HR if you still need to evaluate"
+      },
+      "submitted": {
+        "title": "Evaluation sent",
+        "body": "Your evaluation has been received. This link sends once."
+      },
+      "unavailable": {
+        "title": "Not available right now",
+        "body": "Sign-in is not ready — please try again later"
+      },
+      "switchAccount": "Sign out to switch account",
+      "thanks": "Thank you for evaluating",
+      "signedInAs": "Signed in as {email}",
+      "signInButton": "Sign in"
+    },
+    "language": "Language"
+  },
+  "unsaved": {
+    "title": "Discard changes?",
+    "body": "Your unsaved changes will be lost.",
+    "stay": "Keep editing",
+    "leave": "Discard"
   }
 }

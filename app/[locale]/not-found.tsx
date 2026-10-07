@@ -19,10 +19,14 @@ export default function NotFound() {
     <section className="container-page pt-28 pb-16">
       <div className="card p-10">
         <h1 className="text-2xl font-black">404</h1>
-        <p className="mt-2 text-sm text-slate-600">{t('notFound')}</p>
-        <div className="mt-6">
-          <Link href="/" className="btn btn-primary">
-            {t('back')}
+        <p className="mt-2 text-sm text-slate-600">{t('notFoundPage.body')}</p>
+        {/* A closed or removed job lands here too: the open jobs are the way on. */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link href="/jobs" className="btn btn-primary">
+            {t('notFoundPage.jobs')}
+          </Link>
+          <Link href="/" className="btn btn-ghost">
+            {t('notFoundPage.home')}
           </Link>
         </div>
       </div>

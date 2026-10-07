@@ -14,9 +14,17 @@ export interface JobTextLike {
   title: string;
 }
 
-/** The job's name in the admin: Thai, else English, else Chinese, else its code (the old jobTitle). */
-export function jobTitle(job: { code: string; translations: Partial<Record<JobLang, JobTextLike>> }): string {
-  return job.translations.th?.title || job.translations.en?.title || job.translations.zh?.title || job.code;
+/**
+ * The job's name in the admin: in the admin's language, else Thai, else
+ * English, else Chinese, else its code. Every admin page names a job this way
+ * (the jobs list, the editor, the applicants list, the overview).
+ */
+export function jobTitle(
+  job: { code: string; translations: Partial<Record<JobLang, JobTextLike>> },
+  locale: JobLang,
+): string {
+  const tr = job.translations;
+  return tr[locale]?.title || tr.th?.title || tr.en?.title || tr.zh?.title || job.code;
 }
 
 /** `?state=published` ↔ PUBLISHED. Lower case in the url, as the old admin's status values were. */

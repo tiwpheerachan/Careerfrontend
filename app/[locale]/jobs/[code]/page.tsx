@@ -227,8 +227,9 @@ export default async function JobDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Phones and tablets: apply bar fixed at the bottom */}
-      <div className="lg:hidden">
+      {/* Phones and tablets: apply bar fixed at the bottom. `data-mobile-apply-bar`
+          gives the footer room for it below its last line (components/site/footer.tsx). */}
+      <div className="lg:hidden" data-mobile-apply-bar="">
         <div className="fixed inset-x-0 bottom-0 z-70">
           <div className="mx-auto w-full max-w-[1280px] px-4 pb-4">
             <div
@@ -257,8 +258,6 @@ export default async function JobDetailPage({ params }: Props) {
             </div>
           </div>
         </div>
-
-        <div className="h-[108px]" />
       </div>
     </section>
   );

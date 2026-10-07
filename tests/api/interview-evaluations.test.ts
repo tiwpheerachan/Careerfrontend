@@ -74,6 +74,10 @@ describe('picking the candidate', () => {
         department: 'Operations',
       }),
     ]);
+
+    // A phone as digits, whatever separators either side used.
+    const byPhone = await call(candidates.GET, { query: { q: '081-111 1111' } });
+    expect(byPhone.body.candidates).toEqual([expect.objectContaining({ kind: 'form', id: form.id })]);
   });
 });
 
@@ -111,7 +115,7 @@ describe('evaluating', () => {
 
   it('keeps a fail reason only with a FAIL', async () => {
     const pass = await post(evaluation({ result: 'PASS', failReason: 'ignored' }));
-    const fail = await post(evaluation({ result: 'FAIL', failReason: 'ประสบการณ์ไม่ตรง' }));
+    const fail = await post(evaluation({ round: 2, result: 'FAIL', failReason: 'ประสบการณ์ไม่ตรง' }));
     expect(pass.body.evaluation.failReason).toBeNull();
     expect(fail.body.evaluation.failReason).toBe('ประสบการณ์ไม่ตรง');
   });
@@ -230,9 +234,32 @@ describe('with SSO on: an evaluation is its evaluator’s', () => {
     expect((await put(await as('other@shd-technology.co.th'))).status).toBe(403);
     expect((await put(await as('HEAD@shd-technology.co.th'))).status).toBe(200);
 
+    const own = await put(await as('HEAD@shd-technology.co.th'));
+    expect(own.body.evaluation.edited).toBeNull();
+
     resetPermissionsCache();
     grant('manage');
-    expect((await put(await as('hr-lead@shd-technology.co.th'))).status).toBe(200);
+    const managed = await put(await as('hr-lead@shd-technology.co.th'));
+    expect(managed.status).toBe(200);
+    // Still the department head's evaluation — with who changed it, and when.
+    expect(managed.body.evaluation.evaluator.email).toBe('head@shd-technology.co.th');
+    expect(managed.body.evaluation.edited).toEqual({ by: 'hr-lead@shd-technology.co.th', at: expect.any(String) });
+  });
+
+  it('409: the same evaluator, round and side twice — edit the first instead', async () => {
+    grant('edit');
+    const head = await as('head@shd-technology.co.th');
+    const first = await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), head);
+    expect(first.status).toBe(201);
+    const again = await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), head);
+    expect(again.status).toBe(409);
+    expect(again.body.error.message).toContain(first.body.evaluation.id);
+    // Another round, another side or another person is a new evaluation.
+    expect((await post(evaluation({ evaluatorRole: 'DEPARTMENT', round: 2 }), head)).status).toBe(201);
+    expect((await post(evaluation({ evaluatorRole: 'HR' }), head)).status).toBe(201);
+    expect(
+      (await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), await as('other@shd-technology.co.th'))).status,
+    ).toBe(201);
   });
 
   it('view can read but not evaluate; edit cannot delete', async () => {

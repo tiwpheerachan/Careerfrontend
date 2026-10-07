@@ -74,61 +74,105 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
             <p className="text-sm text-gray-500">{q ? t('emptySearch') : t('emptyHint')}</p>
           </div>
         ) : (
-          <Table className="text-left">
-            <TableHeader className="border-b border-gray-200 bg-gray-50 text-xs text-gray-500 uppercase [&_tr]:border-0">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="px-4 py-3">{t('columns.candidate')}</TableHead>
-                <TableHead className="px-4 py-3">{t('columns.round')}</TableHead>
-                <TableHead className="px-4 py-3">{t('columns.evaluator')}</TableHead>
-                <TableHead className="px-4 py-3">{t('columns.score')}</TableHead>
-                <TableHead className="px-4 py-3">{t('columns.result')}</TableHead>
-                <TableHead className="px-4 py-3">{t('columns.date')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Phones: one card per evaluation — the name opens the candidate, the card's link the evaluation. */}
+            <ul className="divide-y divide-gray-100 md:hidden">
               {items.map((e) => (
-                <TableRow key={e.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <TableCell className="min-w-48 px-4 py-3 whitespace-normal">
-                    <Link
-                      href={`/admin/interviews/candidate/${encodeURIComponent(candidateKey(e.candidate))}`}
-                      className="font-semibold text-blue-700 hover:underline"
-                    >
-                      {e.candidate.name}
-                    </Link>
-                    <div className="text-xs text-gray-400">
-                      {[e.candidate.position, e.candidate.department].filter(Boolean).join(' · ') || '—'}
+                <li key={e.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/interviews/candidate/${encodeURIComponent(candidateKey(e.candidate))}`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {e.candidate.name}
+                      </Link>
+                      <div className="truncate text-xs text-gray-400">
+                        {[e.candidate.position, e.candidate.department].filter(Boolean).join(' · ') || '—'}
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
+                    <ToneBadge tone={RESULT_TONE[e.result]}>{tf(`results.${e.result}`)}</ToneBadge>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs text-gray-500">
+                    <span className="min-w-0 truncate">
+                      {tf(`rounds.${e.round}`)} · {e.evaluator.name || e.evaluator.email} ·{' '}
+                      <span className="font-semibold text-gray-800">
+                        {e.total}/{e.max}
+                      </span>{' '}
+                      · {formatDate(e.interviewDate, locale)}
+                    </span>
                     <Link
                       href={`/admin/interviews/${e.id}`}
-                      className="text-gray-700 hover:text-blue-700 hover:underline"
+                      className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-blue-700 hover:underline"
                     >
-                      {tf(`rounds.${e.round}`)}
+                      {t('open')} <ChevronRight className="h-3.5 w-3.5" />
                     </Link>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-700">
-                    <div>{e.evaluator.name || e.evaluator.email}</div>
-                    <div className="text-xs text-gray-400">{tf(`roles.${e.evaluatorRole}`)}</div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap">
-                    <span className="font-semibold text-gray-900">
-                      {e.total}/{e.max}
-                    </span>
-                    <span className={e.meetsPassMark ? 'ml-2 text-xs text-emerald-700' : 'ml-2 text-xs text-red-600'}>
-                      {e.meetsPassMark ? tf('meets') : tf('notMeets')}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <ToneBadge tone={RESULT_TONE[e.result]}>{tf(`results.${e.result}`)}</ToneBadge>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 whitespace-nowrap text-gray-500">
-                    {formatDate(e.interviewDate, locale)}
-                  </TableCell>
-                </TableRow>
+                  </div>
+                </li>
               ))}
-            </TableBody>
-          </Table>
+            </ul>
+            <Table className="hidden text-left md:table">
+              <TableHeader className="border-b border-gray-200 bg-gray-50 text-xs text-gray-500 uppercase [&_tr]:border-0">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4 py-3">{t('columns.candidate')}</TableHead>
+                  <TableHead className="px-4 py-3">{t('columns.round')}</TableHead>
+                  <TableHead className="px-4 py-3">{t('columns.evaluator')}</TableHead>
+                  <TableHead className="px-4 py-3">{t('columns.score')}</TableHead>
+                  <TableHead className="px-4 py-3">{t('columns.result')}</TableHead>
+                  <TableHead className="px-4 py-3">{t('columns.date')}</TableHead>
+                  <TableHead className="px-4 py-3 text-right">
+                    <span className="sr-only">{t('columns.actions')}</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((e) => (
+                  <TableRow key={e.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <TableCell className="min-w-48 px-4 py-3 whitespace-normal">
+                      <Link
+                        href={`/admin/interviews/candidate/${encodeURIComponent(candidateKey(e.candidate))}`}
+                        className="font-semibold text-blue-700 hover:underline"
+                      >
+                        {e.candidate.name}
+                      </Link>
+                      <div className="text-xs text-gray-400">
+                        {[e.candidate.position, e.candidate.department].filter(Boolean).join(' · ') || '—'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <span className="text-gray-700">{tf(`rounds.${e.round}`)}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-gray-700">
+                      <div>{e.evaluator.name || e.evaluator.email}</div>
+                      <div className="text-xs text-gray-400">{tf(`roles.${e.evaluatorRole}`)}</div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-semibold text-gray-900">
+                        {e.total}/{e.max}
+                      </span>
+                      <span className={e.meetsPassMark ? 'ml-2 text-xs text-emerald-700' : 'ml-2 text-xs text-red-600'}>
+                        {e.meetsPassMark ? tf('meets') : tf('notMeets')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <ToneBadge tone={RESULT_TONE[e.result]}>{tf(`results.${e.result}`)}</ToneBadge>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap text-gray-500">
+                      {formatDate(e.interviewDate, locale)}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right">
+                      <Link
+                        href={`/admin/interviews/${e.id}`}
+                        className="text-sm font-semibold whitespace-nowrap text-blue-700 hover:underline"
+                      >
+                        {t('open')}
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
         )}
       </div>
 

@@ -24,6 +24,16 @@ import { fieldId, OTHER_JOB } from './draft';
 export interface JobOption {
   code: string;
   title: string;
+  countryCode: string;
+}
+
+/**
+ * The jobs offered under a letterhead. Every company letterhead (SHD, Rabbit,
+ * TOP ONE) is a Thai company, so it lists only the jobs in Thailand; with no
+ * company chosen (or "not specified") every job is offered.
+ */
+export function jobsFor(jobs: JobOption[], letterhead: string): JobOption[] {
+  return letterhead && letterhead !== 'PLAIN' ? jobs.filter((job) => job.countryCode === 'TH') : jobs;
 }
 
 function useT() {
@@ -66,7 +76,7 @@ export function PositionStep({ jobs }: { jobs: JobOption[] }) {
             onValueChange={(value) => set('jobCode', value)}
             placeholder={t('jobPlaceholder')}
             options={[
-              ...jobs.map((job) => ({ value: job.code, label: job.title })),
+              ...jobsFor(jobs, draft.letterhead).map((job) => ({ value: job.code, label: job.title })),
               { value: OTHER_JOB, label: t('jobOther') },
             ]}
             aria-required

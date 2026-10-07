@@ -21,28 +21,28 @@ export function RecCard({ job, locale }: { job: PublicJob; locale: Locale }) {
         'focus:outline-hidden focus-visible:ring-4 focus-visible:ring-orange-200/60',
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="line-clamp-2 text-sm font-black text-slate-900">{job.title}</div>
-          <div className="mt-1 text-xs font-semibold text-slate-500">
-            <span className="inline-flex items-center gap-1">
-              <Hash className="h-3.5 w-3.5" />
-              {job.code}
-            </span>
-          </div>
-        </div>
+      {/* The badge sits above the title, so the title and code get the card's full width
+          (beside it they were cut short and the code wrapped onto three lines). */}
+      <span
+        className={cx(
+          'inline-flex items-center gap-1 rounded-full',
+          'border border-slate-200 bg-slate-50 px-2.5 py-1',
+          'text-[11px] font-bold text-slate-700',
+          'group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-700',
+        )}
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        {t('match')}
+      </span>
 
-        <span
-          className={cx(
-            'inline-flex shrink-0 items-center gap-1 rounded-full',
-            'border border-slate-200 bg-slate-50 px-2.5 py-1',
-            'text-[11px] font-bold text-slate-700',
-            'group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-700',
-          )}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          {t('match')}
-        </span>
+      <div className="mt-3 min-w-0">
+        <div className="line-clamp-2 text-sm font-black text-slate-900">{job.title}</div>
+        <div className="mt-1 text-xs font-semibold break-all text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <Hash className="h-3.5 w-3.5 shrink-0" />
+            {job.code}
+          </span>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-2">

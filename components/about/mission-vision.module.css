@@ -8,6 +8,10 @@
   letter-spacing: 0.22em;
   color: #0f172a;
 }
+/* Wide letter-spacing pulls Thai vowel and tone marks apart: none for Thai. */
+.kicker:lang(th) {
+  letter-spacing: normal;
+}
 .kicker::before {
   content: '';
   display: inline-block;

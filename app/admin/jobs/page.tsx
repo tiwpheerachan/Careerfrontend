@@ -1,12 +1,13 @@
 import { Briefcase, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { JobsTable, type JobRow } from '@/components/admin/jobs/jobs-table';
 import { JobsToolbar } from '@/components/admin/jobs/jobs-toolbar';
 import { jobTitle, PUBLISH_STATES, stateFromParam } from '@/components/admin/jobs/job-utils';
 import { PageHeader } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import type { JobPublishState } from '@/lib/constants-types';
+import type { AdminLocale } from '@/lib/i18n/admin';
 import { store } from '@/lib/store';
 import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 
@@ -31,6 +32,7 @@ export default async function JobsPage({
   const q = typeof params.q === 'string' ? params.q.trim().slice(0, 100) : '';
   const publishState = stateFromParam(params.state);
   const t = await getTranslations('jobs.list');
+  const locale = (await getLocale()) as AdminLocale;
 
   const jobs = store().jobs;
   const [all, searched, rows] = await Promise.all([
@@ -49,7 +51,7 @@ export default async function JobsPage({
   const tableRows: JobRow[] = rows.map((job) => ({
     id: job.id,
     code: job.code,
-    title: jobTitle(job),
+    title: jobTitle(job, locale),
     department: job.department,
     level: job.level,
     quantity: job.quantity,

@@ -62,6 +62,19 @@ export default async function proxy(request: NextRequest) {
 
   if (isUnder(pathname, '/sso')) return asAdmin(request);
 
+  // An interview invitation link: signed in with SSO, any account — whether
+  // that account is on the link is the page's question (lib/auth/invitee.ts),
+  // not a role. Without SSO configured the page answers for itself.
+  if (isUnder(pathname, '/evaluate')) {
+    const config = credentials();
+    if (config && !(await unseal(request.cookies.get(SESSION_COOKIE)?.value, config.sessionSecret))) {
+      const login = new URL('/sso/login', requestOrigin(request));
+      login.searchParams.set('next', pathname);
+      return NextResponse.redirect(login);
+    }
+    return asAdmin(request);
+  }
+
   if (isUnder(pathname, '/admin')) {
     const config = credentials();
     if (!config) {

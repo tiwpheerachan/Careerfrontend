@@ -196,7 +196,8 @@ export function StatTileVideo({
     <div className={cx(tile, className)}>
       <FullBleedVideo src={videoSrc} />
       <div className="relative p-5 text-white sm:p-6">
-        <div className="flex items-center justify-between gap-3">
+        {/* Wraps: on phones the tile is half the screen, too narrow for both pills on one line. */}
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1 text-[11px] font-black">
             <Sparkles className="h-3.5 w-3.5" />
             {pill}

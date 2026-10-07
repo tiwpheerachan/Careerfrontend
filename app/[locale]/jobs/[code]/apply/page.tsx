@@ -53,9 +53,14 @@ export default async function ApplyPage({ params }: Props) {
   const tc = await getTranslations('common');
 
   return (
-    <section className={cx('container-page pt-6 pb-14 sm:pt-10', s.applyBg, s.applySection)}>
+    // pt-24/28: the page starts below the fixed navbar (like the job page), so the
+    // sticky "Back" link rests above the form instead of being pushed onto it.
+    <section className={cx('container-page pt-24 pb-14 md:pt-28', s.applyBg, s.applySection)}>
       <div className={s.backWrap}>
-        <Link href={`/jobs/${encodeURIComponent(job.code)}`} className="btn btn-ghost inline-flex items-center gap-2">
+        <Link
+          href={`/jobs/${encodeURIComponent(job.code)}`}
+          className="btn btn-ghost inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm"
+        >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           {tc('back')}
         </Link>

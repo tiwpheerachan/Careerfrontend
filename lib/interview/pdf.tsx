@@ -1,39 +1,48 @@
 import 'server-only';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Document, Font, Image, Page, Path, Svg, StyleSheet, Text, View, renderToBuffer } from '@react-pdf/renderer';
 import type { Style } from '@react-pdf/types';
+import * as fontkit from 'fontkit';
 import type { ReactNode } from 'react';
 import type { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
 import en from '@/messages/admin/en.json';
 import th from '@/messages/admin/th.json';
 import zh from '@/messages/admin/zh.json';
-import { splitSaraAm } from '@/lib/pdf/thai';
+import { splitSaraAm, wrapToWidth } from '@/lib/pdf/thai';
 import { GENERAL_ITEMS, SCORE_LEVELS, SENIOR_ITEMS } from './scoring';
 
 /**
  * The interview evaluation as the company's paper form (แบบฟอร์มประเมินผล
- * สัมภาษณ์ / 面试评估表): one page per candidate and evaluating side (HR, or
- * the hiring department), with the 1st and 2nd interview side by side — the
- * way the paper form has a column for each.
+ * สัมภาษณ์ / 面试评估表), for one candidate and one evaluating side (HR, or the
+ * hiring department), with the 1st and 2nd interview side by side — the way the
+ * paper form has a column for each.
+ *
+ *   one evaluator per round   one page, as on paper
+ *   several in a round        a summary page first (each item's average per
+ *                             round, and who scored what), then one page per
+ *                             evaluator — nobody's scores or signature line
+ *                             is left out
  *
  * The original is a Word document, so unlike the application form there is no
- * blank PDF to print onto: the layout is rebuilt here after it — the letterhead,
- * the candidate block, the 0–5 scale, the score table, the pass rule, and a
- * result and signature block per round. The signature itself is left blank,
- * to be signed on paper; the evaluator's name is printed under it.
+ * blank PDF to print onto: the layout is rebuilt here after it. The signature
+ * itself is left blank, to be signed on paper; the evaluator's name is printed
+ * under it, and an edit by someone else (manage) is printed beside it.
  *
  * Thai, English or Chinese (the admin's languages); the text is the admin's
  * own messages (messages/admin/*.json → interviews.pdf). Sarabun draws Thai
  * and Latin, Noto Sans SC the Chinese — a fallback per glyph, so a Thai name
- * on the Chinese form still prints.
+ * on the Chinese form still prints. Free text is wrapped here, by measuring
+ * (lib/pdf/thai.ts wrapToWidth): react-pdf alone cannot break Thai lines.
  */
 
 export type PdfLanguage = 'th' | 'en' | 'zh';
 type Role = (typeof EVALUATOR_ROLES)[number];
 type Result = (typeof EVALUATION_RESULTS)[number];
 
-/** One round's evaluation, as much of it as the PDF prints. */
+/** One evaluation, as much of it as the PDF prints. */
 export interface PrintedRound {
+  round: 1 | 2;
   interviewDate: string;
   senior: boolean;
   generalScores: number[];
@@ -41,11 +50,14 @@ export interface PrintedRound {
   generalTotal: number;
   seniorTotal: number | null;
   total: number;
+  max: number;
   meetsPassMark: boolean;
   result: Result;
   failReason: string | null;
   comment: string | null;
   evaluator: { email: string; name: string | null };
+  viaInvitation?: boolean;
+  edited?: { by: string; at: Date } | null;
   updatedAt: Date;
 }
 
@@ -53,27 +65,27 @@ export interface InterviewPdfInput {
   language: PdfLanguage;
   role: Role;
   candidate: { name: string; position: string | null; department: string | null };
-  rounds: { 1?: PrintedRound; 2?: PrintedRound };
+  /** Every evaluation of this side (both rounds, every evaluator). */
+  evaluations: PrintedRound[];
   printedAt: Date;
 }
 
 const ASSETS = path.join(process.cwd(), 'assets');
 const LOGO = path.join(ASSETS, 'interview', 'shd-logo.png');
+const FONT = {
+  regular: path.join(ASSETS, 'fonts', 'Sarabun-Regular.ttf'),
+  bold: path.join(ASSETS, 'fonts', 'Sarabun-Bold.ttf'),
+  chinese: path.join(ASSETS, 'fonts', 'NotoSansSC-Regular.otf'),
+};
 
 Font.register({
   family: 'Sarabun',
-  fonts: [
-    { src: path.join(ASSETS, 'fonts', 'Sarabun-Regular.ttf') },
-    { src: path.join(ASSETS, 'fonts', 'Sarabun-Bold.ttf'), fontWeight: 'bold' },
-  ],
+  fonts: [{ src: FONT.regular }, { src: FONT.bold, fontWeight: 'bold' }],
 });
 // No bold Chinese face: bold Chinese text is drawn regular rather than failing.
 Font.register({
   family: 'NotoSansSC',
-  fonts: [
-    { src: path.join(ASSETS, 'fonts', 'NotoSansSC-Regular.otf') },
-    { src: path.join(ASSETS, 'fonts', 'NotoSansSC-Regular.otf'), fontWeight: 'bold' },
-  ],
+  fonts: [{ src: FONT.chinese }, { src: FONT.chinese, fontWeight: 'bold' }],
 });
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -85,11 +97,21 @@ const MUTED = '#6b7280';
 const LINE = '#9ca3af';
 const PEN = '#1d3f9a';
 
+// A4 minus the side margins, and the two round columns.
+const PAGE_WIDTH = 595.28;
+const MARGIN = 40;
+const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+const ROUND_GAP = 14;
+const ROUND_WIDTH = (CONTENT_WIDTH - ROUND_GAP) / 2;
+const FIELD_LABEL = 92;
+// The evaluator column of the summary's list: what the round, score and result columns leave.
+const EVAL_NAME_WIDTH = CONTENT_WIDTH - 64 - 74 - 120 - 10;
+
 const s = StyleSheet.create({
   page: {
     paddingTop: 30,
     paddingBottom: 34,
-    paddingHorizontal: 40,
+    paddingHorizontal: MARGIN,
     fontFamily: ['Sarabun', 'NotoSansSC'] as unknown as string,
     fontSize: 9,
     // One line height for every script: Chinese glyphs are taller than Thai, and
@@ -104,9 +126,10 @@ const s = StyleSheet.create({
   title: { fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginTop: 8 },
   sectionTitle: { fontSize: 10.5, fontWeight: 'bold', marginTop: 10, marginBottom: 3 },
   fieldRow: { flexDirection: 'row', marginTop: 2 },
-  fieldLabel: { width: 92, color: MUTED },
+  fieldLabel: { width: FIELD_LABEL, color: MUTED },
   fieldValue: { flex: 1, color: PEN, borderBottomWidth: 0.5, borderBottomColor: LINE, borderBottomStyle: 'dotted' },
   formFor: { fontSize: 11, fontWeight: 'bold', textAlign: 'center', marginTop: 10 },
+  evaluatorLine: { fontSize: 9, textAlign: 'center', color: PEN, marginTop: 1 },
   scale: { fontSize: 8.5, color: MUTED, marginTop: 2 },
   table: { marginTop: 6, borderWidth: 0.6, borderColor: LINE },
   tr: { flexDirection: 'row', borderTopWidth: 0.6, borderTopColor: LINE, minHeight: 14 },
@@ -120,7 +143,7 @@ const s = StyleSheet.create({
     borderLeftColor: LINE,
   },
   total: { fontWeight: 'bold' },
-  note: { fontSize: 8.5, fontStyle: 'normal', marginTop: 6, marginBottom: 1, textDecoration: 'underline' },
+  note: { fontSize: 8.5, marginTop: 6, marginBottom: 1, textDecoration: 'underline' },
   rules: {
     fontSize: 8.5,
     marginTop: 7,
@@ -129,13 +152,17 @@ const s = StyleSheet.create({
     borderBottomWidth: 0.6,
     borderColor: INK,
   },
-  rounds: { flexDirection: 'row', marginTop: 8, gap: 14 },
-  round: { flex: 1 },
+  rounds: { flexDirection: 'row', marginTop: 8, gap: ROUND_GAP },
+  // Equal heights (the row stretches them), the signature at the bottom: the two
+  // rounds' signature lines line up however much either one wrote.
+  round: { width: ROUND_WIDTH, flexDirection: 'column' },
   roundTitle: { fontWeight: 'bold', marginBottom: 3 },
   choice: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   box: { width: 9, height: 9, borderWidth: 0.7, borderColor: INK, marginRight: 4 },
   reason: { color: PEN, marginLeft: 13, fontSize: 8.5 },
   comment: { marginTop: 4, fontSize: 8.5 },
+  edited: { marginTop: 3, fontSize: 7.5, color: MUTED },
+  spacer: { flexGrow: 1 },
   signature: { marginTop: 10, flexDirection: 'row', alignItems: 'flex-end' },
   signLine: { flex: 1, borderBottomWidth: 0.6, borderBottomColor: INK, marginLeft: 4, height: 12 },
   signedName: { textAlign: 'center', marginTop: 3, color: PEN },
@@ -147,11 +174,52 @@ const s = StyleSheet.create({
     borderBottomWidth: 0.6,
     borderBottomColor: INK,
   },
-  printed: { position: 'absolute', bottom: 14, left: 40, right: 40 },
+  summaryNote: { fontSize: 8.5, color: MUTED, textAlign: 'center', marginTop: 2 },
+  evalRound: { width: 64, paddingHorizontal: 5, paddingVertical: 1.5 },
+  evalResult: { width: 120, paddingHorizontal: 5, paddingVertical: 1.5, borderLeftWidth: 0.6, borderLeftColor: LINE },
+  printed: { position: 'absolute', bottom: 14, left: MARGIN, right: MARGIN },
   printedText: { fontSize: 7, color: MUTED, textAlign: 'right' },
 });
 
-/** Text with the sara am fix applied to every string child. */
+// --- Measuring, for wrapping -------------------------------------------------------------------
+
+let fonts: { regular: fontkit.Font; bold: fontkit.Font; chinese: fontkit.Font } | undefined;
+function loadedFonts() {
+  fonts ??= {
+    // Paths written out in each call: the build traces only what it can see is a fixed file.
+    regular: fontkit.create(
+      readFileSync(path.join(process.cwd(), 'assets', 'fonts', 'Sarabun-Regular.ttf')),
+    ) as fontkit.Font,
+    bold: fontkit.create(readFileSync(path.join(process.cwd(), 'assets', 'fonts', 'Sarabun-Bold.ttf'))) as fontkit.Font,
+    chinese: fontkit.create(
+      readFileSync(path.join(process.cwd(), 'assets', 'fonts', 'NotoSansSC-Regular.otf')),
+    ) as fontkit.Font,
+  };
+  return fonts;
+}
+
+/** The width of a string at a size, as react-pdf will draw it (Sarabun, Noto SC for what Sarabun lacks). */
+function widthAt(size: number, bold = false) {
+  const f = loadedFonts();
+  const latin = bold ? f.bold : f.regular;
+  return (text: string) => {
+    let width = 0;
+    for (const char of text) {
+      const face = latin.hasGlyphForCodePoint(char.codePointAt(0)!) ? latin : f.chinese;
+      width += (face.layout(char).advanceWidth / face.unitsPerEm) * size;
+    }
+    return width;
+  };
+}
+
+/** Free text made ready for the page: the sara am fix, and lines that fit `width`. */
+function prepared(text: string, width: number, size: number, bold = false): string {
+  return wrapToWidth(splitSaraAm(text), width, widthAt(size, bold));
+}
+
+// --- Pieces ------------------------------------------------------------------------------------
+
+/** Text with the sara am fix applied to every string child (short, fixed labels). */
 function T({ style, children }: { style?: Style | Style[]; children: ReactNode }) {
   const fix = (node: ReactNode): ReactNode =>
     typeof node === 'string' ? splitSaraAm(node) : Array.isArray(node) ? node.map(fix) : node;
@@ -170,28 +238,79 @@ function Tick({ on }: { on: boolean }) {
   );
 }
 
-function InterviewForm({ input }: { input: InterviewPdfInput }) {
-  const m = MESSAGES[input.language].interviews;
-  const p = m.pdf;
-  const date = (iso: string) =>
-    new Intl.DateTimeFormat(INTL[input.language], { dateStyle: 'medium', timeZone: 'UTC' }).format(
-      new Date(`${iso}T00:00:00Z`),
-    );
-  const r1 = input.rounds[1];
-  const r2 = input.rounds[2];
-  const senior = Boolean(r1?.senior || r2?.senior);
-  const dates = [r1?.interviewDate, r2?.interviewDate]
-    .filter((d): d is string => Boolean(d))
+type Messages = (typeof MESSAGES)['th']['interviews'];
+
+interface Ctx {
+  m: Messages;
+  p: Messages['pdf'];
+  input: InterviewPdfInput;
+  date: (iso: string) => string;
+  when: (d: Date) => string;
+}
+
+/** The letterhead, the title and the candidate block — the top of every page. */
+function Top({ ctx, dates }: { ctx: Ctx; dates: string }) {
+  const { p, input } = ctx;
+  const valueWidth = CONTENT_WIDTH - FIELD_LABEL;
+  return (
+    <>
+      <View style={s.header}>
+        <View>
+          <T style={s.company}>{p.company}</T>
+          <T style={s.address}>{p.address}</T>
+        </View>
+        {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not an HTML img */}
+        <Image src={LOGO} style={s.logo} />
+      </View>
+      <T style={s.title}>{p.title}</T>
+      <T style={s.sectionTitle}>{p.candidateSection}</T>
+      {(
+        [
+          [p.name, input.candidate.name],
+          [p.position, input.candidate.position ?? ''],
+          [p.department, input.candidate.department ?? ''],
+          [p.interviewDate, dates],
+        ] as const
+      ).map(([label, value]) => (
+        <View key={label} style={s.fieldRow}>
+          <T style={s.fieldLabel}>{label}</T>
+          <Text style={s.fieldValue}>{value ? prepared(value, valueWidth, 9) : ' '}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Printed({ ctx }: { ctx: Ctx }) {
+  return (
+    <View style={s.printed} fixed>
+      <T style={s.printedText}>{ctx.p.printed.replace('{date}', ctx.when(ctx.input.printedAt))}</T>
+    </View>
+  );
+}
+
+const scaleLine = (m: Messages) =>
+  `(${SCORE_LEVELS.map((level) => `${level}: ${m.scale[String(level) as keyof typeof m.scale]}`).join(', ')})`;
+
+const datesOf = (ctx: Ctx, list: PrintedRound[]) =>
+  list
+    .map((r) => r.interviewDate)
     .filter((d, i, all) => all.indexOf(d) === i)
-    .map(date)
+    .sort()
+    .map(ctx.date)
     .join(' / ');
-  const scale = SCORE_LEVELS.map((level) => `${level}: ${m.scale[String(level) as keyof typeof m.scale]}`).join(', ');
+
+/** The paper form for one set of rounds: one evaluator, or one per round. */
+function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRound }) {
+  const { m, p, input } = ctx;
+  const senior = Boolean(r1?.senior || r2?.senior);
+  const sameEvaluator = r1 && r2 ? r1.evaluator.email === r2.evaluator.email : true;
+  const one = r1 ?? r2;
 
   const scoreCell = (round: PrintedRound | undefined, list: 'general' | 'senior', i: number) => {
     const scores = list === 'general' ? round?.generalScores : round?.seniorScores;
     return <T style={[s.cellScore, { color: PEN }]}>{scores ? String(scores[i]) : ''}</T>;
   };
-
   const rows = (keys: readonly string[], list: 'general' | 'senior', offset: number) =>
     keys.map((key, i) => (
       <View key={key} style={s.tr} wrap={false}>
@@ -200,7 +319,6 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
         {scoreCell(r2, list, i)}
       </View>
     ));
-
   const totalRow = (label: string, pick: (r: PrintedRound) => number | null) => (
     <View style={[s.tr, s.th]}>
       <T style={[s.cellItem, s.total, { textAlign: 'right' }]}>{label}</T>
@@ -210,7 +328,7 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
   );
 
   const roundBlock = (title: string, round: PrintedRound | undefined) => (
-    <View style={s.round} wrap={false}>
+    <View style={s.round}>
       <T style={s.roundTitle}>{title}</T>
       {(['PENDING', 'PASS', 'FAIL'] as const).map((result) => (
         <View key={result} style={s.choice}>
@@ -218,8 +336,23 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
           <T>{m.form.results[result]}</T>
         </View>
       ))}
-      {round?.result === 'FAIL' && round.failReason ? <T style={s.reason}>{round.failReason}</T> : null}
-      {round?.comment ? <T style={s.comment}>{`${p.comment}: ${round.comment}`}</T> : null}
+      {round?.result === 'FAIL' && round.failReason ? (
+        <Text style={s.reason}>{prepared(round.failReason, ROUND_WIDTH - 13, 8.5)}</Text>
+      ) : null}
+      {round?.comment ? (
+        <Text style={s.comment}>{prepared(`${p.comment}: ${round.comment}`, ROUND_WIDTH, 8.5)}</Text>
+      ) : null}
+      {round?.viaInvitation ? <T style={s.edited}>{p.viaInvitation}</T> : null}
+      {round?.edited ? (
+        <Text style={s.edited}>
+          {prepared(
+            p.editedBy.replace('{who}', round.edited.by).replace('{date}', ctx.when(round.edited.at)),
+            ROUND_WIDTH,
+            7.5,
+          )}
+        </Text>
+      ) : null}
+      <View style={s.spacer} />
       <View style={s.signature}>
         <T>{p.signature}</T>
         <View style={s.signLine} />
@@ -229,78 +362,183 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
       >{`( ${round ? round.evaluator.name || round.evaluator.email : '                              '} )`}</T>
       <View style={[s.signature, { marginTop: 5 }]}>
         <T>{p.date}</T>
-        <T style={s.dateValue}>{round ? date(round.interviewDate) : ' '}</T>
+        <T style={s.dateValue}>{round ? ctx.date(round.interviewDate) : ' '}</T>
       </View>
     </View>
   );
 
-  const printed = new Intl.DateTimeFormat(INTL[input.language], {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Bangkok',
-  }).format(input.printedAt);
-
   return (
-    <Document title={`${p.title} — ${input.candidate.name}`} producer="SHD Careers">
-      <Page size="A4" style={s.page}>
-        <View style={s.header}>
-          <View>
-            <T style={s.company}>{p.company}</T>
-            <T style={s.address}>{p.address}</T>
-          </View>
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image, not an HTML img */}
-          <Image src={LOGO} style={s.logo} />
+    <Page size="A4" style={s.page}>
+      <Top
+        ctx={ctx}
+        dates={datesOf(
+          ctx,
+          [r1, r2].filter((r): r is PrintedRound => Boolean(r)),
+        )}
+      />
+      <T style={s.formFor}>{p.formFor[input.role]}</T>
+      {sameEvaluator && one ? (
+        <T style={s.evaluatorLine}>{`${p.evaluator}: ${one.evaluator.name || one.evaluator.email}`}</T>
+      ) : null}
+      <T style={s.scale}>{p.scaleIntro}</T>
+      <T style={s.scale}>{scaleLine(m)}</T>
+
+      <View style={s.table}>
+        <View style={[s.tr, s.th, { borderTopWidth: 0 }]}>
+          <T style={s.cellItem}>{p.item}</T>
+          <T style={s.cellScore}>{p.round1}</T>
+          <T style={s.cellScore}>{p.round2}</T>
         </View>
-        <T style={s.title}>{p.title}</T>
+        {rows(GENERAL_ITEMS, 'general', 0)}
+        {totalRow(p.generalTotal, (r) => r.generalTotal)}
+      </View>
 
-        <T style={s.sectionTitle}>{p.candidateSection}</T>
-        {(
-          [
-            [p.name, input.candidate.name],
-            [p.position, input.candidate.position ?? ''],
-            [p.department, input.candidate.department ?? ''],
-            [p.interviewDate, dates],
-          ] as const
-        ).map(([label, value]) => (
-          <View key={label} style={s.fieldRow}>
-            <T style={s.fieldLabel}>{label}</T>
-            <T style={s.fieldValue}>{value || ' '}</T>
-          </View>
-        ))}
+      <T style={s.note}>{p.seniorNote}</T>
+      <View style={s.table}>
+        {rows(SENIOR_ITEMS, 'senior', GENERAL_ITEMS.length)}
+        {totalRow(p.seniorTotal, (r) => r.seniorTotal)}
+        {senior ? totalRow(`${p.grandTotal} (75)`, (r) => (r.senior ? r.total : null)) : null}
+      </View>
 
-        <T style={s.formFor}>{p.formFor[input.role]}</T>
-        <T style={s.scale}>{p.scaleIntro}</T>
-        <T style={s.scale}>{`(${scale})`}</T>
+      <Text style={s.rules}>{prepared(p.rules, CONTENT_WIDTH, 8.5)}</Text>
 
-        <View style={s.table}>
-          <View style={[s.tr, s.th, { borderTopWidth: 0 }]}>
-            <T style={s.cellItem}>{p.item}</T>
-            <T style={s.cellScore}>{p.round1}</T>
-            <T style={s.cellScore}>{p.round2}</T>
-          </View>
-          {rows(GENERAL_ITEMS, 'general', 0)}
-          {totalRow(p.generalTotal, (r) => r.generalTotal)}
-        </View>
-
-        <T style={s.note}>{p.seniorNote}</T>
-        <View style={s.table}>
-          {rows(SENIOR_ITEMS, 'senior', GENERAL_ITEMS.length)}
-          {totalRow(p.seniorTotal, (r) => r.seniorTotal)}
-          {senior ? totalRow(`${p.grandTotal} (75)`, (r) => (r.senior ? r.total : null)) : null}
-        </View>
-
-        <T style={s.rules}>{p.rules}</T>
-
+      {/* The verdicts and signatures stay together, on the next page if need be. */}
+      <View wrap={false}>
         <T style={s.sectionTitle}>{p.conclusion}</T>
         <View style={s.rounds}>
           {roundBlock(p.opinion1, r1)}
           {roundBlock(p.opinion2, r2)}
         </View>
+      </View>
+      <Printed ctx={ctx} />
+    </Page>
+  );
+}
 
-        <View style={s.printed} fixed>
-          <T style={s.printedText}>{p.printed.replace('{date}', printed)}</T>
+const avg = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
+const fmt = (value: number | null) => (value === null ? '' : value.toFixed(1).replace(/\.0$/, ''));
+
+/** Several evaluators in a round: each item's average per round, and who scored what. */
+function SummaryPage({ ctx, byRound }: { ctx: Ctx; byRound: Record<1 | 2, PrintedRound[]> }) {
+  const { m, p, input } = ctx;
+  const all = [...byRound[1], ...byRound[2]];
+  const anySenior = all.some((r) => r.senior);
+  const itemAvg = (round: 1 | 2, list: 'general' | 'senior', i: number) =>
+    avg(
+      byRound[round].flatMap((r) =>
+        list === 'general' ? [r.generalScores[i]!] : r.seniorScores ? [r.seniorScores[i]!] : [],
+      ),
+    );
+  const totalAvg = (round: 1 | 2, pick: (r: PrintedRound) => number | null) =>
+    avg(byRound[round].flatMap((r) => (pick(r) === null ? [] : [pick(r)!])));
+
+  const rows = (keys: readonly string[], list: 'general' | 'senior', offset: number) =>
+    keys.map((key, i) => (
+      <View key={key} style={s.tr} wrap={false}>
+        <T style={s.cellItem}>{`${offset + i + 1}. ${m.items[key as keyof typeof m.items]}`}</T>
+        <T style={[s.cellScore, { color: PEN }]}>{fmt(itemAvg(1, list, i))}</T>
+        <T style={[s.cellScore, { color: PEN }]}>{fmt(itemAvg(2, list, i))}</T>
+      </View>
+    ));
+  const totalRow = (label: string, pick: (r: PrintedRound) => number | null) => (
+    <View style={[s.tr, s.th]}>
+      <T style={[s.cellItem, s.total, { textAlign: 'right' }]}>{label}</T>
+      <T style={[s.cellScore, s.total, { color: PEN }]}>{fmt(totalAvg(1, pick))}</T>
+      <T style={[s.cellScore, s.total, { color: PEN }]}>{fmt(totalAvg(2, pick))}</T>
+    </View>
+  );
+
+  return (
+    <Page size="A4" style={s.page}>
+      <Top ctx={ctx} dates={datesOf(ctx, all)} />
+      <T style={s.formFor}>{`${p.formFor[input.role]} — ${p.summaryTitle}`}</T>
+      <T style={s.summaryNote}>
+        {p.summaryNote.replace('{count}', String(new Set(all.map((r) => r.evaluator.email)).size))}
+      </T>
+
+      <View style={s.table}>
+        <View style={[s.tr, s.th, { borderTopWidth: 0 }]}>
+          <T style={s.cellItem}>{`${p.item} (${p.average})`}</T>
+          <T style={s.cellScore}>{p.round1}</T>
+          <T style={s.cellScore}>{p.round2}</T>
         </View>
-      </Page>
+        {rows(GENERAL_ITEMS, 'general', 0)}
+        {totalRow(p.generalTotal, (r) => r.generalTotal)}
+        {anySenior ? rows(SENIOR_ITEMS, 'senior', GENERAL_ITEMS.length) : null}
+        {anySenior ? totalRow(p.seniorTotal, (r) => r.seniorTotal) : null}
+      </View>
+
+      <T style={s.sectionTitle}>{p.evaluators}</T>
+      <View style={s.table}>
+        {all.map((r, i) => (
+          <View key={i} style={[s.tr, i === 0 ? { borderTopWidth: 0 } : {}]} wrap={false}>
+            <T style={s.evalRound}>{m.form.rounds[String(r.round) as '1' | '2']}</T>
+            <Text style={s.cellItem}>
+              {prepared(
+                `${r.evaluator.name || r.evaluator.email}${r.viaInvitation ? ` (${p.viaInvitation})` : ''}`,
+                EVAL_NAME_WIDTH,
+                9,
+              )}
+            </Text>
+            <T style={[s.cellScore, { color: PEN }]}>{`${r.total}/${r.max}`}</T>
+            <T style={s.evalResult}>{m.form.results[r.result]}</T>
+          </View>
+        ))}
+      </View>
+      <Printed ctx={ctx} />
+    </Page>
+  );
+}
+
+function InterviewForm({ input }: { input: InterviewPdfInput }) {
+  const m = MESSAGES[input.language].interviews;
+  const ctx: Ctx = {
+    m,
+    p: m.pdf,
+    input,
+    date: (iso) =>
+      new Intl.DateTimeFormat(INTL[input.language], { dateStyle: 'medium', timeZone: 'UTC' }).format(
+        new Date(`${iso}T00:00:00Z`),
+      ),
+    when: (d) =>
+      new Intl.DateTimeFormat(INTL[input.language], {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Asia/Bangkok',
+      }).format(d),
+  };
+
+  // Each evaluator's newest evaluation of each round.
+  const newest = new Map<string, PrintedRound>();
+  for (const e of [...input.evaluations].sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())) {
+    newest.set(`${e.evaluator.email.toLowerCase()}|${e.round}`, e);
+  }
+  const kept = [...newest.values()];
+  const byRound = { 1: kept.filter((e) => e.round === 1), 2: kept.filter((e) => e.round === 2) } as Record<
+    1 | 2,
+    PrintedRound[]
+  >;
+  const crowded = byRound[1].length > 1 || byRound[2].length > 1;
+
+  // Per evaluator, in the order they first appear: their own rounds side by side.
+  const people = [...new Set(kept.map((e) => e.evaluator.email.toLowerCase()))];
+  const pageOf = (email: string) => ({
+    r1: byRound[1].find((e) => e.evaluator.email.toLowerCase() === email),
+    r2: byRound[2].find((e) => e.evaluator.email.toLowerCase() === email),
+  });
+
+  return (
+    <Document title={`${ctx.p.title} — ${input.candidate.name}`} producer="SHD Careers">
+      {crowded ? (
+        <>
+          <SummaryPage ctx={ctx} byRound={byRound} />
+          {people.map((email) => (
+            <FormPage key={email} ctx={ctx} {...pageOf(email)} />
+          ))}
+        </>
+      ) : (
+        <FormPage ctx={ctx} r1={byRound[1][0]} r2={byRound[2][0]} />
+      )}
     </Document>
   );
 }

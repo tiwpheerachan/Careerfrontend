@@ -61,3 +61,67 @@ export const InterviewEvaluationInput = z
   });
 
 export type InterviewEvaluationInput = z.output<typeof InterviewEvaluationInput>;
+
+/**
+ * What an invited evaluator sends (POST /api/v1/evaluate/{token}): only the
+ * scores and the verdict — the candidate, the round and the side are the
+ * invitation's, the evaluator is whoever is signed in.
+ */
+export const GuestEvaluationInput = z
+  .object({
+    senior: z.boolean(),
+    generalScores: z.array(Score).length(GENERAL_ITEMS.length),
+    seniorScores: z
+      .array(Score)
+      .length(SENIOR_ITEMS.length)
+      .nullable()
+      .optional()
+      .transform((value) => value ?? null),
+    result: z.enum(EVALUATION_RESULTS),
+    failReason: text(300),
+    comment: text(2000),
+  })
+  .superRefine((form, ctx) => {
+    if (form.senior !== Boolean(form.seniorScores)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['seniorScores'],
+        message: 'items 11–15 go with (and only with) a Senior position',
+      });
+    }
+  });
+
+export type GuestEvaluationInput = z.output<typeof GuestEvaluationInput>;
+
+/** HR making an invitation. */
+export const InvitationInput = z
+  .object({
+    applicationId: PublicId,
+    applicationFormId: PublicId,
+    candidateName: z.string().trim().min(1).max(150),
+    position: text(150),
+    department: text(150),
+    round: z.union([z.literal(1), z.literal(2)]),
+    evaluatorRole: z.enum(EVALUATOR_ROLES),
+    senior: z.boolean().default(false).meta({ description: 'Senior position: the invitees score items 11–15 too.' }),
+    invitees: z
+      .array(
+        z.object({
+          email: z.string().trim().toLowerCase().max(200).pipe(z.email()),
+          name: text(150),
+          unionId: text(100),
+          jobTitle: text(150),
+          department: text(150),
+        }),
+      )
+      .min(1)
+      .max(20)
+      .refine((list) => new Set(list.map((p) => p.email)).size === list.length, 'each person once'),
+  })
+  .superRefine((form, ctx) => {
+    if (form.applicationId && form.applicationFormId) {
+      ctx.addIssue({ code: 'custom', path: ['applicationFormId'], message: 'link an application or a form, not both' });
+    }
+  });
+
+export type InvitationInput = z.output<typeof InvitationInput>;

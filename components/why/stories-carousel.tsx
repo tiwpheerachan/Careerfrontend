@@ -56,7 +56,7 @@ export function StoriesCarousel({ intro, note, stories }: { intro: ReactNode; no
     <div className="grid gap-8 lg:grid-cols-4 lg:items-start">
       <ImageModal item={modalItem} onClose={() => setModalItem(null)} />
 
-      <div className="lg:col-span-1">
+      <div className="min-w-0 lg:col-span-1">
         {intro}
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -98,7 +98,7 @@ export function StoriesCarousel({ intro, note, stories }: { intro: ReactNode; no
         <div className="mt-4 text-[11px] text-slate-500">{note}</div>
       </div>
 
-      <div className="lg:col-span-3">
+      <div className="min-w-0 lg:col-span-3">
         <div
           ref={setTrack}
           className={cx(

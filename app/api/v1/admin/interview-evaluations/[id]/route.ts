@@ -28,7 +28,8 @@ export const PUT = handler<RouteParams<'id'>>(async (request, _context, { params
     throw new ForbiddenError('Only the evaluator who wrote this evaluation can change it.');
   }
   const input = await parseBody(request, adminUpdateEvaluation.body.schema);
-  return json({ evaluation: await repo.update(id, input) });
+  // Someone else's (manage): kept as an edit, with who and when.
+  return json({ evaluation: await repo.update(id, input, own ? null : actor.email) });
 });
 
 /** DELETE /api/v1/admin/interview-evaluations/{id} — soft delete. */

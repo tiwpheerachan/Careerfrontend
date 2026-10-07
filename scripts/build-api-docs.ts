@@ -207,6 +207,7 @@ const STATUS_NAMES: Record<string, string> = {
   403: 'Forbidden',
   404: 'Not Found',
   409: 'Conflict',
+  410: 'Gone',
   413: 'Payload Too Large',
   429: 'Too Many Requests',
   503: 'Service Unavailable',
@@ -218,6 +219,7 @@ const ERROR_CODES: Record<string, string> = {
   403: 'forbidden',
   404: 'not_found',
   409: 'conflict',
+  410: 'gone',
   429: 'too_many_requests',
   503: 'unavailable',
 };

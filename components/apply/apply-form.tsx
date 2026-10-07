@@ -12,10 +12,11 @@ import {
   Upload,
 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useCallback, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ApplicationFields } from '@/lib/api/schemas';
 import { EDUCATION_LEVELS } from '@/lib/constants';
 import { cx } from '@/lib/cx';
+import { Link } from '@/lib/i18n/navigation';
 import s from './apply.module.css';
 import { ApplySelect } from './apply-select';
 import { Field, FieldError, inputClass, invalidProps } from './field';
@@ -38,9 +39,37 @@ type Exp = { key: number; company: string; title: string; from: string; to: stri
 type Errors = Record<string, string>;
 type Result = { ok: true; id: string } | { ok: false; message: string } | null;
 
+/**
+ * What a refresh, a language switch or a step back to the job page keeps: the
+ * typed text, per job and only in this tab (like the application-form
+ * wizard). Files cannot be kept by a browser; `hadFiles` says one was chosen,
+ * so the form can ask for it again. The terms tick is not kept.
+ */
+interface ApplyDraft {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneIso: string;
+  phoneNumber: string;
+  residence: string;
+  residenceOther: string;
+  addressDetail: string;
+  educations: Edu[];
+  experiences: Exp[];
+  skills: string[];
+  visa: 'false' | 'true';
+  availableFrom: string;
+  websiteUrl: string;
+  source: string;
+  hadFiles: boolean;
+}
+const draftKey = (code: string) => `shd.apply.draft.v1.${code}`;
+
 let nextKey = 1;
 const newEdu = (): Edu => ({ key: nextKey++, level: '', school: '', from: '', to: '' });
 const newExp = (): Exp => ({ key: nextKey++, company: '', title: '', from: '', to: '' });
+const eduFilled = (e: Edu) => !!(e.level || e.school.trim() || e.from || e.to);
+const expFilled = (e: Exp) => !!(e.company.trim() || e.title.trim() || e.from || e.to);
 
 const digitsOf = (value: string) => value.replace(/[^\d]/g, '');
 /** "linkedin.com/in/x" → "https://linkedin.com/in/x"; the API takes http(s) URLs only. */
@@ -97,6 +126,10 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
   const [phase, setPhase] = useState<Phase>('idle');
   const [hint, setHint] = useState('');
   const [stoppedAt, setStoppedAt] = useState<'validating' | 'uploading' | 'sending'>('validating');
+  // The tab's draft has been read (so saving may start), and whether it had files that are now gone.
+  const [restored, setRestored] = useState(false);
+  const [filesLost, setFilesLost] = useState(false);
+  const successRef = useRef<HTMLHeadingElement | null>(null);
 
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const attachmentsInputRef = useRef<HTMLInputElement | null>(null);
@@ -145,6 +178,117 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
   ]);
   const ready = missingRequired.length === 0 && !submitting;
 
+  // --- The tab's draft ---------------------------------------------------------------
+
+  const hasFiles = !!resumeFile || attachments.length > 0;
+  const dirty =
+    hasFiles ||
+    [firstName, lastName, email, phoneNumber, residenceOther, addressDetail, availableFrom, websiteUrl, source].some(
+      (v) => v.trim() !== '',
+    ) ||
+    educations.some(eduFilled) ||
+    experiences.some(expFilled) ||
+    skills.length > 0;
+  const sent = result?.ok === true;
+
+  // Restore this job's draft once, after the first render (the server has no sessionStorage).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(draftKey(job.code));
+      if (raw) {
+        const d = JSON.parse(raw) as Partial<ApplyDraft>;
+        const rows = [...(d.educations ?? []), ...(d.experiences ?? [])];
+        nextKey = Math.max(nextKey, ...rows.map((r) => r.key + 1));
+        /* eslint-disable react-hooks/set-state-in-effect -- reading browser storage, once */
+        setFirstName(d.firstName ?? '');
+        setLastName(d.lastName ?? '');
+        setEmail(d.email ?? '');
+        if (d.phoneIso && PHONE_CODES.some((p) => p.iso === d.phoneIso)) setPhoneIso(d.phoneIso);
+        setPhoneNumber(d.phoneNumber ?? '');
+        if (d.residence) setResidence(d.residence);
+        setResidenceOther(d.residenceOther ?? '');
+        setAddressDetail(d.addressDetail ?? '');
+        if (d.educations?.length) setEducations(d.educations);
+        if (d.experiences?.length) setExperiences(d.experiences);
+        setSkills(d.skills ?? []);
+        if (d.visa === 'true' || d.visa === 'false') setVisa(d.visa);
+        setAvailableFrom(d.availableFrom ?? '');
+        setWebsiteUrl(d.websiteUrl ?? '');
+        setSource(d.source ?? '');
+        setFilesLost(!!d.hadFiles);
+        setRound((r) => r + 1); // the skills picker starts from the restored list
+      }
+    } catch {
+      /* no storage, or an old shape: start empty */
+    }
+    setRestored(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [job.code]);
+
+  useEffect(() => {
+    if (!restored || sent) return;
+    try {
+      if (!dirty) {
+        sessionStorage.removeItem(draftKey(job.code));
+        return;
+      }
+      const draft: ApplyDraft = {
+        firstName,
+        lastName,
+        email,
+        phoneIso,
+        phoneNumber,
+        residence,
+        residenceOther,
+        addressDetail,
+        educations,
+        experiences,
+        skills,
+        visa,
+        availableFrom,
+        websiteUrl,
+        source,
+        hadFiles: hasFiles || filesLost,
+      };
+      sessionStorage.setItem(draftKey(job.code), JSON.stringify(draft));
+    } catch {
+      /* storage full or blocked: the form still works, it just will not survive a refresh */
+    }
+  }, [
+    restored,
+    sent,
+    dirty,
+    job.code,
+    firstName,
+    lastName,
+    email,
+    phoneIso,
+    phoneNumber,
+    residence,
+    residenceOther,
+    addressDetail,
+    educations,
+    experiences,
+    skills,
+    visa,
+    availableFrom,
+    websiteUrl,
+    source,
+    hasFiles,
+    filesLost,
+  ]);
+
+  // Leaving the page (refresh, closing the tab, another site) with something typed: ask first.
+  useEffect(() => {
+    if (!dirty || sent) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty, sent]);
+
   /** Clears one field's message once it is edited. */
   function clearError(...paths: string[]) {
     setErrors((prev) => {
@@ -159,12 +303,8 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
 
   /** The rows that have anything in them, and which on-screen row each came from. */
   function filledRows() {
-    const eduRows = educations
-      .map((e, i) => ({ e, i }))
-      .filter(({ e }) => e.level || e.school.trim() || e.from || e.to);
-    const expRows = experiences
-      .map((e, i) => ({ e, i }))
-      .filter(({ e }) => e.company.trim() || e.title.trim() || e.from || e.to);
+    const eduRows = educations.map((e, i) => ({ e, i })).filter(({ e }) => eduFilled(e));
+    const expRows = experiences.map((e, i) => ({ e, i })).filter(({ e }) => expFilled(e));
     return { eduRows, expRows };
   }
 
@@ -326,6 +466,7 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
       return;
     }
     setResumeFile(file);
+    setFilesLost(false);
   }
 
   async function addAttachments(list: FileList | null) {
@@ -436,10 +577,16 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
 
     switch (outcome.kind) {
       case 'created':
+        try {
+          sessionStorage.removeItem(draftKey(job.code));
+        } catch {
+          /* nothing to clear */
+        }
         setResult({ ok: true, id: outcome.id });
         setHint(t('modal.hintDone'));
         setPhase('done');
         resetForm();
+        setFilesLost(false);
         window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         break;
       case 'invalid': {
@@ -499,7 +646,7 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
         stoppedAt={stoppedAt}
         container={dialogContainer}
         onClose={() => setModalOpen(false)}
-        onClosed={focusFirstInvalid}
+        onClosed={() => (sent ? successRef.current?.focus({ preventScroll: true }) : focusFirstInvalid())}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -521,33 +668,54 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
 
       <div className={cx('mt-6', s.softHr)} />
 
-      {result && (
+      {sent ? (
+        // Sent: say so plainly, with the way on — not the emptied form again (it invited a second copy).
+        <div className="mt-8 text-center" role="status">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" aria-hidden="true" />
+          <h2
+            ref={successRef}
+            tabIndex={-1}
+            className="mt-4 text-xl font-black tracking-tight text-slate-900 outline-none sm:text-2xl"
+          >
+            {t('success.title')}
+          </h2>
+          <p className="mx-auto mt-2 max-w-[52ch] text-sm text-slate-600">{t('success.body')}</p>
+          {result?.ok ? (
+            <p className="mt-3 text-xs break-all text-slate-500">{t('reference', { id: result.id })}</p>
+          ) : null}
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <Link href="/jobs" className="btn btn-primary">
+              {t('success.jobs')}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {result && !result.ok && (
         <div
-          role={result.ok ? 'status' : 'alert'}
-          className={cx(
-            'mt-6 rounded-2xl border px-4 py-3 text-sm',
-            result.ok
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-              : 'border-rose-200 bg-rose-50 text-rose-800',
-          )}
+          role="alert"
+          className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
         >
           <div className="flex items-start gap-2">
-            {result.ok ? (
-              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-            ) : (
-              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-            )}
+            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
             <div className="min-w-0">
-              <div className="font-semibold">{result.ok ? tf('success') : t('submitFailed')}</div>
-              <div className="mt-1 text-sm break-all">
-                {result.ok ? t('reference', { id: result.id }) : result.message || tf('fail')}
-              </div>
+              <div className="font-semibold">{t('submitFailed')}</div>
+              <div className="mt-1 text-sm break-all">{result.message || tf('fail')}</div>
             </div>
           </div>
         </div>
       )}
 
-      <form ref={formRef} noValidate onSubmit={onSubmit} aria-label={tj('applyTitle')}>
+      {filesLost && !sent && !resumeFile ? (
+        <div
+          role="status"
+          className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          {t('draft.filesAgain')}
+        </div>
+      ) : null}
+
+      <form ref={formRef} noValidate onSubmit={onSubmit} aria-label={tj('applyTitle')} hidden={sent}>
         {/* Personal */}
         <div className="mt-8">
           <div className="flex items-center gap-2">
@@ -1146,6 +1314,7 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
           </button>
 
           <div className="mt-3 text-[11px] text-slate-500">{t('submitNote')}</div>
+          <div className="mt-1 text-[11px] text-slate-500">{t('draft.note')}</div>
         </div>
       </form>
     </div>

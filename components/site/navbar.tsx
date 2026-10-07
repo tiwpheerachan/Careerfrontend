@@ -6,8 +6,18 @@ import { Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { Link, usePathname } from '@/lib/i18n/navigation';
 import { cx } from '@/lib/cx';
 import { LanguageSwitcher } from './language-switcher';
+import { notePath } from './nav-history';
 
 const LOGO = 'https://image.makewebcdn.com/makeweb/m_1920x0/hvIRoKhSo/DefaultData/logo_2x.png';
+
+/**
+ * Pages whose top is a full-bleed picture hero: the navbar floats over it
+ * transparent until the page scrolls. Every other page (job detail, apply,
+ * the application form, partners, 404) starts on white, where the white
+ * links and menu icon would be invisible — there it starts in the dark
+ * "scrolled" style.
+ */
+const HERO_PAGES = new Set(['/', '/about', '/why-shd', '/jobs']);
 
 /** Active like react-router's NavLink: the page itself or anything under it. */
 function useActive(href: string) {
@@ -62,7 +72,8 @@ const ctaStyle = (scrolled: boolean): CSSProperties =>
 export function Navbar() {
   const t = useTranslations('nav');
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolledPast, setScrolled] = useState(false);
+  const scrolled = scrolledPast || !HERO_PAGES.has(pathname);
   const [open, setOpen] = useState(false);
   const [lastPath, setLastPath] = useState(pathname);
 
@@ -71,6 +82,9 @@ export function Navbar() {
     setLastPath(pathname);
     setOpen(false);
   }
+
+  // For "Back" buttons: has the visitor moved between pages of this site in this tab?
+  useEffect(() => notePath(pathname), [pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 14);

@@ -16,6 +16,7 @@ export function SsoShell({
   detail,
   action,
   inline = false,
+  consoleLabel,
 }: {
   title: string;
   children: ReactNode;
@@ -25,13 +26,16 @@ export function SsoShell({
   action?: ReactNode;
   /** Inside the admin's own frame (sidebar and header), not a page of its own. */
   inline?: boolean;
+  /** Under the mark: "Admin Console" unless said otherwise (an invitation link is not the admin). */
+  consoleLabel?: string;
 }) {
   const Root = inline ? 'div' : 'main';
   return (
-    <Root className={cn('grid place-items-center', inline ? 'min-h-[60vh]' : 'min-h-screen bg-gray-50 p-6')}>
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-xs">
+    // Flex, not a grid: a grid track grows to fit the unbroken email line and pushes the card off a phone screen.
+    <Root className={cn('flex items-center justify-center', inline ? 'min-h-[60vh]' : 'min-h-screen bg-gray-50 p-6')}>
+      <div className="w-full max-w-md min-w-0 rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-xs">
         <div className="mb-6 flex justify-center">
-          <Brand />
+          <Brand consoleLabel={consoleLabel} />
         </div>
         <h1 className="text-xl font-black tracking-tight text-gray-900">{title}</h1>
         <p className="mt-2 text-sm text-gray-500">{children}</p>

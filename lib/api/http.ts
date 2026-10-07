@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   BadRequestError,
   ConflictError,
+  GoneError,
   ForbiddenError,
   NotFoundError,
   TooManyRequestsError,
@@ -51,6 +52,7 @@ export function failure(err: unknown, logger: Logger = log): Response {
   if (err instanceof ForbiddenError) return error(403, 'forbidden', err.message);
   if (err instanceof NotFoundError) return error(404, 'not_found', err.message);
   if (err instanceof ConflictError) return error(409, 'conflict', err.message);
+  if (err instanceof GoneError) return error(410, 'gone', err.message);
   if (err instanceof TooManyRequestsError) {
     return json<ErrorBody>({ error: { code: 'too_many_requests', message: err.message } }, 429, {
       'retry-after': String(err.retryAfter),

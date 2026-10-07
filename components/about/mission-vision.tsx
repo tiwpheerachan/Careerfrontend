@@ -38,7 +38,9 @@ function Pillar({ icon, kicker, title, body }: { icon: ReactNode; kicker: string
       <div className="flex items-start gap-4">
         <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900/3">{icon}</div>
         <div className="min-w-0">
-          <div className="text-[11px] font-extrabold tracking-[0.22em] text-slate-900/70">{kicker}</div>
+          <div className="text-[11px] font-extrabold tracking-[0.22em] text-slate-900/70 [&:lang(th)]:tracking-normal">
+            {kicker}
+          </div>
           <div className="mt-1 text-lg font-black text-slate-900">{title}</div>
           <p className={cx(styles.p, 'mt-2')}>{body}</p>
         </div>

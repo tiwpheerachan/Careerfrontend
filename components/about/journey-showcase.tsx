@@ -49,21 +49,29 @@ export function JourneyShowcase({ items }: { items: JourneyItem[] }) {
         {/* Step bar */}
         <div className="px-2 sm:px-6">
           <div className="relative">
-            <div className="grid grid-cols-5 gap-2 text-[12px] sm:text-sm">
-              {labels.map((label, i) => (
-                <button
-                  key={`${label}-${i}`}
-                  type="button"
-                  onClick={() => setIdx(i)}
-                  className={cx(
-                    'text-left transition',
-                    i === idx ? 'font-semibold text-slate-950' : 'text-slate-500 hover:text-slate-700',
-                  )}
-                  aria-current={i === idx ? 'step' : undefined}
-                >
-                  {label}
-                </button>
-              ))}
+            {/* Each label sits over its dot (the dots are spread edge to edge below):
+                the first starts at the left edge, the last ends at the right one. */}
+            <div className="relative h-5 text-[12px] sm:h-6 sm:text-sm">
+              {labels.map((label, i) => {
+                const last = steps.length - 1;
+                const at = last > 0 ? (i / last) * 100 : 0;
+                const shift = i === 0 ? '0' : i === last ? '-100%' : '-50%';
+                return (
+                  <button
+                    key={`${label}-${i}`}
+                    type="button"
+                    onClick={() => setIdx(i)}
+                    className={cx(
+                      'absolute top-0 whitespace-nowrap transition',
+                      i === idx ? 'font-semibold text-slate-950' : 'text-slate-500 hover:text-slate-700',
+                    )}
+                    style={{ left: `${at}%`, transform: `translateX(${shift})` }}
+                    aria-current={i === idx ? 'step' : undefined}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* rail */}

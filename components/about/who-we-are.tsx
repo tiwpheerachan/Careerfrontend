@@ -17,7 +17,7 @@ export function WhoWeAre() {
       <section className="relative">
         <div className="mx-auto w-full max-w-[1180px] px-4 py-12 sm:px-6 lg:px-10">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 text-[11px] font-black tracking-[0.22em] text-slate-900">
+            <div className="inline-flex items-center gap-2 text-[11px] font-black tracking-[0.22em] text-slate-900 [&:lang(th)]:tracking-normal">
               <Users className="h-4 w-4 text-slate-900" />
               <span>{t('kicker')}</span>
             </div>

@@ -33,9 +33,12 @@ async function prefillFrom(key: string | undefined): Promise<Prefill | undefined
 export default async function NewEvaluationPage({ searchParams }: PageProps<'/admin/interviews/new'>) {
   const actor = await requireAdminPage({ resource: 'applications', level: 'edit' });
   const { candidate } = await searchParams;
-  const prefill = await prefillFrom(typeof candidate === 'string' ? candidate : undefined);
+  const key = typeof candidate === 'string' ? candidate : undefined;
+  const prefill = await prefillFrom(key);
   return (
     <EvaluationForm
+      // Started from a candidate's page: back (and a save) goes there.
+      backHref={prefill && key ? `/admin/interviews/candidate/${encodeURIComponent(key)}` : undefined}
       evaluation={null}
       today={today()}
       evaluator={actor.name || actor.email}

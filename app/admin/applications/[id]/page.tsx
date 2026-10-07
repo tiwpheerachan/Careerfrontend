@@ -73,7 +73,7 @@ export default async function ApplicationDetailPage({ params, searchParams }: Pa
           <div className="flex flex-wrap items-center gap-2">
             {abilitiesOf(actor).applications.edit && (
               <Link
-                href={`/admin/interviews/new?candidate=${encodeURIComponent(`application:${a.id}`)}`}
+                href={`/admin/interviews/candidate/${encodeURIComponent(`application:${a.id}`)}`}
                 className="inline-flex items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
               >
                 <ClipboardCheck className="h-4 w-4 text-blue-600" />

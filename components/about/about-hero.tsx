@@ -39,7 +39,7 @@ function StatCard({
 
       <div className="mt-2 flex items-baseline gap-2">
         <div className="text-3xl font-black tracking-tight text-slate-950">{value}</div>
-        <div className="text-sm font-semibold text-slate-600/80">{suffix}</div>
+        <div className="text-sm font-semibold whitespace-nowrap text-slate-600/80">{suffix}</div>
       </div>
     </div>
   );
@@ -138,7 +138,7 @@ export function AboutHero() {
         className={cx('relative will-change-transform', styles.parallax)}
         style={{ transform: 'translate3d(var(--hx,0px), var(--hy,0px), 0)' }}
       >
-        <div className="relative mx-auto w-full max-w-[1180px] px-4 pt-14 pb-8 sm:px-6 sm:pt-16 sm:pb-10 lg:px-10">
+        <div className="relative mx-auto w-full max-w-[1180px] px-4 pt-24 pb-8 sm:px-6 sm:pt-28 sm:pb-10 lg:px-10">
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
             <div>
               <div className="flex flex-wrap items-center gap-2">

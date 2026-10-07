@@ -77,6 +77,9 @@ export function StagePanel({ applicationId }: { applicationId: string }) {
   const can = useAbilities();
   const [, startTransition] = useTransition();
 
+  // "Saved" until another stage is picked (or 2.5s pass).
+  const justSaved = saved && !saving && draft === state.stage;
+
   const onSave = async () => {
     if (draft === state.stage) return;
     setSaving(true);
@@ -133,15 +136,21 @@ export function StagePanel({ applicationId }: { applicationId: string }) {
           type="button"
           onClick={onSave}
           disabled={saving || draft === state.stage}
-          className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+          className={cn(
+            'mt-4 inline-flex w-full items-center justify-center gap-1 rounded-xl px-4 py-2 text-sm font-medium transition',
+            // Just saved: a green confirmation, not a greyed-out button.
+            justSaved
+              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset'
+              : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50',
+          )}
         >
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" /> {tCommon('saving')}
             </>
-          ) : saved ? (
+          ) : justSaved ? (
             <>
-              <CheckCircle2 className="h-4 w-4" /> {tCommon('saved')}
+              <CheckCircle2 className="h-4 w-4" aria-hidden /> <span role="status">{tCommon('saved')}</span>
             </>
           ) : (
             <>

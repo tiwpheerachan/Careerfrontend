@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { cx } from '@/lib/cx';
 import { Link } from '@/lib/i18n/navigation';
 
 /**
@@ -12,7 +13,13 @@ export async function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-slate-200 bg-white">
+    <footer
+      className={cx(
+        'border-t border-slate-200 bg-white',
+        // A page with a fixed bottom apply bar on phones (the job page): room for it.
+        'max-lg:[body:has([data-mobile-apply-bar])_&]:pb-[120px]',
+      )}
+    >
       <div className="container-page py-10">
         <div className="grid gap-8 md:grid-cols-3">
           <div>

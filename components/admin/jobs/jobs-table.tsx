@@ -1,12 +1,32 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Briefcase,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  SearchX,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PUBLISH_TONE, ToneBadge } from '@/components/admin/ui';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -55,7 +75,9 @@ const STATE_DOT: Record<JobPublishState, string> = {
 /**
  * The jobs table — the old one's columns and look, on shadcn's Table, with
  * sortable columns and the row actions in a menu (edit, an explicit status,
- * delete behind a confirm dialog).
+ * delete behind a confirm dialog). Taking a published job that people have
+ * applied to off the site (draft or closed) asks first; other status changes
+ * are one click.
  */
 export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: number; filtered: boolean }) {
   const t = useTranslations('jobs.list');
@@ -69,6 +91,9 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
   const [busy, setBusy] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<DeletableJob | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  /** A status change waiting for "yes" (see setState). */
+  const [unpublishing, setUnpublishing] = useState<{ row: JobRow; next: JobPublishState } | null>(null);
+  const [unpublishOpen, setUnpublishOpen] = useState(false);
   const can = useAbilities();
 
   const sorted = useMemo(() => {
@@ -86,8 +111,17 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s?.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: FIRST_DIR[key] }));
 
-  const setState = async (row: JobRow, next: JobPublishState) => {
+  const setState = (row: JobRow, next: JobPublishState) => {
     if (next === row.publishState) return;
+    if (row.publishState === 'PUBLISHED' && row.applicantCount > 0) {
+      setUnpublishing({ row, next });
+      setUnpublishOpen(true);
+    } else {
+      void changeState(row, next);
+    }
+  };
+
+  const changeState = async (row: JobRow, next: JobPublishState) => {
     setBusy(row.id);
     try {
       await adminFetch(`/jobs/${row.id}/publish-state`, { method: 'PATCH', json: { publishState: next } });
@@ -129,16 +163,16 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
   return (
     <div className="card overflow-hidden">
       {sorted.length === 0 ? (
-        <div className="p-8 text-sm text-gray-500">
-          {total === 0 || !filtered ? (
-            t('empty')
-          ) : (
-            <>
-              {t('noMatch')} ·{' '}
-              <Link href="/admin/jobs" className="font-semibold text-blue-700 hover:underline">
-                {t('clearFilters')}
-              </Link>
-            </>
+        // The same empty state as the applicants list.
+        <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gray-100 text-gray-400">
+            {total > 0 && filtered ? <SearchX className="h-5 w-5" /> : <Briefcase className="h-5 w-5" />}
+          </div>
+          <p className="text-sm font-semibold text-gray-700">{total > 0 && filtered ? t('noMatch') : t('empty')}</p>
+          {total > 0 && filtered && (
+            <Link href="/admin/jobs" className="text-sm font-semibold text-blue-700 hover:underline">
+              {t('clearFilters')}
+            </Link>
           )}
         </div>
       ) : (
@@ -251,6 +285,34 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
           </TableBody>
         </Table>
       )}
+
+      <AlertDialog open={unpublishOpen} onOpenChange={setUnpublishOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-bold text-gray-900">
+              {unpublishing && t('unpublish.title', { state: publishState(unpublishing.next) })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {unpublishing &&
+                t('unpublish.body', {
+                  title: unpublishing.row.title,
+                  count: unpublishing.row.applicantCount,
+                  state: publishState(unpublishing.next),
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{common('cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (unpublishing) void changeState(unpublishing.row, unpublishing.next);
+              }}
+            >
+              {unpublishing && t('unpublish.confirm', { state: publishState(unpublishing.next) })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <DeleteJobDialog
         job={deleting}

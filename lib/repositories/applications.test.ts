@@ -167,9 +167,9 @@ describe('applications: sorting', () => {
     const names = async (sort: 'name' | 'stage' | 'job', dir?: 'asc' | 'desc') =>
       (await repos.applications.list({ page: 1, pageSize: 10, sort, dir })).rows.map((r) => r.firstName);
 
-    // C collation: upper case before lower case.
-    expect(await names('name')).toEqual(['Anna', 'Zed', 'mia']);
-    expect(await names('name', 'desc')).toEqual(['mia', 'Zed', 'Anna']);
+    // Case-insensitive: "mia" between "Anna" and "Zed", not after both.
+    expect(await names('name')).toEqual(['Anna', 'mia', 'Zed']);
+    expect(await names('name', 'desc')).toEqual(['Zed', 'mia', 'Anna']);
     expect((await names('stage')).at(-1)).toBe('Zed'); // HIRED is the last stage
     expect((await names('job'))[0]).toBe('mia'); // JOB-A first
   });

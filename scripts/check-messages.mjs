@@ -39,9 +39,13 @@ function walk(dir) {
 }
 
 const isAdmin = (file) =>
-  [`app${sep}admin${sep}`, `app${sep}sso${sep}`, `components${sep}admin${sep}`, `components${sep}auth${sep}`].some(
-    (dir) => file.startsWith(dir),
-  );
+  [
+    `app${sep}admin${sep}`,
+    `app${sep}sso${sep}`,
+    `app${sep}evaluate${sep}`,
+    `components${sep}admin${sep}`,
+    `components${sep}auth${sep}`,
+  ].some((dir) => file.startsWith(dir));
 
 const lookup = (catalogue, locale, path) =>
   path.split('.').reduce((node, part) => (node == null ? undefined : node[part]), messages[catalogue][locale]);

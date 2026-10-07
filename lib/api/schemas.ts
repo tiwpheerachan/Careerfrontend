@@ -504,6 +504,11 @@ export const InterviewEvaluation = z.object({
   result: z.enum(EVALUATION_RESULTS).meta({ description: 'The evaluator’s own verdict.' }),
   failReason: z.string().nullable(),
   comment: z.string().nullable(),
+  viaInvitation: z.boolean().meta({ description: 'Sent by an invited evaluator through a link.' }),
+  edited: z
+    .object({ by: z.string(), at: DateTime })
+    .nullable()
+    .meta({ description: 'Changed by someone other than its evaluator (manage).' }),
   createdAt: DateTime,
   updatedAt: DateTime,
 });
@@ -548,3 +553,58 @@ export const EvaluationPdfQuery = z.object({
   role: z.enum(EVALUATOR_ROLES).meta({ description: 'Whose form: HR, or the hiring department.' }),
   lang: z.enum(['th', 'en', 'zh']).default('th'),
 });
+
+// --- Inviting evaluators -------------------------------------------------------------------------
+
+export { GuestEvaluationInput, InvitationInput } from '@/lib/interview/schema';
+
+export const PeopleQuery = z.object({
+  q: z.string().trim().min(2).max(100).meta({ description: 'A name or email, at least 2 characters.' }),
+});
+
+const Person = z.object({
+  unionId: z.string().nullable(),
+  name: z.string(),
+  enName: z.string().nullable(),
+  email: z.string(),
+  jobTitle: z.string().nullable(),
+  department: z.string().nullable(),
+});
+
+export const PeopleList = z.object({ people: z.array(Person) });
+
+export const InvitationsQuery = z.object({
+  candidate: z.string().min(3).max(200).meta({ description: 'application:<id>, form:<id> or name:<name>.' }),
+});
+
+export const Invitation = z.object({
+  id: Id,
+  link: z.string().meta({ description: 'The link to send — opening it needs an SSO sign-in as someone on it.' }),
+  candidate: InterviewEvaluation.shape.candidate,
+  round: z.union([z.literal(1), z.literal(2)]),
+  evaluatorRole: z.enum(EVALUATOR_ROLES),
+  senior: z.boolean(),
+  createdBy: z.string(),
+  createdByName: z.string().nullable(),
+  createdAt: DateTime,
+  openedAt: DateTime.nullable(),
+  revokedAt: DateTime.nullable(),
+  expiresAt: DateTime.meta({ description: '24 hours after it is made, or 6 hours after it is first opened.' }),
+  state: z.enum(['PENDING', 'OPEN', 'COMPLETED', 'EXPIRED', 'REVOKED']),
+  invitees: z.array(
+    z.object({
+      id: Id,
+      email: z.string(),
+      name: z.string().nullable(),
+      jobTitle: z.string().nullable(),
+      department: z.string().nullable(),
+      openedAt: DateTime.nullable(),
+      submittedAt: DateTime.nullable(),
+    }),
+  ),
+});
+
+export const InvitationsList = z.object({ invitations: z.array(Invitation) });
+
+export const TokenParams = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{32,100}$/) });
+export const TokenFileParams = TokenParams.extend({ fileId: Id });

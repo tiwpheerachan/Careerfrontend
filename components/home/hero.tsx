@@ -71,7 +71,7 @@ export async function Hero({ openings }: { openings: number }) {
       />
 
       {/* CONTENT */}
-      <div className="container-page relative py-12 sm:py-16 lg:py-20">
+      <div className="container-page relative pt-24 pb-12 sm:pt-24 sm:pb-16 lg:py-20">
         <div className="mx-auto max-w-[920px] text-center">
           <div className="inline-flex items-center gap-2 rounded-full border  bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-white/90 backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_28px_rgba(52,211,153,0.65)]" />

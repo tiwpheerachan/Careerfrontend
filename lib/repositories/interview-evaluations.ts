@@ -7,7 +7,7 @@ import {
   jobs,
   type InterviewEvaluationRow,
 } from '@/lib/db/schema';
-import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import type { CandidateRef } from '@/lib/interview/candidate-key';
 import type { InterviewEvaluationInput } from '@/lib/interview/schema';
 import { outcomeOf, type Outcome } from '@/lib/interview/scoring';
@@ -48,6 +48,10 @@ export interface InterviewEvaluation extends Outcome {
   result: InterviewEvaluationRow['result'];
   failReason: string | null;
   comment: string | null;
+  /** Sent by an invited evaluator through a link (not entered in the admin). */
+  viaInvitation: boolean;
+  /** Changed by someone other than its evaluator (manage), if it was. */
+  edited: { by: string; at: Date } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,6 +97,8 @@ export function createInterviewEvaluationRepository(db: Database) {
       result: row.result,
       failReason: row.failReason,
       comment: row.comment,
+      viaInvitation: row.invitationsPk !== null,
+      edited: row.editedBy && row.editedAt ? { by: row.editedBy, at: row.editedAt } : null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -109,30 +115,38 @@ export function createInterviewEvaluationRepository(db: Database) {
   async function valuesOf(input: InterviewEvaluationInput) {
     let applicationsPk: number | null = null;
     let applicationFormsPk: number | null = null;
+    // A linked candidate's name is the record's, not whatever the form sent:
+    // otherwise an edit would quietly rename the applicant in every list.
+    let linkedName: string | null = null;
     if (input.applicationId) {
       const [row] = await db
-        .select({ pk: applications.pk })
+        .select({
+          pk: applications.pk,
+          name: sql<string>`${applications.firstName} || ' ' || ${applications.lastName}`,
+        })
         .from(applications)
         .where(and(eq(applications.id, input.applicationId), ne(applications.status, 'DELETED')))
         .limit(1);
       if (!row) throw new BadRequestError('No such applicant.', [{ path: 'applicationId', message: 'not found' }]);
       applicationsPk = row.pk;
+      linkedName = row.name;
     }
     if (input.applicationFormId) {
       const [row] = await db
-        .select({ pk: applicationForms.pk })
+        .select({ pk: applicationForms.pk, name: applicationForms.nameTh })
         .from(applicationForms)
         .where(and(eq(applicationForms.id, input.applicationFormId), ne(applicationForms.status, 'DELETED')))
         .limit(1);
       if (!row)
         throw new BadRequestError('No such application form.', [{ path: 'applicationFormId', message: 'not found' }]);
       applicationFormsPk = row.pk;
+      linkedName = row.name;
     }
     const outcome = outcomeOf({ general: input.generalScores, senior: input.senior ? input.seniorScores : null });
     return {
       applicationsPk,
       applicationFormsPk,
-      candidateName: input.candidateName,
+      candidateName: linkedName ?? input.candidateName,
       position: input.position,
       department: input.department,
       interviewDate: input.interviewDate,
@@ -158,6 +172,24 @@ export function createInterviewEvaluationRepository(db: Database) {
     return present(row);
   }
 
+  /** Every evaluation of one candidate (see candidate-key.ts): round 1 then 2, newest first within a round. */
+  async function forCandidate(ref: CandidateRef): Promise<InterviewEvaluation[]> {
+    const who =
+      ref.kind === 'application'
+        ? eq(applications.id, ref.id)
+        : ref.kind === 'form'
+          ? eq(applicationForms.id, ref.id)
+          : and(
+              isNull(interviewEvaluations.applicationsPk),
+              isNull(interviewEvaluations.applicationFormsPk),
+              sql`lower(btrim(${interviewEvaluations.candidateName})) = lower(btrim(${ref.name}))`,
+            );
+    const rows = await joined()
+      .where(and(live, who))
+      .orderBy(asc(interviewEvaluations.round), desc(interviewEvaluations.updatedAt));
+    return rows.map(present);
+  }
+
   return {
     /**
      * Applicants and application forms whose name (or email, phone) matches —
@@ -165,6 +197,12 @@ export function createInterviewEvaluationRepository(db: Database) {
      */
     async candidates(q: string, limit = 10): Promise<Candidate[]> {
       const pattern = likePattern(q.trim());
+      // Phones compared as digits only: "081-234 5678" finds 0812345678 and the reverse.
+      const digits = q.replace(/\D/g, '');
+      const phoneLike = (column: typeof applications.phone | typeof applicationForms.mobile) =>
+        digits.length >= 3
+          ? sql`regexp_replace(coalesce(${column}, ''), '\\D', '', 'g') like ${likePattern(digits)}`
+          : ilike(column, pattern);
       const [fromApplications, fromForms] = await Promise.all([
         db
           .select({
@@ -183,7 +221,7 @@ export function createInterviewEvaluationRepository(db: Database) {
               or(
                 ilike(sql`${applications.firstName} || ' ' || ${applications.lastName}`, pattern),
                 ilike(applications.email, pattern),
-                ilike(applications.phone, pattern),
+                phoneLike(applications.phone),
               ),
             ),
           )
@@ -207,7 +245,7 @@ export function createInterviewEvaluationRepository(db: Database) {
                 ilike(applicationForms.nameTh, pattern),
                 ilike(applicationForms.nameEn, pattern),
                 ilike(applicationForms.email, pattern),
-                ilike(applicationForms.mobile, pattern),
+                phoneLike(applicationForms.mobile),
               ),
             ),
           )
@@ -257,25 +295,26 @@ export function createInterviewEvaluationRepository(db: Database) {
       return row && { ...row, kind };
     },
 
-    /** Every evaluation of one candidate (see candidate-key.ts): round 1 then 2, newest first within a round. */
-    async forCandidate(ref: CandidateRef): Promise<InterviewEvaluation[]> {
-      const who =
-        ref.kind === 'application'
-          ? eq(applications.id, ref.id)
-          : ref.kind === 'form'
-            ? eq(applicationForms.id, ref.id)
-            : and(
-                isNull(interviewEvaluations.applicationsPk),
-                isNull(interviewEvaluations.applicationFormsPk),
-                sql`lower(btrim(${interviewEvaluations.candidateName})) = lower(btrim(${ref.name}))`,
-              );
-      const rows = await joined()
-        .where(and(live, who))
-        .orderBy(asc(interviewEvaluations.round), desc(interviewEvaluations.updatedAt));
-      return rows.map(present);
-    },
+    forCandidate,
 
     async create(input: InterviewEvaluationInput, evaluator: Evaluator): Promise<InterviewEvaluation> {
+      // One evaluation per evaluator, candidate, round and side — a second is a
+      // 409 pointing at the first, which they can edit instead.
+      const ref: CandidateRef = input.applicationId
+        ? { kind: 'application', id: input.applicationId }
+        : input.applicationFormId
+          ? { kind: 'form', id: input.applicationFormId }
+          : { kind: 'manual', name: input.candidateName };
+      const twin = (await forCandidate(ref)).find(
+        (e) =>
+          e.round === input.round &&
+          e.evaluatorRole === input.evaluatorRole &&
+          e.evaluator.email.toLowerCase() === evaluator.email.toLowerCase(),
+      );
+      if (twin)
+        throw new ConflictError(
+          `You have already evaluated this round of this candidate (evaluation ${twin.id}) — edit it instead.`,
+        );
       const [row] = await db
         .insert(interviewEvaluations)
         .values({ ...(await valuesOf(input)), evaluatorEmail: evaluator.email, evaluatorName: evaluator.name })
@@ -313,11 +352,15 @@ export function createInterviewEvaluationRepository(db: Database) {
     get,
 
     /** Replaces the scores and verdict. The evaluator stays who it was. */
-    async update(id: string, input: InterviewEvaluationInput): Promise<InterviewEvaluation> {
+    /**
+     * Replaces the scores and verdict. `editor` is set when it is not the
+     * evaluator's own change (manage): who and when are kept and shown.
+     */
+    async update(id: string, input: InterviewEvaluationInput, editor?: string | null): Promise<InterviewEvaluation> {
       if (!isUuid(id)) throw new NotFoundError('interview evaluation', id);
       const [row] = await db
         .update(interviewEvaluations)
-        .set(await valuesOf(input))
+        .set({ ...(await valuesOf(input)), ...(editor ? { editedBy: editor, editedAt: new Date() } : {}) })
         .where(and(live, eq(interviewEvaluations.id, id)))
         .returning({ id: interviewEvaluations.id });
       if (!row) throw new NotFoundError('interview evaluation', id);

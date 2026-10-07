@@ -1,5 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { NotFoundError } from '@/lib/errors';
 import type { ObjectStore } from './index';
 
 /**
@@ -28,7 +29,9 @@ export function createLocalStore(directory: string): ObjectStore {
     },
 
     async open(objectPath) {
-      const bytes = await readFile(fileOf(objectPath));
+      const bytes = await readFile(fileOf(objectPath)).catch((error: NodeJS.ErrnoException) => {
+        throw error.code === 'ENOENT' ? new NotFoundError('file', objectPath) : error;
+      });
       return { bytes: new Uint8Array(bytes), contentType: 'application/octet-stream' };
     },
   };

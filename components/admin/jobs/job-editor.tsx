@@ -17,23 +17,12 @@ import {
   Type,
   Users,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
-import { useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/admin/ui';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RadioGroup } from '@/components/ui/radio-group';
@@ -50,6 +39,7 @@ import { DeleteJobDialog } from './delete-job-dialog';
 import { DEFAULT_COUNTRIES, JOB_CODE_PATTERN, JOB_LANGS, jobTitle, PUBLISH_STATES, type JobLang } from './job-utils';
 import { ValueCombobox } from './value-combobox';
 import { useAbilities } from '@/components/admin/shell/abilities';
+import { GuardedLink } from '@/components/admin/shell/unsaved-guard';
 
 /** A job as the editor receives it (the AdminJob fields it edits). */
 export interface EditableJob {
@@ -208,12 +198,13 @@ export function JobEditor({ job, options }: { job: EditableJob | null; options: 
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [leaveOpen, setLeaveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
+  // As the jobs list names it: the admin's language first.
+  const title = job ? jobTitle(job, locale) : '';
 
-  // Closing the tab, reloading or leaving through the sidebar with unsaved changes asks first.
+  // Leaving with unsaved changes — closing the tab, Back, the sidebar, "back" / "cancel" here — asks first.
   useUnsavedChanges(dirty);
 
   const countries = useMemo(() => {
@@ -316,12 +307,6 @@ export function JobEditor({ job, options }: { job: EditableJob | null; options: 
     }
   };
 
-  const guardLeave = (e: MouseEvent) => {
-    if (!dirty) return;
-    e.preventDefault();
-    setLeaveOpen(true);
-  };
-
   const fieldError = (path: string) => errors[path];
   const issueFor = (l: JobLang) => Object.keys(errors).some((p) => p.startsWith(`translations.${l}.`));
   // Server issues on paths this form has no field for (e.g. publishState) go in the box.
@@ -334,18 +319,26 @@ export function JobEditor({ job, options }: { job: EditableJob | null; options: 
 
   return (
     <div>
-      <Link
+      <GuardedLink
         href="/admin/jobs"
-        onClick={guardLeave}
         className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
       >
         <ArrowLeft className="h-4 w-4" /> {t('back')}
-      </Link>
+      </GuardedLink>
 
       <PageHeader
         icon={<Briefcase className="h-5 w-5" />}
         title={isEdit ? t('titleEdit') : t('titleNew')}
-        subtitle={isEdit ? <span className="font-mono">{job.code}</span> : t('subtitleNew')}
+        subtitle={
+          isEdit ? (
+            <>
+              {title !== job.code && <>{title} · </>}
+              <span className="font-mono">{job.code}</span>
+            </>
+          ) : (
+            t('subtitleNew')
+          )
+        }
         actions={
           isEdit &&
           can.jobs.manage && (
@@ -644,9 +637,7 @@ export function JobEditor({ job, options }: { job: EditableJob | null; options: 
                   variant="outline"
                   className="h-auto w-full rounded-xl border-gray-200 bg-white px-4 py-2 font-semibold text-gray-900 hover:bg-gray-50"
                 >
-                  <Link href="/admin/jobs" onClick={guardLeave}>
-                    {common('cancel')}
-                  </Link>
+                  <GuardedLink href="/admin/jobs">{common('cancel')}</GuardedLink>
                 </Button>
                 {dirty && (
                   <p className="flex items-center justify-center gap-1.5 pt-1 text-xs text-amber-700">
@@ -660,31 +651,9 @@ export function JobEditor({ job, options }: { job: EditableJob | null; options: 
         </fieldset>
       </form>
 
-      <AlertDialog open={leaveOpen} onOpenChange={setLeaveOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-bold text-gray-900">{t('discard.title')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('discard.body')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('discard.stay')}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              className="bg-red-600 text-white hover:bg-red-700"
-              onClick={() => {
-                setInitial(form);
-                router.push('/admin/jobs');
-              }}
-            >
-              {t('discard.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {isEdit && (
         <DeleteJobDialog
-          job={{ id: job.id, code: job.code, title: jobTitle(job), applicantCount: job.applicantCount }}
+          job={{ id: job.id, code: job.code, title, applicantCount: job.applicantCount }}
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
           onDeleted={() => {

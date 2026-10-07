@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminApiError, adminFetch } from '@/lib/admin/client';
-import { useUnsavedChanges } from '@/lib/admin/unsaved';
+import { confirmLeave, useUnsavedChanges } from '@/lib/admin/unsaved';
 import type { LOCALES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { ContentField } from './content-field';
@@ -79,7 +79,8 @@ export function ContentEditor({
   /** Sections opened/closed while a search is active; null = the ones the search matches. */
   const [searchOpen, setSearchOpen] = useState<string[] | null>(null);
   const [revertKey, setRevertKey] = useState<string | null>(null);
-  const [pendingLang, setPendingLang] = useState<SiteLocale | null>(null);
+  /** The server's word on a refused save, by key (shown under the field until it is edited). */
+  const [refused, setRefused] = useState<Record<string, string>>({});
 
   // A new language starts clean; fresh overrides from the server replace the local patch.
   const [prev, setPrev] = useState({ lang, overrides });
@@ -104,7 +105,7 @@ export function ContentEditor({
   // Only overrides of keys the site still has.
   const overrideCount = defaults.filter(([key]) => overrideOf(key) !== null).length;
 
-  // Leaving the page (reload, close, typed url, the sidebar) with unsaved text asks first.
+  // Leaving the page (reload, close, typed url, Back, the sidebar, another language) with unsaved text asks first.
   useUnsavedChanges(dirtyCount > 0);
 
   const query = search.trim().toLowerCase();
@@ -137,7 +138,15 @@ export function ContentEditor({
   const shown = sections.reduce((sum, s) => sum + s.entries.length, 0);
   const accordionValue = query ? (searchOpen ?? sections.map((s) => s.id)) : open;
 
-  const onChange = useCallback((key: string, value: string) => setEdited((e) => ({ ...e, [key]: value })), []);
+  const onChange = useCallback((key: string, value: string) => {
+    setEdited((e) => ({ ...e, [key]: value }));
+    setRefused((r) => {
+      if (!(key in r)) return r;
+      const next = { ...r };
+      delete next[key];
+      return next;
+    });
+  }, []);
 
   const setBusyKey = (key: string, on: boolean) =>
     setBusy((b) => {
@@ -164,6 +173,9 @@ export function ContentEditor({
         toast.success(t('savedToast'), { description: key });
         router.refresh();
       } catch (error) {
+        // The text itself was refused (lib/content/validate.ts): say why under the field.
+        const issue = error instanceof AdminApiError ? error.issues.find((i) => i.path === 'value') : undefined;
+        if (issue) setRefused((r) => ({ ...r, [key]: issue.message }));
         toast.error(t('saveFailed'), { description: errorText(error) });
       } finally {
         setBusyKey(key, false);
@@ -197,11 +209,10 @@ export function ContentEditor({
     });
   };
 
+  // Another language is another page: unsaved text asks first, as leaving does.
   const onLangChange = (value: string) => {
     const next = value as SiteLocale;
-    if (next === lang) return;
-    if (dirtyCount) setPendingLang(next);
-    else goTo(next);
+    if (next !== lang) confirmLeave(() => goTo(next));
   };
 
   const langLabel = (key: SiteLocale) => LANGS.find((l) => l.key === key)?.label ?? key;
@@ -297,11 +308,13 @@ export function ContentEditor({
                       <ContentField
                         key={key}
                         messageKey={key}
+                        siteLocale={lang}
                         defaultText={text}
                         value={edited[key] ?? storedOf(key)}
                         dirty={isDirty(key)}
                         override={overrideOf(key)}
                         busy={busy[key] === true}
+                        serverError={refused[key]}
                         onChange={onChange}
                         onSave={onSave}
                         onRevert={onRevert}
@@ -338,27 +351,6 @@ export function ContentEditor({
               }}
             >
               {t('revert')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={pendingLang !== null} onOpenChange={(isOpen) => !isOpen && setPendingLang(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('discardTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('discardBody', { count: dirtyCount })}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('keepEditing')}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => {
-                if (pendingLang) goTo(pendingLang);
-                setPendingLang(null);
-              }}
-            >
-              {t('discard')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
