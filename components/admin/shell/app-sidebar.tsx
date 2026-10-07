@@ -31,20 +31,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { discardUnsavedChanges, hasUnsavedChanges } from '@/lib/admin/unsaved';
 import { cn } from '@/lib/utils';
 import { Brand } from '../ui';
+import { useAbilities } from './abilities';
 
 const NAV = [
-  { href: '/admin/dashboard', key: 'dashboard', icon: LayoutDashboard },
-  { href: '/admin/jobs', key: 'jobs', icon: Briefcase },
-  { href: '/admin/applications', key: 'applications', icon: Users },
-  { href: '/admin/content', key: 'content', icon: FileText },
+  { href: '/admin/dashboard', key: 'dashboard', icon: LayoutDashboard, area: 'applications' },
+  { href: '/admin/jobs', key: 'jobs', icon: Briefcase, area: 'jobs' },
+  { href: '/admin/applications', key: 'applications', icon: Users, area: 'applications' },
+  { href: '/admin/content', key: 'content', icon: FileText, area: 'content' },
 ] as const;
 
 /**
  * The admin's left column — the old fixed 256px white sidebar, now shadcn's
  * Sidebar (which also gives the mobile drawer, focus handling and ESC).
  * Active item: blue-50 wash, blue text, a blue bar on the left edge.
+ * Only the parts this person may open are listed (useAbilities).
  */
-export function AppSidebar({ actorEmail }: { actorEmail: string }) {
+export function AppSidebar({ actor }: { actor: { name: string; email: string; dev: boolean } }) {
+  const can = useAbilities();
   const t = useTranslations('nav');
   const brand = useTranslations('brand');
   const pathname = usePathname();
@@ -72,7 +75,7 @@ export function AppSidebar({ actorEmail }: { actorEmail: string }) {
             {t('menu')}
           </SidebarGroupLabel>
           <SidebarMenu className="gap-1">
-            {NAV.map(({ href, key, icon: Icon }) => {
+            {NAV.filter(({ area }) => can[area].view).map(({ href, key, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <SidebarMenuItem key={href}>
@@ -121,31 +124,36 @@ export function AppSidebar({ actorEmail }: { actorEmail: string }) {
         <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-linear-to-br from-gray-700 to-gray-900 text-xs font-bold text-white uppercase">
-              {actorEmail.charAt(0) || 'A'}
+              {(actor.name || actor.email).charAt(0) || 'A'}
             </div>
             <div className="min-w-0 leading-tight">
-              <div className="truncate text-sm font-semibold text-gray-900">
-                {actorEmail === 'dev@localhost' ? t('devUser') : actorEmail}
+              <div className="truncate text-sm font-semibold text-gray-900" title={actor.email}>
+                {actor.dev ? t('devUser') : actor.name || actor.email}
               </div>
-              <div className="text-[11px] text-gray-400">{t('signedInAs')}</div>
+              <div className="truncate text-[11px] text-gray-400">
+                {actor.dev || !actor.name ? t('signedInAs') : actor.email}
+              </div>
             </div>
           </div>
-          {/* Sign-out arrives with SSO; the button keeps its place and says so. */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <button
-                  type="button"
-                  disabled
-                  aria-label={t('signOut')}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-gray-400 transition disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top">{t('signOutSoon')}</TooltipContent>
-          </Tooltip>
+          {/* Signs out of this app only (the central session stays): POST, so no
+              link or prefetch can do it. In development without SSO there is
+              no session to end. */}
+          {actor.dev ? null : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <form action="/sso/logout" method="post">
+                  <button
+                    type="submit"
+                    aria-label={t('signOut')}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </form>
+              </TooltipTrigger>
+              <TooltipContent side="top">{t('signOut')}</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </SidebarFooter>
 

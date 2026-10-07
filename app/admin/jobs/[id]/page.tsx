@@ -17,7 +17,7 @@ async function load(id: string) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'jobs', level: 'view' });
   const job = await load((await params).id);
   const meta = await getTranslations('meta');
   return { title: `${job.code} · ${meta('title')}` };
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props) {
 
 /** One job, in the editor. `id` is the job's public uuid. */
 export default async function EditJobPage({ params }: Props) {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'jobs', level: 'view' });
   const { id } = await params;
   const [job, options] = await Promise.all([load(id), store().jobs.options()]);
   return (

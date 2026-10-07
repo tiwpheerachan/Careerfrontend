@@ -27,12 +27,16 @@ jobs:
           POSTGRES_DB: shd_career_test
           LANG: en_US.utf8
           POSTGRES_INITDB_ARGS: --locale=en_US.UTF-8 --encoding=UTF8
+          TZ: Asia/Bangkok
+          PGTZ: Asia/Bangkok
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d shd_career_test"
           --health-interval 2s --health-timeout 3s --health-retries 30
 
     env:
+      # Company standard time zone (the runner's OS stays UTC; every process uses this).
+      TZ: Asia/Bangkok
       TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/shd_career_test
 
     steps:
@@ -47,6 +51,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # Company time-zone standard: app + database (after the tests migrated it).
+      - run: npm run check:timezone -- --skip-os "$TEST_DATABASE_URL"
       - run: npm run check:messages
       - name: Build
         run: npm run build

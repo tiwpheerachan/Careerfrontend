@@ -1,0 +1,4 @@
+﻿key,name,rtype,parent,verbs,sensitive,description
+jobs,ตำแหน่งงาน,table,,,FALSE,ตำแหน่งงานบนเว็บสมัครงาน — view = ดูรายการและหน้าแก้ไข (อ่านอย่างเดียว) · edit = สร้าง แก้ เปิด/ปิดรับสมัคร · manage = ลบ
+applications,ผู้สมัคร,table,,export,TRUE,ใบสมัครและไฟล์เรซูเม่ (ข้อมูลส่วนบุคคล) — view = ดูผู้สมัคร ไฟล์ และภาพรวม · edit = เปลี่ยนสถานะ เขียน/ลบโน้ต · manage = ลบใบสมัคร และส่งออก CSV
+content,ข้อความบนเว็บ,page,,,FALSE,ข้อความบนหน้าเว็บสาธารณะ (th/en/zh) — view = ดู · edit = แก้และคืนค่าเดิม

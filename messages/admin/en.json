@@ -17,7 +17,6 @@
     "signedInAs": "Signed in",
     "devUser": "Admin (dev)",
     "signOut": "Sign out",
-    "signOutSoon": "Sign out — available once SSO is on",
     "language": "Language",
     "unsavedTitle": "You have unsaved changes",
     "unsavedBody": "If you leave this page, the changes you have not saved will be lost.",
@@ -346,5 +345,40 @@
         "fixFields": "Please fix the fields marked in red"
       }
     }
+  },
+  "auth": {
+    "signOut": "Sign out",
+    "signedOutTitle": "You are signed out",
+    "signedOutBody": "Your session on this app has ended. You are still signed in to the central system, so signing back in will not ask for your password.",
+    "errorTitle": "Could not sign you in",
+    "tryAgain": "Try again",
+    "error_code": "That sign-in link has already been used, or it expired. They are only good for a minute.",
+    "error_state": "The sign-in did not come back the way it left. Start again from this page.",
+    "error_client": "This app’s credentials are not being accepted by the central system. Nothing you can do from here — please tell whoever set it up.",
+    "error_access": "Your account does not have access to this app. Ask an administrator to grant it.",
+    "error_inactive": "Your account has been suspended in the central system.",
+    "error_setup": "Single sign-on is not configured on this deployment yet.",
+    "error_unavailable": "The login service could not be reached. It may be a moment’s outage — try again.",
+    "signInAgain": "Sign in again",
+    "noAccessTitle": "No access yet",
+    "noAccessBody": "This account is signed in, but the central system has not given it anything in this app. Ask an administrator there to grant a role, then check again.",
+    "unavailableTitle": "Could not check your access",
+    "unavailableBody": "The central system did not answer, so what you may see is unknown right now — not refused. Give it a moment and try again.",
+    "checkAgain": "Check again",
+    "signedInAs": "Signed in as",
+    "forbiddenTitle": "You cannot use this part",
+    "forbiddenBody": "This needs \"{level}\" access to \"{resource}\". Ask an administrator of the central system to grant it, then check again.",
+    "backToAdmin": "Back to the admin",
+    "resource": {
+      "jobs": "Jobs",
+      "applications": "Applicants",
+      "content": "Site content"
+    },
+    "level": {
+      "view": "view",
+      "edit": "edit",
+      "manage": "manage"
+    },
+    "unmanaged": "Permissions are not switched on (CENTRAL_API_KEY) — everyone who can sign in can use everything"
   }
 }

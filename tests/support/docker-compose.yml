@@ -18,6 +18,11 @@ services:
       POSTGRES_DB: shd_career_test
       LANG: en_US.utf8
       POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8 --encoding=UTF8'
+      # Company standard: Asia/Bangkok for the OS (the container) and the database.
+      TZ: Asia/Bangkok
+      PGTZ: Asia/Bangkok
+    # The server's default zone too (migration 0004 also sets it per database).
+    command: ['postgres', '-c', 'timezone=Asia/Bangkok', '-c', 'log_timezone=Asia/Bangkok']
     ports:
       - '127.0.0.1:55435:5432'
     # No volume: the database is disposable and starting clean is a feature.

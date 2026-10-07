@@ -12,10 +12,10 @@ Every endpoint is under `/api/v1` and answers JSON (except the CSV export and fi
 
 ## Two groups
 
-| Group                      | Used by                     | Sign-in                                                                            |
-| -------------------------- | --------------------------- | ---------------------------------------------------------------------------------- |
-| **Jobs**, **Site content** | the public site, applicants | none                                                                               |
-| **Admin · …**              | the HR team                 | required (SSO — not built yet: open in development, 503 in production until it is) |
+| Group                      | Used by                     | Sign-in                                                                                                   |
+| -------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Jobs**, **Site content** | the public site, applicants | none                                                                                                      |
+| **Admin · …**              | the HR team                 | required (SSO — sign in at `/sso/login`; the `shd_careers_session` cookie; each endpoint's `Permission:`) |
 
 ## Applying
 

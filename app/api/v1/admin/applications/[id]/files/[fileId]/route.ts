@@ -12,7 +12,7 @@ import { store } from '@/lib/store';
  * never goes stale. Every download is logged with who asked.
  */
 export const GET = handler<RouteParams<'id' | 'fileId'>>(async (request, { log }, { params }) => {
-  const actor = await requireAdmin(request);
+  const actor = await requireAdmin(request, { resource: 'applications', level: 'view' });
   const { id, fileId } = await parseParams(params, adminDownloadFile.params);
   const file = await store().applications.file(id, fileId);
   log.info({ actor: actor.email, applicationId: id, fileId }, 'application file opened');

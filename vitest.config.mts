@@ -16,6 +16,8 @@ process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 process.env.DIRECT_URL = process.env.TEST_DATABASE_URL;
 delete process.env.SHD_ALLOW_PRODUCTION;
 process.env.LOG_LEVEL ??= 'silent';
+// Company standard time zone — the code under test runs in it, as in production.
+process.env.TZ = 'Asia/Bangkok';
 // Uploaded files go to a throwaway folder, never to Supabase.
 process.env.STORAGE_DRIVER = 'local';
 process.env.LOCAL_STORAGE_DIR = fileURLToPath(new URL('./.storage-test', import.meta.url));
@@ -24,6 +26,12 @@ for (const name of [
   'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
   'APPLY_SHEET_WEBHOOK_URL',
   'TRUST_PROXY_HEADER',
+  // Sign-in off: the admin routes run as "dev@localhost" unless a test turns SSO on.
+  'SSO_CLIENT_ID',
+  'SSO_CLIENT_SECRET',
+  'SESSION_SECRET',
+  'CENTRAL_API_KEY',
+  'SSO_DEBUG',
 ]) {
   delete process.env[name];
 }

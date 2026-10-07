@@ -418,4 +418,20 @@ export const Health = z.object({
   database: z.string().optional(),
   version: z.string().optional(),
   latencyMs: z.number().int(),
+  timeZones: z
+    .object({
+      os: z.string().meta({ example: 'Asia/Bangkok' }),
+      app: z.string().meta({ example: 'Asia/Bangkok' }),
+      db: z.string().nullable().meta({ example: 'Asia/Bangkok' }),
+      standard: z.literal('Asia/Bangkok'),
+      ok: z.boolean().meta({ description: 'All three match the standard.' }),
+    })
+    .meta({ description: 'Company standard: OS, app and database all on Asia/Bangkok.' }),
+  clock: z
+    .object({
+      app: z.string().meta({ example: '2026-10-07T09:15:02.123+07:00' }),
+      db: z.string().nullable().meta({ example: '2026-10-07 09:15:02.125+07' }),
+    })
+    .optional()
+    .meta({ description: 'The app’s and the database’s clocks, with offsets — for measuring drift against NTP.' }),
 });

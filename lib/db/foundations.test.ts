@@ -36,4 +36,16 @@ describe('migration 0000', () => {
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) expect(row, row.table).toMatchObject({ rls: true, policies: 0 });
   });
+
+  it('puts every session on Asia/Bangkok (company standard), and stores instants unchanged', async () => {
+    const rows = (await testDb.execute(sql`
+      select current_setting('TimeZone') as tz,
+             '2026-01-01T00:30:00Z'::timestamptz::text as as_text,
+             extract(epoch from '2026-01-01T00:30:00Z'::timestamptz)::bigint as epoch
+    `)) as unknown as Array<{ tz: string; as_text: string; epoch: string }>;
+    expect(rows[0]!.tz).toBe('Asia/Bangkok');
+    // Written out in Bangkok time, the same instant underneath.
+    expect(rows[0]!.as_text).toBe('2026-01-01 07:30:00+07');
+    expect(Number(rows[0]!.epoch)).toBe(Date.UTC(2026, 0, 1, 0, 30) / 1000);
+  });
 });

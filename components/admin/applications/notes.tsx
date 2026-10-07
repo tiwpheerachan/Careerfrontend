@@ -18,6 +18,7 @@ import {
 import { AdminApiError, adminFetch } from '@/lib/admin/client';
 import { formatDateTime } from '@/lib/admin/format';
 import type { AdminLocale } from '@/lib/i18n/admin';
+import { useAbilities } from '@/components/admin/shell/abilities';
 
 interface Note {
   id: string;
@@ -44,6 +45,7 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
   const [toDelete, setToDelete] = useState<Note | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [refreshing, startTransition] = useTransition();
+  const can = useAbilities();
 
   const onAdd = async (event: FormEvent) => {
     event.preventDefault();
@@ -81,32 +83,34 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
 
   return (
     <>
-      <form onSubmit={onAdd}>
-        <label htmlFor="note-body" className="sr-only">
-          {t('notes')}
-        </label>
-        <textarea
-          id="note-body"
-          value={body}
-          onChange={(e) => {
-            setBody(e.target.value);
-            setFieldError(undefined);
-          }}
-          maxLength={5000}
-          aria-invalid={!!fieldError}
-          placeholder={t('notePlaceholder')}
-          className="min-h-[90px] w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-hidden placeholder:text-gray-400 focus:border-blue-600 aria-invalid:border-red-500"
-        />
-        {fieldError && <p className="mt-1 text-xs text-red-600">{fieldError}</p>}
-        <button
-          type="submit"
-          disabled={adding || !body.trim()}
-          className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-50 disabled:opacity-50"
-        >
-          {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          {t('addNote')}
-        </button>
-      </form>
+      {can.applications.edit && (
+        <form onSubmit={onAdd}>
+          <label htmlFor="note-body" className="sr-only">
+            {t('notes')}
+          </label>
+          <textarea
+            id="note-body"
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value);
+              setFieldError(undefined);
+            }}
+            maxLength={5000}
+            aria-invalid={!!fieldError}
+            placeholder={t('notePlaceholder')}
+            className="min-h-[90px] w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-hidden placeholder:text-gray-400 focus:border-blue-600 aria-invalid:border-red-500"
+          />
+          {fieldError && <p className="mt-1 text-xs text-red-600">{fieldError}</p>}
+          <button
+            type="submit"
+            disabled={adding || !body.trim()}
+            className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-50 disabled:opacity-50"
+          >
+            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {t('addNote')}
+          </button>
+        </form>
+      )}
 
       <div className={refreshing ? 'opacity-60 transition-opacity' : undefined}>
         {notes.length === 0 ? (
@@ -121,15 +125,17 @@ export function Notes({ applicationId, notes }: { applicationId: string; notes: 
                     <span className="break-all">{note.createdBy ?? t('bySystem')}</span> ·{' '}
                     {formatDateTime(note.createdAt, locale)}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setToDelete(note)}
-                    aria-label={t('deleteNote')}
-                    title={t('deleteNote')}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {can.applications.edit && (
+                    <button
+                      type="button"
+                      onClick={() => setToDelete(note)}
+                      aria-label={t('deleteNote')}
+                      title={t('deleteNote')}
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

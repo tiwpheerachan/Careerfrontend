@@ -17,6 +17,12 @@ export interface Endpoint {
   description?: string;
   /** public = anyone; admin = the admin gate (lib/auth/admin.ts). */
   auth: 'public' | 'admin';
+  /**
+   * Admin only: the permission it needs from the central system,
+   * "resource.level" (lib/auth/permissions.ts). Absent = any access to the admin.
+   * Documentation — the route handler's requireAdmin(request, need) is the check.
+   */
+  permission?: `${'jobs' | 'applications' | 'content'}.${'view' | 'edit' | 'manage'}`;
   params?: z.ZodObject;
   query?: z.ZodObject;
   body?: { schema: z.ZodType; type: 'application/json' | 'multipart/form-data' };

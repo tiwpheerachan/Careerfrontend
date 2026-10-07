@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import type { Endpoint } from '@/lib/api/contract';
 import { ENDPOINTS } from '@/lib/api/contracts';
 import { openapi } from '@/lib/api/openapi';
 
@@ -45,4 +46,30 @@ describe('API contracts', () => {
       }
     }
   });
+});
+
+/**
+ * The permission the docs promise is the one the route checks. Each admin
+ * method's handler must open with requireAdmin(request, { resource, level })
+ * matching the contract's `permission` — or plain requireAdmin(request) when
+ * the contract names none (any access to the admin).
+ */
+describe('admin permissions match their contracts', () => {
+  for (const endpoint of (ENDPOINTS as readonly Endpoint[]).filter((e) => e.auth === 'admin')) {
+    const method = endpoint.method.toUpperCase();
+    it(`${method} ${endpoint.path} checks ${endpoint.permission ?? 'any admin access'}`, () => {
+      const file = path.join(ROOT, endpoint.path.replace(/\{(\w+)\}/g, '[$1]'), 'route.ts');
+      const source = readFileSync(file, 'utf8');
+      const start = source.search(new RegExp(`export const ${method}\\b`));
+      expect(start, `${method} in ${file}`).toBeGreaterThan(-1);
+      const next = source.slice(start + 1).search(/\nexport const /);
+      const handler = next < 0 ? source.slice(start) : source.slice(start, start + 1 + next);
+      const [resource, level] = endpoint.permission?.split('.') ?? [];
+      expect(handler).toContain(
+        endpoint.permission
+          ? `requireAdmin(request, { resource: '${resource}', level: '${level}' })`
+          : 'requireAdmin(request)',
+      );
+    });
+  }
 });

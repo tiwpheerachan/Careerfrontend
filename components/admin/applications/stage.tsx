@@ -13,6 +13,7 @@ import { APPLICATION_STAGES } from '@/lib/constants';
 import type { ApplicationStage } from '@/lib/constants-types';
 import type { AdminLocale } from '@/lib/i18n/admin';
 import { cn } from '@/lib/utils';
+import { useAbilities } from '@/components/admin/shell/abilities';
 
 type When = Date | string;
 
@@ -73,6 +74,7 @@ export function StagePanel({ applicationId }: { applicationId: string }) {
   }
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const can = useAbilities();
   const [, startTransition] = useTransition();
 
   const onSave = async () => {
@@ -105,7 +107,11 @@ export function StagePanel({ applicationId }: { applicationId: string }) {
       <label htmlFor="stage-select" className="mb-1 block text-sm font-medium text-gray-800">
         {t('stage')}
       </label>
-      <Select value={draft} onValueChange={(v) => setDraft(v as ApplicationStage)} disabled={saving}>
+      <Select
+        value={draft}
+        onValueChange={(v) => setDraft(v as ApplicationStage)}
+        disabled={saving || !can.applications.edit}
+      >
         <SelectTrigger
           id="stage-select"
           className="h-auto! w-full rounded-xl border-gray-200 bg-white px-3 py-2 text-sm text-gray-900"
@@ -122,26 +128,28 @@ export function StagePanel({ applicationId }: { applicationId: string }) {
         </SelectContent>
       </Select>
 
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving || draft === state.stage}
-        className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
-      >
-        {saving ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> {tCommon('saving')}
-          </>
-        ) : saved ? (
-          <>
-            <CheckCircle2 className="h-4 w-4" /> {tCommon('saved')}
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4" /> {tCommon('save')}
-          </>
-        )}
-      </button>
+      {can.applications.edit && (
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || draft === state.stage}
+          className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> {tCommon('saving')}
+            </>
+          ) : saved ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" /> {tCommon('saved')}
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" /> {tCommon('save')}
+            </>
+          )}
+        </button>
+      )}
       {state.stageChangedAt && (
         <p className="mt-2 text-center text-xs text-gray-500">
           {t('lastUpdated', { date: formatDateTime(state.stageChangedAt, locale) })}

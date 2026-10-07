@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatDateTime } from '@/lib/admin/format';
 import type { AdminLocale } from '@/lib/i18n/admin';
 import type { ContentOverride } from './content-editor';
+import { useAbilities } from '@/components/admin/shell/abilities';
 
 /** Longer built-in text gets a textarea. Decided by the default, so the field never changes type while typing. */
 const MULTILINE_FROM = 60;
@@ -43,13 +44,15 @@ export const ContentField = memo(function ContentField({
   const locale = useLocale() as AdminLocale;
   const multiline = defaultText.length > MULTILINE_FROM || defaultText.includes('\n');
   const id = `content-${messageKey}`;
+  // View-only access: the text is shown, not editable, and nothing saves.
+  const canEdit = useAbilities().content.edit;
 
   // Enter saves a one-line field; Ctrl/⌘+Enter saves a textarea.
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
     if (multiline && !(event.metaKey || event.ctrlKey)) return;
     event.preventDefault();
-    if (dirty && !busy) onSave(messageKey, value);
+    if (canEdit && dirty && !busy) onSave(messageKey, value);
   };
 
   return (
@@ -75,6 +78,7 @@ export const ContentField = memo(function ContentField({
           id={id}
           className={`${fieldClass} min-h-[70px] resize-y py-2`}
           value={value}
+          readOnly={!canEdit}
           onChange={(e) => onChange(messageKey, e.target.value)}
           onKeyDown={onKeyDown}
         />
@@ -83,6 +87,7 @@ export const ContentField = memo(function ContentField({
           id={id}
           className={`${fieldClass} h-auto py-2`}
           value={value}
+          readOnly={!canEdit}
           onChange={(e) => onChange(messageKey, e.target.value)}
           onKeyDown={onKeyDown}
         />
@@ -96,7 +101,7 @@ export const ContentField = memo(function ContentField({
               : t('lastChangedAt', { at: formatDateTime(override.updatedAt, locale) })}
           </span>
         )}
-        {override && (
+        {canEdit && override && (
           <button
             type="button"
             onClick={() => onRevert(messageKey)}
@@ -106,15 +111,17 @@ export const ContentField = memo(function ContentField({
             <RotateCcw className="h-3.5 w-3.5" /> {t('revert')}
           </button>
         )}
-        <Button
-          type="button"
-          onClick={() => onSave(messageKey, value)}
-          disabled={!dirty || busy}
-          className="h-auto gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
-        >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          {tCommon('save')}
-        </Button>
+        {canEdit && (
+          <Button
+            type="button"
+            onClick={() => onSave(messageKey, value)}
+            disabled={!dirty || busy}
+            className="h-auto gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
+          >
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {tCommon('save')}
+          </Button>
+        )}
       </div>
     </div>
   );

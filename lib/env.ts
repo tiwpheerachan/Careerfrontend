@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isoWithOffset } from '@/lib/time';
 
 /**
  * Every server environment variable, checked once.
@@ -17,9 +18,16 @@ const optional = <T extends z.ZodType>(schema: T) =>
 
 const postgresUrl = z.string().regex(/^postgres(ql)?:\/\//, 'must be a postgres:// or postgresql:// URL');
 
+/** The company standard for servers, the app and the database (lib/timezone.ts). */
+export const STANDARD_TIME_ZONE = 'Asia/Bangkok';
+
 const serverSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+
+  // The process time zone. Company standard: Asia/Bangkok for the OS, the app
+  // and the database. Required, so a server that forgot it does not start in UTC.
+  TZ: z.literal(STANDARD_TIME_ZONE, { error: `must be ${STANDARD_TIME_ZONE} (company standard)` }),
 
   // Supabase transaction pooler (:6543, ?pgbouncer=true) in production; the
   // local container in development.
@@ -60,6 +68,26 @@ const serverSchema = z.object({
   TRUST_PROXY_HEADER: optional(z.string().min(1)),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(1).max(10).default(1),
 
+  // Admin sign-in: SHD SSO (central login), as in shd_onelink. Client id and
+  // secret both set (with SESSION_SECRET) = on; both empty = the admin is open
+  // in development (as "dev@localhost") and closed (503) in production.
+  //   SSO_CLIENT_ID / SSO_CLIENT_SECRET — issued when SSO is switched on for
+  //     this app in the central console (the secret is shown once).
+  //   SESSION_SECRET — ours: signs the admin's session cookie. Any random
+  //     string of 32+ characters (openssl rand -base64 48).
+  // Register <SITE_URL>/api/sso/callback as the redirect URI.
+  SSO_CLIENT_ID: optional(z.string().min(1)),
+  SSO_CLIENT_SECRET: optional(z.string().min(1)),
+  SESSION_SECRET: optional(z.string().min(32, 'must be at least 32 characters (openssl rand -base64 48)')),
+  SSO_ORIGIN: optional(z.url()),
+  // The key for the central permission API (/authz/*) — from the app's
+  // Credentials page, NOT the client secret. Empty = everyone who can sign in
+  // gets full access (logged as a warning).
+  CENTRAL_API_KEY: optional(z.string().min(1)),
+  // Logs what /sso/verify answered while setting up. `shape` (key names and
+  // types only) is safe anywhere; `full` is refused in production (lib/auth/sso-debug.ts).
+  SSO_DEBUG: optional(z.string().min(1)),
+
   // Error reporting. Empty = Sentry is never initialised and nothing is sent.
   SENTRY_DSN: optional(z.url()),
   SENTRY_ENVIRONMENT: optional(z.string().min(1)),
@@ -81,6 +109,13 @@ const checkedSchema = serverSchema.superRefine((env, ctx) => {
   }
   if (Boolean(env.TURNSTILE_SECRET_KEY) !== Boolean(env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)) {
     problem('TURNSTILE_SECRET_KEY', 'set both TURNSTILE_SECRET_KEY and NEXT_PUBLIC_TURNSTILE_SITE_KEY, or neither');
+  }
+  // SESSION_SECRET alone is fine (render.yaml generates one before SSO is set up).
+  if (Boolean(env.SSO_CLIENT_ID) !== Boolean(env.SSO_CLIENT_SECRET)) {
+    problem('SSO_CLIENT_ID', 'set both SSO_CLIENT_ID and SSO_CLIENT_SECRET, or neither');
+  }
+  if (env.SSO_CLIENT_ID && !env.SESSION_SECRET) {
+    problem('SESSION_SECRET', 'is required when SSO is set up (openssl rand -base64 48)');
   }
   if (env.APPLY_SHEET_WEBHOOK_URL && !env.APPLY_SHEET_API_KEY) {
     problem('APPLY_SHEET_API_KEY', 'is required when APPLY_SHEET_WEBHOOK_URL is set');
@@ -122,7 +157,11 @@ export function serverEnvOrExit(): ServerEnv {
   try {
     return serverEnv();
   } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
+    // Written by hand rather than through lib/log (which may itself be misconfigured):
+    // one JSON line with its time and offset, like every other log line.
+    console.error(
+      JSON.stringify({ level: 60, time: isoWithOffset(), msg: error instanceof Error ? error.message : String(error) }),
+    );
     process.exit(1);
   }
 }

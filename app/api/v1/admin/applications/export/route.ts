@@ -29,7 +29,7 @@ const HEADER = [
 
 /** GET /api/v1/admin/applications/export — every match as CSV, same filters as the list. */
 export const GET = handler(async (request, { log }) => {
-  const actor = await requireAdmin(request);
+  const actor = await requireAdmin(request, { resource: 'applications', level: 'manage' });
   const query = parseQuery(request, adminExportApplications.query);
   const rows = await store().applications.exportRows(query);
   log.info({ actor: actor.email, rows: rows.length }, 'applications exported');

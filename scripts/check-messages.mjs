@@ -13,7 +13,8 @@ import { join, sep } from 'node:path';
  * Two catalogues, checked separately (lib/i18n/request.ts loads one or the
  * other):
  *   the public site   app/**, components/**      messages/{th,en,zh}.json
- *   the admin         app/admin/**, components/admin/**   messages/admin/{th,en}.json
+ *   the admin         app/admin/**, app/sso/**, components/admin/**, components/auth/**
+ *                                                 messages/admin/{th,en}.json
  *
  * Same approach as shd_onelink's script.
  */
@@ -37,7 +38,10 @@ function walk(dir) {
   });
 }
 
-const isAdmin = (file) => file.startsWith(`app${sep}admin${sep}`) || file.startsWith(`components${sep}admin${sep}`);
+const isAdmin = (file) =>
+  [`app${sep}admin${sep}`, `app${sep}sso${sep}`, `components${sep}admin${sep}`, `components${sep}auth${sep}`].some(
+    (dir) => file.startsWith(dir),
+  );
 
 const lookup = (catalogue, locale, path) =>
   path.split('.').reduce((node, part) => (node == null ? undefined : node[part]), messages[catalogue][locale]);

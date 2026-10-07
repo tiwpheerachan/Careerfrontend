@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { AdminApiError, adminFetch } from '@/lib/admin/client';
+import { useAbilities } from '@/components/admin/shell/abilities';
 
 /** Delete (soft) behind a confirm, then back to the list it came from. */
 export function DeleteApplication({ id, name, backHref }: { id: string; name: string; backHref: string }) {
@@ -25,6 +26,7 @@ export function DeleteApplication({ id, name, backHref }: { id: string; name: st
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const can = useAbilities();
 
   const onDelete = async () => {
     setDeleting(true);
@@ -39,6 +41,8 @@ export function DeleteApplication({ id, name, backHref }: { id: string; name: st
       setDeleting(false);
     }
   };
+
+  if (!can.applications.manage) return null;
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !deleting && setOpen(next)}>

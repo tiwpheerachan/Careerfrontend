@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /** GET /api/v1/admin/analytics — the dashboard. Days are Bangkok days. */
 export const GET = handler(async (request) => {
-  await requireAdmin(request);
+  await requireAdmin(request, { resource: 'applications', level: 'view' });
   const { days } = parseQuery(request, adminAnalytics.query);
   return json(await store().applications.analytics({ days, timeZone: 'Asia/Bangkok' }));
 });

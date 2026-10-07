@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:messages": "node scripts/check-messages.mjs",
+    "check:timezone": "node scripts/check-timezone.mjs",
     "docs:api": "node --import ./scripts/register-alias.mjs scripts/build-api-docs.ts",
     "api:test": "cd bruno && bru run -r --env local",
     "api:smoke": "cd bruno && bru run 01-smoke --env local",

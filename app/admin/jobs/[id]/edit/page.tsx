@@ -8,7 +8,7 @@ import { requireAdminPage } from '@/lib/auth/admin';
  * than the uuid, so a code is looked up too.
  */
 export default async function OldEditUrl({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'jobs', level: 'view' });
   const id = decodeURIComponent((await params).id);
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) redirect(`/admin/jobs/${id}`);
   const code = id.trim().toUpperCase();

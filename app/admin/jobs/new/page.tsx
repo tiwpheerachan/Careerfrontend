@@ -11,7 +11,7 @@ export async function generateMetadata() {
 
 /** A new job — the editor, empty, with the values already in use offered for department and level. */
 export default async function NewJobPage() {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'jobs', level: 'edit' });
   const options = await store().jobs.options();
   return <JobEditor job={null} options={options} />;
 }

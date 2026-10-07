@@ -10,7 +10,7 @@ import { store } from '@/lib/store';
  * admin's header badge stayed stale after a save).
  */
 export const PATCH = handler<RouteParams<'id'>>(async (request, _context, { params }) => {
-  const actor = await requireAdmin(request);
+  const actor = await requireAdmin(request, { resource: 'applications', level: 'edit' });
   const { id } = await parseParams(params, adminSetStage.params);
   const { stage } = await parseBody(request, adminSetStage.body.schema);
   const repos = store();

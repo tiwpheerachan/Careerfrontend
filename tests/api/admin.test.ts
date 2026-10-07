@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as analytics from '@/app/api/v1/admin/analytics/route';
 import * as applicationsExport from '@/app/api/v1/admin/applications/export/route';
 import * as note from '@/app/api/v1/admin/applications/[id]/notes/[noteId]/route';
@@ -11,6 +11,8 @@ import * as publishState from '@/app/api/v1/admin/jobs/[id]/publish-state/route'
 import * as job from '@/app/api/v1/admin/jobs/[id]/route';
 import * as jobs from '@/app/api/v1/admin/jobs/route';
 import * as openapi from '@/app/api/v1/openapi.json/route';
+import { resetPermissionsCache } from '@/lib/auth/permissions';
+import { seal, SESSION_COOKIE } from '@/lib/auth/session';
 import { resetServerEnv } from '@/lib/env';
 import { call } from '@/tests/support/api';
 import { applicationInput, jobInput, openJob, repos } from '@/tests/support/fixtures';
@@ -142,7 +144,7 @@ describe('the admin gate', () => {
     resetServerEnv();
   });
 
-  it('is closed in production until sign-in exists: 503, no data', async () => {
+  it('is closed in production while SSO is not configured: 503, no data', async () => {
     await repos.jobs.create(jobInput(), null);
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('STORAGE_DRIVER', 'supabase');
@@ -155,6 +157,76 @@ describe('the admin gate', () => {
       expect(res.status).toBe(503);
       expect(res.body.error.code).toBe('unavailable');
     }
+  });
+});
+
+describe('the admin gate with SSO on', () => {
+  const SECRET = 'a-test-session-secret-0123456789abcdef';
+  const signedIn = async (email = 'hr@shd-technology.co.th') => ({
+    cookie: `${SESSION_COOKIE}=${await seal({ sub: 'u-1', name: 'HR', email }, SECRET)}`,
+  });
+  /** What the central system answers for /authz/effective. */
+  const central = (body: unknown, status = 200) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(body), { status })),
+    );
+
+  beforeEach(() => {
+    vi.stubEnv('SSO_CLIENT_ID', 'careers');
+    vi.stubEnv('SSO_CLIENT_SECRET', 'client-secret');
+    vi.stubEnv('SESSION_SECRET', SECRET);
+    resetServerEnv();
+    resetPermissionsCache();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    resetServerEnv();
+    resetPermissionsCache();
+  });
+
+  it('401 without a session, or with one signed by someone else', async () => {
+    expect((await call(jobs.GET)).status).toBe(401);
+    const forged = `${SESSION_COOKIE}=${await seal({ sub: 'x', name: '', email: 'x@y' }, `${SECRET}-other`)}`;
+    const res = await call(jobs.GET, { headers: { cookie: forged } });
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('unauthorized');
+  });
+
+  it('signed in, no CENTRAL_API_KEY: everything, and the work is signed with their email', async () => {
+    const res = await call(jobs.POST, { json: body, headers: await signedIn() });
+    expect(res.status).toBe(201);
+    expect(res.body.job.createdBy).toBe('hr@shd-technology.co.th');
+  });
+
+  it('each action needs its level: view reads, edit writes, manage deletes and exports', async () => {
+    vi.stubEnv('CENTRAL_API_KEY', 'central-key');
+    central({ hasAccess: true, base_level: 'none', resources: { jobs: 'view', applications: 'edit' } });
+    const headers = await signedIn();
+
+    expect((await call(jobs.GET, { headers })).status).toBe(200);
+    const create = await call(jobs.POST, { json: body, headers });
+    expect(create.status).toBe(403);
+    expect(create.body.error.code).toBe('forbidden');
+
+    expect((await call(applications.GET, { headers })).status).toBe(200);
+    expect((await call(applicationsExport.GET, { headers })).status).toBe(403);
+    expect((await call(content.GET, { headers })).status).toBe(403);
+  });
+
+  it('403 for a person the central system gives nothing', async () => {
+    vi.stubEnv('CENTRAL_API_KEY', 'central-key');
+    central({ hasAccess: false });
+    expect((await call(openapi.GET, { headers: await signedIn() })).status).toBe(403);
+  });
+
+  it('503, not 403, when the central system cannot be asked', async () => {
+    vi.stubEnv('CENTRAL_API_KEY', 'central-key');
+    central({ error: 'down' }, 502);
+    const res = await call(jobs.GET, { headers: await signedIn() });
+    expect(res.status).toBe(503);
   });
 });
 

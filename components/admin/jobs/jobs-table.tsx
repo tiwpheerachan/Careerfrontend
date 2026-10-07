@@ -26,6 +26,7 @@ import type { AdminLocale } from '@/lib/i18n/admin';
 import { cn } from '@/lib/utils';
 import { DeleteJobDialog, type DeletableJob } from './delete-job-dialog';
 import { PUBLISH_STATES } from './job-utils';
+import { useAbilities } from '@/components/admin/shell/abilities';
 
 export interface JobRow {
   id: string;
@@ -68,6 +69,7 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
   const [busy, setBusy] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<DeletableJob | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const can = useAbilities();
 
   const sorted = useMemo(() => {
     if (!sort) return rows;
@@ -205,34 +207,42 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
                           <Pencil /> {common('edit')}
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-gray-400">{t('setState')}</DropdownMenuLabel>
-                      <DropdownMenuRadioGroup
-                        value={row.publishState}
-                        onValueChange={(next) => setState(row, next as JobPublishState)}
-                      >
-                        {PUBLISH_STATES.map((s) => (
-                          <DropdownMenuRadioItem key={s} value={s}>
-                            <span className={cn('h-2 w-2 rounded-full', STATE_DOT[s])} />
-                            {publishState(s)}
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => {
-                          setDeleting({
-                            id: row.id,
-                            code: row.code,
-                            title: row.title,
-                            applicantCount: row.applicantCount,
-                          });
-                          setDeleteOpen(true);
-                        }}
-                      >
-                        <Trash2 /> {tDelete('action')}
-                      </DropdownMenuItem>
+                      {can.jobs.edit && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs text-gray-400">{t('setState')}</DropdownMenuLabel>
+                          <DropdownMenuRadioGroup
+                            value={row.publishState}
+                            onValueChange={(next) => setState(row, next as JobPublishState)}
+                          >
+                            {PUBLISH_STATES.map((s) => (
+                              <DropdownMenuRadioItem key={s} value={s}>
+                                <span className={cn('h-2 w-2 rounded-full', STATE_DOT[s])} />
+                                {publishState(s)}
+                              </DropdownMenuRadioItem>
+                            ))}
+                          </DropdownMenuRadioGroup>
+                        </>
+                      )}
+                      {can.jobs.manage && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => {
+                              setDeleting({
+                                id: row.id,
+                                code: row.code,
+                                title: row.title,
+                                applicantCount: row.applicantCount,
+                              });
+                              setDeleteOpen(true);
+                            }}
+                          >
+                            <Trash2 /> {tDelete('action')}
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

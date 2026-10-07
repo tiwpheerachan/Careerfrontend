@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/admin/ui';
 import { Button } from '@/components/ui/button';
 import type { JobPublishState } from '@/lib/constants-types';
 import { store } from '@/lib/store';
-import { requireAdminPage } from '@/lib/auth/admin';
+import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 
 export async function generateMetadata() {
   const t = await getTranslations('jobs.list');
@@ -26,7 +26,7 @@ export default async function JobsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdminPage();
+  const actor = await requireAdminPage({ resource: 'jobs', level: 'view' });
   const params = await searchParams;
   const q = typeof params.q === 'string' ? params.q.trim().slice(0, 100) : '';
   const publishState = stateFromParam(params.state);
@@ -67,14 +67,16 @@ export default async function JobsPage({
           filtered ? t('showing', { shown: rows.length, total: all.length }) : t('total', { total: all.length })
         }
         actions={
-          <Button
-            asChild
-            className="h-auto rounded-xl px-4 py-2 font-semibold shadow-lg shadow-blue-600/20 hover:bg-blue-700"
-          >
-            <Link href="/admin/jobs/new">
-              <Plus className="h-4 w-4" /> {t('create')}
-            </Link>
-          </Button>
+          abilitiesOf(actor).jobs.edit && (
+            <Button
+              asChild
+              className="h-auto rounded-xl px-4 py-2 font-semibold shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+            >
+              <Link href="/admin/jobs/new">
+                <Plus className="h-4 w-4" /> {t('create')}
+              </Link>
+            </Button>
+          )
         }
       />
 

@@ -25,7 +25,7 @@ export default async function ContentPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'content', level: 'view' });
   const lang = siteLocaleOf((await searchParams).lang);
   const defaults = flattenStrings(MESSAGES[lang]);
   const rows = await store().siteContent.list(lang);

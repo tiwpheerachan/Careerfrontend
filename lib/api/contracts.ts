@@ -96,6 +96,7 @@ export const adminListJobs = endpoint({
   summary: 'All jobs',
   description: 'Every job that is not deleted, newest change first, with applicant counts.',
   auth: 'admin',
+  permission: 'jobs.view',
   query: S.AdminJobsQuery,
   responses: { 200: { description: 'The jobs.', schema: z.object({ jobs: z.array(S.AdminJob) }) } },
 });
@@ -106,6 +107,7 @@ export const adminCreateJob = endpoint({
   tag: 'Admin · Jobs',
   summary: 'Create a job',
   auth: 'admin',
+  permission: 'jobs.edit',
   body: { schema: S.JobInput, type: 'application/json' },
   responses: {
     201: { description: 'Created.', schema: z.object({ job: S.AdminJob }) },
@@ -119,6 +121,7 @@ export const adminJobOptions = endpoint({
   tag: 'Admin · Jobs',
   summary: 'Values in use, for autocomplete',
   auth: 'admin',
+  permission: 'jobs.view',
   responses: { 200: { description: 'Distinct countries, departments and levels.', schema: S.JobFacets } },
 });
 
@@ -128,6 +131,7 @@ export const adminGetJob = endpoint({
   tag: 'Admin · Jobs',
   summary: 'One job',
   auth: 'admin',
+  permission: 'jobs.view',
   params: S.IdParams,
   responses: { 200: { description: 'The job.', schema: z.object({ job: S.AdminJob }) } },
 });
@@ -139,6 +143,7 @@ export const adminUpdateJob = endpoint({
   summary: 'Replace a job',
   description: 'Every field is replaced; send the whole job.',
   auth: 'admin',
+  permission: 'jobs.edit',
   params: S.IdParams,
   body: { schema: S.JobInput, type: 'application/json' },
   responses: {
@@ -154,6 +159,7 @@ export const adminDeleteJob = endpoint({
   summary: 'Delete a job',
   description: 'Soft delete: the job is hidden, its applicants are kept, and its code is free again.',
   auth: 'admin',
+  permission: 'jobs.manage',
   params: S.IdParams,
   responses: { 204: { description: 'Deleted.' } },
 });
@@ -164,6 +170,7 @@ export const adminSetPublishState = endpoint({
   tag: 'Admin · Jobs',
   summary: 'Publish, unpublish or close a job',
   auth: 'admin',
+  permission: 'jobs.edit',
   params: S.IdParams,
   body: { schema: S.PublishStateInput, type: 'application/json' },
   responses: { 200: { description: 'Saved.', schema: z.object({ job: S.AdminJob }) } },
@@ -178,6 +185,7 @@ export const adminListApplications = endpoint({
   summary: 'Applications, one page',
   description: 'Newest first.',
   auth: 'admin',
+  permission: 'applications.view',
   query: S.AdminApplicationsQuery,
   responses: { 200: { description: 'One page.', schema: S.ApplicationList } },
 });
@@ -189,6 +197,7 @@ export const adminExportApplications = endpoint({
   summary: 'Download as CSV',
   description: 'Every match, same filters as the list (the job filter included). UTF-8 with BOM, opens in Excel.',
   auth: 'admin',
+  permission: 'applications.manage',
   query: S.ExportQuery,
   responses: { 200: { description: 'The CSV file.', contentType: 'text/csv' } },
 });
@@ -199,6 +208,7 @@ export const adminGetApplication = endpoint({
   tag: 'Admin · Applications',
   summary: 'One application, in full',
   auth: 'admin',
+  permission: 'applications.view',
   params: S.IdParams,
   responses: { 200: { description: 'The application.', schema: z.object({ application: S.ApplicationDetail }) } },
 });
@@ -210,6 +220,7 @@ export const adminDeleteApplication = endpoint({
   summary: 'Delete an application',
   description: 'Soft delete.',
   auth: 'admin',
+  permission: 'applications.manage',
   params: S.IdParams,
   responses: { 204: { description: 'Deleted.' } },
 });
@@ -221,6 +232,7 @@ export const adminSetStage = endpoint({
   summary: 'Move to a hiring stage',
   description: 'Recorded in the stage history with who did it.',
   auth: 'admin',
+  permission: 'applications.edit',
   params: S.IdParams,
   body: { schema: S.StageInput, type: 'application/json' },
   responses: {
@@ -234,6 +246,7 @@ export const adminAddNote = endpoint({
   tag: 'Admin · Applications',
   summary: 'Add a note',
   auth: 'admin',
+  permission: 'applications.edit',
   params: S.IdParams,
   body: { schema: S.NoteInput, type: 'application/json' },
   responses: {
@@ -250,6 +263,7 @@ export const adminDeleteNote = endpoint({
   tag: 'Admin · Applications',
   summary: 'Delete a note',
   auth: 'admin',
+  permission: 'applications.edit',
   params: S.NoteParams,
   responses: { 204: { description: 'Deleted.' } },
 });
@@ -261,6 +275,7 @@ export const adminDownloadFile = endpoint({
   summary: 'Download a file',
   description: 'In production: a redirect to a signed link that works for 60 seconds. In development: the file itself.',
   auth: 'admin',
+  permission: 'applications.view',
   params: S.FileParams,
   responses: {
     200: { description: 'The file (development).', contentType: 'application/octet-stream' },
@@ -275,6 +290,7 @@ export const adminAnalytics = endpoint({
   summary: 'Dashboard numbers',
   description: 'Counted over every row. Days are Bangkok days.',
   auth: 'admin',
+  permission: 'applications.view',
   query: S.AnalyticsQuery,
   responses: { 200: { description: 'The numbers.', schema: S.AnalyticsResponse } },
 });
@@ -287,6 +303,7 @@ export const adminListContent = endpoint({
   tag: 'Admin · Site content',
   summary: 'Edited keys for one language',
   auth: 'admin',
+  permission: 'content.view',
   query: S.LocaleQuery,
   responses: { 200: { description: 'The overrides, with who changed each.', schema: S.ContentItems } },
 });
@@ -297,6 +314,7 @@ export const adminSetContent = endpoint({
   tag: 'Admin · Site content',
   summary: 'Set one key in one language',
   auth: 'admin',
+  permission: 'content.edit',
   body: { schema: S.ContentInput, type: 'application/json' },
   responses: { 204: { description: 'Saved.' } },
 });
@@ -307,6 +325,7 @@ export const adminRevertContent = endpoint({
   tag: 'Admin · Site content',
   summary: 'Back to the built-in text',
   auth: 'admin',
+  permission: 'content.edit',
   query: S.ContentKeyQuery,
   responses: { 204: { description: 'Reverted.' } },
 });

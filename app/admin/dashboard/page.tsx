@@ -21,7 +21,7 @@ const STAGES: ApplicationStage[] = ['NEW', 'REVIEWING', 'SHORTLISTED', 'REJECTED
  * open jobs nobody has applied to. Every number counts every row.
  */
 export default async function DashboardPage() {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'applications', level: 'view' });
   const locale = (await getLocale()) as AdminLocale;
   const [t, tStage, tCommon, a] = await Promise.all([
     getTranslations('dashboard'),

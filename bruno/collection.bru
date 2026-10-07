@@ -5,8 +5,10 @@ docs {
   - `02-admin-jobs` — creates, edits and deletes a test job. Local only.
   - `03-apply` — creates a job, applies to it with a file, cleans up. Local only.
 
-  The admin endpoints need no sign-in in development (SSO is not built yet)
-  and answer 503 in production, so only `01-smoke` runs against prod.
+  The admin endpoints need no sign-in in development while SSO is not
+  configured (they run as dev@localhost). With SSO on they need the admin's
+  session cookie (sign in through the browser), so only `01-smoke` runs
+  against prod.
 
   The `prod` environment is read-only: the script below refuses anything but
   GET and HEAD against it.

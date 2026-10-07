@@ -30,6 +30,11 @@ services:
       POSTGRES_DB: ${DEV_DB_NAME:-shd_career_db_dev}
       LANG: en_US.utf8
       POSTGRES_INITDB_ARGS: '--locale=en_US.UTF-8 --encoding=UTF8'
+      # Company standard: Asia/Bangkok for the OS (the container) and the database.
+      TZ: Asia/Bangkok
+      PGTZ: Asia/Bangkok
+    # The server's default zone too (migration 0004 also sets it per database).
+    command: ['postgres', '-c', 'timezone=Asia/Bangkok', '-c', 'log_timezone=Asia/Bangkok']
     ports:
       # Loopback only: nobody else on the network reaches a dev database.
       - '127.0.0.1:${DEV_DB_PORT:-55434}:5432'

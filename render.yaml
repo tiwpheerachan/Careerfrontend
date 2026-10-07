@@ -26,6 +26,10 @@ services:
       # Pinned with .nvmrc and package.json "engines" — the same LTS major everywhere.
       - key: NODE_VERSION
         value: '24'
+      # Company standard: OS, app and database on Asia/Bangkok. Required by
+      # lib/env.ts; the database's zone comes from migration 0004.
+      - key: TZ
+        value: Asia/Bangkok
       - key: PUPPETEER_SKIP_DOWNLOAD
         value: 'true' # @hrefcl/apidoc (the API docs build) depends on puppeteer; no browser is needed
 
@@ -75,6 +79,16 @@ services:
         sync: false
       - key: APPLY_SHEET_API_KEY
         sync: false
+
+      # --- Admin sign-in (SHD SSO). Redirect URI to register: <SITE_URL>/api/sso/callback
+      - key: SSO_CLIENT_ID
+        sync: false
+      - key: SSO_CLIENT_SECRET
+        sync: false # shown once by the central console
+      - key: SESSION_SECRET
+        generateValue: true # signs the admin's session cookie; Render makes one
+      - key: CENTRAL_API_KEY
+        sync: false # permissions API key (Credentials page), not the client secret
 
       # --- Error reporting: empty = off, nothing is sent ---------------------
       - key: SENTRY_DSN

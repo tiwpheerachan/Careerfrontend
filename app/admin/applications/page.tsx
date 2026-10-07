@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/admin/ui';
 import type { AdminLocale } from '@/lib/i18n/admin';
 import type { AdminJob } from '@/lib/repositories/jobs';
 import { store } from '@/lib/store';
-import { requireAdminPage } from '@/lib/auth/admin';
+import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 
 /** A job's title in the admin's language, else Thai, English, Chinese, else its code. */
 function titleOf(job: AdminJob, locale: AdminLocale): string {
@@ -22,7 +22,7 @@ const exportButton =
 
 /** /admin/applications — every applicant, filtered, sorted and paged from the url. */
 export default async function ApplicationsPage({ searchParams }: PageProps<'/admin/applications'>) {
-  await requireAdminPage();
+  const actor = await requireAdminPage({ resource: 'applications', level: 'view' });
   const query = parseListQuery(await searchParams);
   const locale = (await getLocale()) as AdminLocale;
   const t = await getTranslations('applications.list');
@@ -61,7 +61,8 @@ export default async function ApplicationsPage({ searchParams }: PageProps<'/adm
         title={t('title')}
         subtitle={t('total', { count: total })}
         actions={
-          total > 0 ? (
+          // CSV export is every applicant's personal data at once: manage only.
+          !abilitiesOf(actor).applications.manage ? undefined : total > 0 ? (
             <a href={exportHref(query)} download className={exportButton}>
               <Download className="h-4 w-4" />
               {t('export')}

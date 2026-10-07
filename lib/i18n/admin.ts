@@ -13,5 +13,8 @@ export function adminLocaleOf(value: string | undefined): AdminLocale {
   return (ADMIN_LOCALES as readonly string[]).includes(value ?? '') ? (value as AdminLocale) : 'th';
 }
 
-/** Set by proxy.ts on every /admin request, read by lib/i18n/request.ts. Not trusted for access — only for which messages to load. */
+/** Set by proxy.ts on every /admin and /sso request, read by lib/i18n/request.ts. Not trusted for access — only for which messages to load. */
 export const ADMIN_AREA_HEADER = 'x-shd-area-admin';
+
+/** Set by proxy.ts on every /admin request: the path and query, so a page can send the person back to it after sign-in. */
+export const ADMIN_PATH_HEADER = 'x-shd-path';

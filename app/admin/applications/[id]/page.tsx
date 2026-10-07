@@ -37,7 +37,7 @@ async function titleIn(job: ApplicationDetail['job'], locale: AdminLocale): Prom
 
 /** /admin/applications/{id} — one applicant in full, with stage, notes and documents. */
 export default async function ApplicationDetailPage({ params, searchParams }: PageProps<'/admin/applications/[id]'>) {
-  await requireAdminPage();
+  await requireAdminPage({ resource: 'applications', level: 'view' });
   const { id } = await params;
   const { from } = await searchParams;
   // As the API presents it: files carry their download endpoint, never the storage path.

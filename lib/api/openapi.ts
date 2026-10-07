@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Endpoint } from './contract';
 import { ENDPOINTS, TAGS } from './contracts';
+import { SESSION_COOKIE } from '@/lib/auth/session';
 
 /**
  * /api/v1 as an OpenAPI 3.0 document, generated from the zod contracts in
@@ -62,9 +63,11 @@ function standardErrors(endpoint: Endpoint): Record<number, string> {
   const errors: Record<number, string> = {};
   if (endpoint.params || endpoint.query || endpoint.body) errors[400] = 'The input is not valid; `issues` says where.';
   if (endpoint.auth === 'admin') {
-    errors[401] = 'Not signed in.';
-    errors[403] = 'Signed in, without permission for this.';
-    errors[503] = 'The admin is not available (sign-in is not set up yet in production).';
+    errors[401] = 'Not signed in (no valid session cookie).';
+    errors[403] = endpoint.permission
+      ? `Signed in, without \`${endpoint.permission}\` permission.`
+      : 'Signed in, without access to the admin.';
+    errors[503] = 'The central permission system did not answer, or sign-in (SSO) is not set up in production.';
   }
   if (endpoint.params) errors[404] = 'Not found.';
   return errors;
@@ -104,7 +107,16 @@ function operation(endpoint: Endpoint) {
   return {
     tags: [endpoint.tag],
     summary: endpoint.summary,
-    ...(endpoint.description ? { description: endpoint.description } : {}),
+    ...(endpoint.description || endpoint.permission
+      ? {
+          description: [
+            endpoint.description,
+            endpoint.permission && `Permission: \`${endpoint.permission}\` (central console).`,
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
+        }
+      : {}),
     security: endpoint.auth === 'admin' ? [{ session: [] }] : [],
     parameters: [...parameters(endpoint.params, 'path'), ...parameters(endpoint.query, 'query')],
     ...(endpoint.body
@@ -138,9 +150,14 @@ export function buildOpenApi() {
     components: {
       schemas: {},
       securitySchemes: {
-        // Sign-in (SSO) is not built yet; the admin endpoints are open in
-        // development and closed (503) in production until it is.
-        session: { type: 'apiKey', in: 'cookie', name: 'shd_session', description: 'Admin sign-in (SSO) — coming.' },
+        // The admin's session cookie, set by signing in with SHD SSO
+        // (/sso/login). Without SSO configured: open in development, 503 in production.
+        session: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: SESSION_COOKIE,
+          description: 'Sign in at /sso/login (SHD SSO); the browser then sends this cookie.',
+        },
       },
     },
     paths,
