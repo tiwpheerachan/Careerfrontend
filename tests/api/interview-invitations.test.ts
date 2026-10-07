@@ -5,6 +5,7 @@ import * as people from '@/app/api/v1/admin/people/route';
 import * as formPdf from '@/app/api/v1/evaluate/[token]/application-form/route';
 import * as files from '@/app/api/v1/evaluate/[token]/files/[fileId]/route';
 import * as evaluate from '@/app/api/v1/evaluate/[token]/route';
+import * as oneEvaluation from '@/app/api/v1/admin/interview-evaluations/[id]/route';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
 import { seal, SESSION_COOKIE } from '@/lib/auth/session';
 import { resetServerEnv } from '@/lib/env';
@@ -180,6 +181,36 @@ describe('invitation links', () => {
     expect(inv!.invitees.find((p) => p.email === 'head@shd-technology.co.th')!.submittedAt).toBeInstanceOf(Date);
     expect(inv!.state).toBe('PENDING'); // the other person has not sent yet
     expect(saved).toMatchObject({ viaInvitation: true, edited: null });
+  });
+
+  it('what was sent through a link stays as sent: nobody changes it, manage may delete it', async () => {
+    const application = await anApplication();
+    const token = tokenOf((await made(application.id)).link);
+    const sent = await call(evaluate.POST, {
+      params: { token },
+      json: evaluation(),
+      headers: await as('head@shd-technology.co.th'),
+    });
+    const id = sent.body.evaluationId;
+    const hr = await as('hr@shd-technology.co.th');
+    const put = await call(oneEvaluation.PUT, {
+      method: 'PUT',
+      params: { id },
+      headers: hr,
+      json: {
+        candidateName: 'Somchai Jaidee',
+        applicationId: application.id,
+        interviewDate: '2026-10-07',
+        round: 1,
+        evaluatorRole: 'DEPARTMENT',
+        senior: false,
+        generalScores: scores(5),
+        result: 'PASS',
+      },
+    });
+    expect(put.status).toBe(403);
+    expect((await repos.interviewEvaluations.get(id)).total).toBe(40);
+    expect((await call(oneEvaluation.DELETE, { method: 'DELETE', params: { id }, headers: hr })).status).toBe(204);
   });
 
   it('HR sets Senior on the link; the invitee cannot change it', async () => {

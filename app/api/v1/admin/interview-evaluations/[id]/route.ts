@@ -16,13 +16,20 @@ export const GET = handler<RouteParams<'id'>>(async (request, _context, { params
 
 /**
  * PUT /api/v1/admin/interview-evaluations/{id} — an evaluation is its
- * evaluator's: only they change it, or someone with manage.
+ * evaluator's: only they change it, or someone with manage. One sent through
+ * an invitation link is changed by nobody: it stays as its evaluator sent it
+ * (a wrong one is deleted, and the person invited again).
  */
 export const PUT = handler<RouteParams<'id'>>(async (request, _context, { params }) => {
   const actor = await requireAdmin(request, { resource: 'applications', level: 'edit' });
   const { id } = await parseParams(params, adminUpdateEvaluation.params);
   const repo = store().interviewEvaluations;
   const current = await repo.get(id);
+  if (current.viaInvitation) {
+    throw new ForbiddenError(
+      'This evaluation was sent through an invitation link and cannot be changed — delete it and invite the evaluator again.',
+    );
+  }
   const own = current.evaluator.email.toLowerCase() === actor.email.toLowerCase();
   if (!own && !allows(actor.permissions, 'applications', 'manage')) {
     throw new ForbiddenError('Only the evaluator who wrote this evaluation can change it.');

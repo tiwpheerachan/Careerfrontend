@@ -480,10 +480,11 @@
         "date": "Interview date",
         "actions": "Actions"
       },
-      "open": "Open",
       "pageOf": "Page {page} of {pages}",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "openEvaluation": "View this evaluation",
+      "openCandidate": "All evaluations of this candidate"
     },
     "form": {
       "titleNew": "Evaluate an interview",
@@ -548,7 +549,6 @@
       "created": "Evaluation saved",
       "saved": "Changes saved",
       "saveFailed": "Could not save",
-      "readOnly": "This evaluation is {who}’s — only they, or someone with manage access, can change it",
       "errors": {
         "candidateName": "Enter the candidate’s name",
         "interviewDate": "Choose the interview date",
@@ -571,7 +571,21 @@
       "viaInvitation": "Sent via invitation link",
       "editedBy": "Last edited by {who} · {date}",
       "nameFromRecord": "The name from the candidate’s record — unlink to type another",
-      "seniorSetByHr": "Set by HR"
+      "seniorSetByHr": "Set by HR",
+      "delete": "Delete this evaluation",
+      "deleteTitle": "Delete this evaluation?",
+      "deleteBody": "{who}’s evaluation ({round}, {role}) will be deleted and no longer count in the averages or the PDF.",
+      "deleteBodyInvited": "The evaluation {who} sent through an invitation link ({round}, {role}) will be deleted. To have it done again, make a new invitation link on the candidate page.",
+      "deleteKeep": "Keep it",
+      "deleted": "Evaluation deleted",
+      "deleteFailed": "Could not delete",
+      "access": {
+        "own": "Your evaluation — you can edit it",
+        "manage": "This is {who}’s evaluation — you can edit it because you have manage rights; saving records you as the editor",
+        "locked": "{who} sent this through an invitation link — it cannot be edited, so the scores stay the evaluator’s own. If it is wrong, ask someone with manage rights to delete it and invite again",
+        "lockedManage": "{who} sent this through an invitation link — it cannot be edited, so the scores stay the evaluator’s own. If it is wrong, delete it and invite again",
+        "other": "This is {who}’s evaluation — only its evaluator, or someone with manage rights, can edit it"
+      }
     },
     "items": {
       "fieldKnowledge": "General knowledge of the field",
@@ -655,7 +669,12 @@
         "zh": "中文"
       },
       "open": "Open",
-      "viewAll": "All of this candidate’s evaluations"
+      "viewAll": "All of this candidate’s evaluations",
+      "summaryTitle": "Scores",
+      "summaryHint": "The evaluators’ average for each round and side, counting each one’s latest evaluation (as on the PDF’s summary page) — each evaluation is in the list below",
+      "averageOf": "average of {count}",
+      "seniorAverage": "Items 11–15: average {score} / 25",
+      "meetsCount": "{meets} of {count} meet the pass mark"
     },
     "invite": {
       "title": "Invite evaluators",

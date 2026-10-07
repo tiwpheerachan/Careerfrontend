@@ -29,14 +29,18 @@ export async function generateMetadata({ params }: Props) {
 
 /**
  * /admin/interviews/{id} — one evaluation. Editable by its evaluator (with
- * edit) or by manage; read-only for everyone else (the API checks the same).
+ * edit) or by manage; read-only for everyone else, and for everyone when it
+ * was sent through an invitation link (the API checks the same).
  */
 export default async function EvaluationPage({ params, searchParams }: Props) {
   const actor = await requireAdminPage({ resource: 'applications', level: 'view' });
   const evaluation = await load((await params).id);
   const can = abilitiesOf(actor).applications;
   const own = evaluation.evaluator.email.toLowerCase() === actor.email.toLowerCase();
-  const editable = can.manage || (can.edit && own);
+  // Sent through an invitation link: nobody changes it (the API refuses too); manage may delete it.
+  const locked = evaluation.viaInvitation;
+  const editable = !locked && (can.manage || (can.edit && own));
+  const access = locked ? 'locked' : !editable ? 'other' : own ? 'own' : 'manage';
   // ?from=candidate: opened from the candidate's page, so back goes there (a flag, never a url).
   const fromCandidate = (await searchParams).from === 'candidate';
   return (
@@ -50,6 +54,8 @@ export default async function EvaluationPage({ params, searchParams }: Props) {
       today={evaluation.interviewDate}
       evaluator={evaluation.evaluator.name || evaluation.evaluator.email}
       readOnly={!editable}
+      access={access}
+      canDelete={can.manage}
     />
   );
 }

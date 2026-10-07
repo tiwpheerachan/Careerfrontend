@@ -480,10 +480,11 @@
         "date": "面试日期",
         "actions": "操作"
       },
-      "open": "打开",
       "pageOf": "第 {page} / {pages} 页",
       "prev": "上一页",
-      "next": "下一页"
+      "next": "下一页",
+      "openEvaluation": "查看此评估",
+      "openCandidate": "查看该候选人的全部评估"
     },
     "form": {
       "titleNew": "面试评估表",
@@ -548,7 +549,6 @@
       "created": "已保存评估",
       "saved": "已保存修改",
       "saveFailed": "无法保存",
-      "readOnly": "此评估属于 {who} — 只有评估人本人或拥有管理权限的人可以修改",
       "errors": {
         "candidateName": "请填写应聘者姓名",
         "interviewDate": "请选择面试日期",
@@ -571,7 +571,21 @@
       "viaInvitation": "通过邀请链接提交",
       "editedBy": "最后由 {who} 修改 · {date}",
       "nameFromRecord": "姓名来自系统中的候选人记录 — 取消关联后可手动输入",
-      "seniorSetByHr": "由 HR 设定"
+      "seniorSetByHr": "由 HR 设定",
+      "delete": "删除此评估",
+      "deleteTitle": "删除此评估？",
+      "deleteBody": "{who} 的评估（{round}，{role}）将被删除，不再计入平均分和 PDF。",
+      "deleteBodyInvited": "{who} 通过邀请链接提交的评估（{round}，{role}）将被删除。如需重新评估，请在候选人页面创建新的邀请链接。",
+      "deleteKeep": "保留",
+      "deleted": "评估已删除",
+      "deleteFailed": "删除失败",
+      "access": {
+        "own": "这是您的评估 — 可以修改",
+        "manage": "此评估属于 {who} — 您拥有管理权限，因此可以修改；保存时会记录您为修改人",
+        "locked": "{who} 通过邀请链接提交了此评估 — 不可修改，以保证分数为评估人本人所给。如有错误，请联系有管理权限的人删除后重新邀请",
+        "lockedManage": "{who} 通过邀请链接提交了此评估 — 不可修改，以保证分数为评估人本人所给。如有错误，请删除后重新邀请",
+        "other": "此评估属于 {who} — 仅评估人本人或有管理权限的人可以修改"
+      }
     },
     "items": {
       "fieldKnowledge": "专业基础知识",
@@ -655,7 +669,12 @@
         "zh": "中文"
       },
       "open": "打开",
-      "viewAll": "查看该应聘者的全部评估"
+      "viewAll": "查看该应聘者的全部评估",
+      "summaryTitle": "评分汇总",
+      "summaryHint": "每一轮次、每一方评估人的平均分，按每人最新的评估计算（与 PDF 汇总页一致）— 每人的评估见下方列表",
+      "averageOf": "{count} 人平均",
+      "seniorAverage": "第 11–15 项平均 {score} / 25",
+      "meetsCount": "{count} 人中 {meets} 人达标"
     },
     "invite": {
       "title": "邀请评估人",

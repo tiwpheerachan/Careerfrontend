@@ -83,6 +83,8 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                     <div className="min-w-0">
                       <Link
                         href={`/admin/interviews/candidate/${encodeURIComponent(candidateKey(e.candidate))}`}
+                        // The name opens the candidate (every evaluation of them); the row's own link, this one.
+                        title={t('openCandidate')}
                         className="font-semibold text-blue-700 hover:underline"
                       >
                         {e.candidate.name}
@@ -105,7 +107,7 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                       href={`/admin/interviews/${e.id}`}
                       className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-blue-700 hover:underline"
                     >
-                      {t('open')} <ChevronRight className="h-3.5 w-3.5" />
+                      {t('openEvaluation')} <ChevronRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
                 </li>
@@ -131,6 +133,8 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                     <TableCell className="min-w-48 px-4 py-3 whitespace-normal">
                       <Link
                         href={`/admin/interviews/candidate/${encodeURIComponent(candidateKey(e.candidate))}`}
+                        // The name opens the candidate (every evaluation of them); the row's own link, this one.
+                        title={t('openCandidate')}
                         className="font-semibold text-blue-700 hover:underline"
                       >
                         {e.candidate.name}
@@ -165,7 +169,7 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                         href={`/admin/interviews/${e.id}`}
                         className="text-sm font-semibold whitespace-nowrap text-blue-700 hover:underline"
                       >
-                        {t('open')}
+                        {t('openEvaluation')}
                       </Link>
                     </TableCell>
                   </TableRow>

@@ -1,6 +1,20 @@
 'use client';
 
-import { ArrowLeft, CheckCircle2, CircleAlert, Link2, Loader2, Mail, PencilLine, Save, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  CircleAlert,
+  Link2,
+  Loader2,
+  Lock,
+  Mail,
+  PencilLine,
+  Save,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useMemo, useState, type ReactNode } from 'react';
@@ -105,7 +119,9 @@ const RESULT_STYLE: Record<Result, string> = {
  * for a Senior position.
  *
  * `evaluation` null = a new one. `readOnly` = someone else's (only its
- * evaluator, or manage, may change it — the API checks the same).
+ * evaluator, or manage, may change it — the API checks the same), or one
+ * sent through an invitation link (nobody changes it). `access` says which,
+ * in a line above the form.
  */
 export function EvaluationForm({
   evaluation,
@@ -116,6 +132,8 @@ export function EvaluationForm({
   guest,
   backHref = '/admin/interviews',
   materials,
+  access,
+  canDelete = false,
 }: {
   evaluation: InterviewEvaluation | null;
   /**
@@ -135,6 +153,14 @@ export function EvaluationForm({
   /** Who it is (or will be) saved as. */
   evaluator: string;
   readOnly: boolean;
+  /**
+   * An existing evaluation, and why this person may (not) change it:
+   *   own      theirs                     manage  someone else's, changed with manage (recorded)
+   *   locked   sent through a link         other   someone else's, and no manage
+   */
+  access?: 'own' | 'manage' | 'locked' | 'other';
+  /** manage: it can be deleted (and its evaluator invited again). */
+  canDelete?: boolean;
 }) {
   const t = useTranslations('interviews.form');
   const items = useTranslations('interviews.items');
@@ -152,6 +178,8 @@ export function EvaluationForm({
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const dirty = JSON.stringify(form) !== JSON.stringify(initial);
   useUnsavedChanges(dirty && !readOnly);
 
@@ -241,6 +269,22 @@ export function EvaluationForm({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!evaluation) return;
+    setDeleting(true);
+    try {
+      await adminFetch(`/interview-evaluations/${evaluation.id}`, { method: 'DELETE' });
+      toast.success(t('deleted'));
+      discardUnsavedChanges();
+      router.push(backHref);
+      router.refresh();
+    } catch (error) {
+      const status = error instanceof AdminApiError ? error.status : undefined;
+      toast.error(t('deleteFailed'), { description: problemOf(status) });
+      setDeleting(false);
     }
   };
 
@@ -428,9 +472,34 @@ export function EvaluationForm({
         </div>
       )}
 
-      {readOnly && evaluation && (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {t('readOnly', { who: evaluation.evaluator.name || evaluation.evaluator.email })}
+      {/* Whose this is, and why it can (not) be changed — so nobody edits someone else's score by surprise. */}
+      {evaluation && access && (
+        <p
+          className={cn(
+            'mb-4 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm',
+            {
+              own: 'border-gray-200 bg-white text-gray-700',
+              manage: 'border-amber-200 bg-amber-50 text-amber-900',
+              locked: 'border-violet-200 bg-violet-50 text-violet-900',
+              other: 'border-gray-200 bg-gray-50 text-gray-700',
+            }[access],
+          )}
+        >
+          {
+            {
+              own: <UserRound className="mt-0.5 h-4 w-4 shrink-0" />,
+              manage: <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />,
+              locked: <Lock className="mt-0.5 h-4 w-4 shrink-0" />,
+              other: <Lock className="mt-0.5 h-4 w-4 shrink-0" />,
+            }[access]
+          }
+          <span>
+            {access === 'locked'
+              ? t(canDelete ? 'access.lockedManage' : 'access.locked', {
+                  who: evaluation.evaluator.name || evaluation.evaluator.email,
+                })
+              : t(`access.${access}`, { who: evaluation.evaluator.name || evaluation.evaluator.email })}
+          </span>
         </p>
       )}
 
@@ -717,6 +786,15 @@ export function EvaluationForm({
                 {saving ? t('saving') : guest ? t('send') : t('save')}
               </button>
             )}
+            {canDelete && evaluation && (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" /> {t('delete')}
+              </button>
+            )}
           </div>
         </aside>
       </div>
@@ -748,6 +826,37 @@ export function EvaluationForm({
             {saving ? t('saving') : guest ? t('send') : t('save')}
           </button>
         </div>
+      )}
+      {canDelete && evaluation && (
+        <AlertDialog open={confirmDelete} onOpenChange={(open) => !deleting && setConfirmDelete(open)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t(evaluation.viaInvitation ? 'deleteBodyInvited' : 'deleteBody', {
+                  who: evaluation.evaluator.name || evaluation.evaluator.email,
+                  round: t(`rounds.${evaluation.round}`),
+                  role: t(`roles.${evaluation.evaluatorRole}`),
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>{t('deleteKeep')}</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                className="bg-red-600 text-white hover:bg-red-700"
+                disabled={deleting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void remove();
+                }}
+              >
+                {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t('delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
       {guest && (
         <AlertDialog open={confirming} onOpenChange={(open) => !saving && setConfirming(open)}>

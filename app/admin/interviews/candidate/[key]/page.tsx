@@ -12,6 +12,7 @@ import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 import { EVALUATOR_ROLES } from '@/lib/constants';
 import type { AdminLocale } from '@/lib/i18n/admin';
 import { parseCandidateKey } from '@/lib/interview/candidate-key';
+import { formatAverage, summarize } from '@/lib/interview/summary';
 import { store } from '@/lib/store';
 
 const RESULT_TONE: Record<'PENDING' | 'PASS' | 'FAIL', Tone> = { PENDING: 'amber', PASS: 'emerald', FAIL: 'red' };
@@ -93,6 +94,45 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
           )
         }
       />
+
+      {/* The scores per side and round: each evaluator's own is in the list below; this is them together. */}
+      {evaluations.length > 0 && (
+        <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
+          <h2 className="text-sm font-bold text-gray-900">{t('summaryTitle')}</h2>
+          <p className="mt-0.5 text-xs text-gray-500">{t('summaryHint')}</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {summarize(evaluations).map((s) => (
+              <div key={`${s.role}-${s.round}`} className="rounded-xl border border-gray-200 p-3">
+                <div className="text-xs font-semibold text-gray-500">
+                  {tf(`rounds.${s.round}`)} · {tf(`roles.${s.role}`)}
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-2xl font-black tracking-tight text-gray-900">
+                    {formatAverage(s.generalAverage)}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-400">/ 50</span>
+                  <span className="ml-1 text-xs text-gray-500">{t('averageOf', { count: s.count })}</span>
+                </div>
+                {s.seniorAverage !== null && (
+                  <div className="text-xs text-gray-600">
+                    {t('seniorAverage', { score: formatAverage(s.seniorAverage) })}
+                  </div>
+                )}
+                <div className="mt-1 text-xs text-gray-600">{t('meetsCount', { meets: s.meets, count: s.count })}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {(['PASS', 'PENDING', 'FAIL'] as const)
+                    .filter((r) => s.results[r] > 0)
+                    .map((r) => (
+                      <ToneBadge key={r} tone={RESULT_TONE[r]}>
+                        {tf(`results.${r}`)} · {s.results[r]}
+                      </ToneBadge>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <InvitationsPanel
         candidate={{

@@ -11,6 +11,7 @@ import th from '@/messages/admin/th.json';
 import zh from '@/messages/admin/zh.json';
 import { splitSaraAm, wrapToWidth } from '@/lib/pdf/thai';
 import { GENERAL_ITEMS, SCORE_LEVELS, SENIOR_ITEMS } from './scoring';
+import { newestPerEvaluator } from './summary';
 
 /**
  * The interview evaluation as the company's paper form (แบบฟอร์มประเมินผล
@@ -508,12 +509,7 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
       }).format(d),
   };
 
-  // Each evaluator's newest evaluation of each round.
-  const newest = new Map<string, PrintedRound>();
-  for (const e of [...input.evaluations].sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())) {
-    newest.set(`${e.evaluator.email.toLowerCase()}|${e.round}`, e);
-  }
-  const kept = [...newest.values()];
+  const kept = newestPerEvaluator(input.evaluations);
   const byRound = { 1: kept.filter((e) => e.round === 1), 2: kept.filter((e) => e.round === 2) } as Record<
     1 | 2,
     PrintedRound[]
