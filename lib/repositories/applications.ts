@@ -168,7 +168,7 @@ function orderOf(sort: ApplicationSort = 'createdAt', dir: 'asc' | 'desc' = sort
 }
 
 /** A job's title for admin lists: Thai, else English, else Chinese. */
-const jobTitle = sql<string | null>`(
+export const jobTitle = sql<string | null>`(
   select t.title from ${jobTranslations} t where t.jobs_pk = ${JOBS_PK}
   order by array_position(array['th','en','zh']::locale[], t.locale) limit 1
 )`;

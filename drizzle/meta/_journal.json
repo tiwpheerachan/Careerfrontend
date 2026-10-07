@@ -43,6 +43,13 @@
       "when": 1791608400000,
       "tag": "0005_application_forms",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791694800000,
+      "tag": "0006_interview_evaluations",
+      "breakpoints": true
     }
   ]
 }

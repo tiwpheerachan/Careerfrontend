@@ -36,3 +36,11 @@ export const FORM_EDUCATION_LEVELS = ['SECONDARY', 'DIPLOMA', 'DEGREE'] as const
 /** "พอใช้" "ดี" "ดีมาก". */
 export const SKILL_LEVELS = ['FAIR', 'GOOD', 'EXCELLENT'] as const;
 export const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
+
+/**
+ * The interview evaluation (แบบประเมินผลสัมภาษณ์) — lib/interview/.
+ * Who evaluated: HR, or the hiring department (ต้นสังกัด / 用人部门).
+ */
+export const EVALUATOR_ROLES = ['HR', 'DEPARTMENT'] as const;
+/** The evaluator's verdict for the round: undecided / compare further, pass, fail. */
+export const EVALUATION_RESULTS = ['PENDING', 'PASS', 'FAIL'] as const;

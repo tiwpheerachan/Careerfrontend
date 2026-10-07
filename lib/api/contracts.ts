@@ -385,6 +385,80 @@ export const adminDeleteApplicationForm = endpoint({
   responses: { 204: { description: 'Deleted.' } },
 });
 
+// --- Interview evaluations (แบบประเมินผลสัมภาษณ์) -----------------------------------------------
+
+export const adminListEvaluations = endpoint({
+  method: 'get',
+  path: '/admin/interview-evaluations',
+  tag: 'Admin · Interviews',
+  summary: 'Interview evaluations',
+  description: 'Newest interview first. Totals and the pass mark computed as on the paper form.',
+  auth: 'admin',
+  permission: 'applications.view',
+  query: S.AdminEvaluationsQuery,
+  responses: { 200: { description: 'One page.', schema: S.AdminEvaluationsList } },
+});
+
+export const adminCreateEvaluation = endpoint({
+  method: 'post',
+  path: '/admin/interview-evaluations',
+  tag: 'Admin · Interviews',
+  summary: 'Evaluate an interview',
+  description: 'One evaluator, one round. The evaluator is whoever is signed in.',
+  auth: 'admin',
+  permission: 'applications.edit',
+  body: { schema: S.InterviewEvaluationInput, type: 'application/json' },
+  responses: { 201: { description: 'Saved.', schema: z.object({ evaluation: S.InterviewEvaluation }) } },
+});
+
+export const adminGetEvaluation = endpoint({
+  method: 'get',
+  path: '/admin/interview-evaluations/{id}',
+  tag: 'Admin · Interviews',
+  summary: 'One evaluation',
+  auth: 'admin',
+  permission: 'applications.view',
+  params: S.IdParams,
+  responses: { 200: { description: 'The evaluation.', schema: z.object({ evaluation: S.InterviewEvaluation }) } },
+});
+
+export const adminUpdateEvaluation = endpoint({
+  method: 'put',
+  path: '/admin/interview-evaluations/{id}',
+  tag: 'Admin · Interviews',
+  summary: 'Change an evaluation',
+  description: 'Only by whoever wrote it, or with applications.manage (403 otherwise).',
+  auth: 'admin',
+  permission: 'applications.edit',
+  params: S.IdParams,
+  body: { schema: S.InterviewEvaluationInput, type: 'application/json' },
+  responses: { 200: { description: 'Saved.', schema: z.object({ evaluation: S.InterviewEvaluation }) } },
+});
+
+export const adminDeleteEvaluation = endpoint({
+  method: 'delete',
+  path: '/admin/interview-evaluations/{id}',
+  tag: 'Admin · Interviews',
+  summary: 'Delete an evaluation',
+  description: 'Soft delete.',
+  auth: 'admin',
+  permission: 'applications.manage',
+  params: S.IdParams,
+  responses: { 204: { description: 'Deleted.' } },
+});
+
+export const adminSearchCandidates = endpoint({
+  method: 'get',
+  path: '/admin/interview-candidates',
+  tag: 'Admin · Interviews',
+  summary: 'Find who is being evaluated',
+  description: 'Applicants and application forms matching a name, email or phone — newest first, at most 10.',
+  auth: 'admin',
+  permission: 'applications.view',
+  query: S.CandidatesQuery,
+  responses: { 200: { description: 'Matches.', schema: S.CandidatesList } },
+});
+
 export const ENDPOINTS = [
   health,
   openapiJson,
@@ -411,6 +485,12 @@ export const ENDPOINTS = [
   adminListApplicationForms,
   adminApplicationFormPdf,
   adminDeleteApplicationForm,
+  adminListEvaluations,
+  adminCreateEvaluation,
+  adminGetEvaluation,
+  adminUpdateEvaluation,
+  adminDeleteEvaluation,
+  adminSearchCandidates,
   adminAnalytics,
   adminListContent,
   adminSetContent,
@@ -424,5 +504,6 @@ export const TAGS = [
   { name: 'Site content', description: 'Text the admin has edited.' },
   { name: 'Admin · Jobs', description: 'Create and manage jobs.' },
   { name: 'Admin · Applications', description: 'Review applicants.' },
+  { name: 'Admin · Interviews', description: 'Interview evaluations (HR and the hiring department).' },
   { name: 'Admin · Site content', description: 'Edit the site’s text.' },
 ];

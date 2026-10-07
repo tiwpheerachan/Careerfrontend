@@ -2,6 +2,8 @@ import { z } from 'zod';
 import {
   APPLICATION_FILE_KINDS,
   APPLICATION_FORM_LETTERHEADS,
+  EVALUATION_RESULTS,
+  EVALUATOR_ROLES,
   APPLICATION_STAGES,
   EDUCATION_LEVELS,
   JOB_PUBLISH_STATES,
@@ -466,4 +468,73 @@ export const AdminApplicationFormsList = z.object({
   total: z.number().int(),
   page: z.number().int(),
   pageSize: z.number().int(),
+});
+
+// --- Interview evaluations (แบบประเมินผลสัมภาษณ์) -----------------------------------------------
+
+export { InterviewEvaluationInput } from '@/lib/interview/schema';
+
+const ScoreList = z.array(z.number().int().min(0).max(5));
+
+export const InterviewEvaluation = z.object({
+  id: Id,
+  candidate: z.object({
+    kind: z
+      .enum(['application', 'form', 'manual'])
+      .meta({ description: 'Linked to an application, a form, or typed in.' }),
+    id: Id.nullable(),
+    name: z.string(),
+    position: z.string().nullable(),
+    department: z.string().nullable(),
+  }),
+  interviewDate: z.iso.date(),
+  round: z.union([z.literal(1), z.literal(2)]),
+  evaluatorRole: z.enum(EVALUATOR_ROLES),
+  evaluator: z.object({ email: z.string(), name: z.string().nullable() }),
+  senior: z.boolean(),
+  generalScores: ScoreList,
+  seniorScores: ScoreList.nullable(),
+  generalTotal: z.number().int(),
+  seniorTotal: z.number().int().nullable(),
+  total: z.number().int(),
+  max: z.number().int().meta({ description: '50, or 75 for a Senior position.' }),
+  meetsPassMark: z
+    .boolean()
+    .meta({ description: 'General: ≥ 40. Senior: items 11–15 over 20 and all fifteen ≥ 60. A recommendation.' }),
+  result: z.enum(EVALUATION_RESULTS).meta({ description: 'The evaluator’s own verdict.' }),
+  failReason: z.string().nullable(),
+  comment: z.string().nullable(),
+  createdAt: DateTime,
+  updatedAt: DateTime,
+});
+
+export const AdminEvaluationsQuery = z.object({
+  q: z.string().trim().max(100).optional().meta({ description: 'Candidate, position, department or evaluator.' }),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const AdminEvaluationsList = z.object({
+  evaluations: z.array(InterviewEvaluation),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+});
+
+export const CandidatesQuery = z.object({
+  q: z.string().trim().min(1).max(100).meta({ description: 'Name, email or phone.' }),
+});
+
+export const CandidatesList = z.object({
+  candidates: z.array(
+    z.object({
+      kind: z.enum(['application', 'form']),
+      id: Id,
+      name: z.string(),
+      position: z.string().nullable(),
+      department: z.string().nullable(),
+      email: z.string(),
+      createdAt: DateTime,
+    }),
+  ),
 });
