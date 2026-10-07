@@ -447,6 +447,20 @@ export const adminDeleteEvaluation = endpoint({
   responses: { 204: { description: 'Deleted.' } },
 });
 
+export const adminEvaluationPdf = endpoint({
+  method: 'get',
+  path: '/admin/interview-evaluations/pdf',
+  tag: 'Admin · Interviews',
+  summary: 'One candidate’s evaluation form as a PDF',
+  description:
+    'The paper form for one side (HR or the hiring department): the 1st and 2nd interview side by side, ' +
+    'each the latest evaluation of that round. Thai, English or Chinese. 404 when that side has not evaluated.',
+  auth: 'admin',
+  permission: 'applications.view',
+  query: S.EvaluationPdfQuery,
+  responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
+});
+
 export const adminSearchCandidates = endpoint({
   method: 'get',
   path: '/admin/interview-candidates',
@@ -490,6 +504,7 @@ export const ENDPOINTS = [
   adminGetEvaluation,
   adminUpdateEvaluation,
   adminDeleteEvaluation,
+  adminEvaluationPdf,
   adminSearchCandidates,
   adminAnalytics,
   adminListContent,

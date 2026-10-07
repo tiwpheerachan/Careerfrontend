@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ClipboardList, FileDown, Search, SearchX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, FileDown, Search, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ApplicationViewTabs } from '@/components/admin/applications/view-tabs';
@@ -127,6 +127,15 @@ export default async function ApplicationFormsPage({ searchParams }: PageProps<'
                         <FileDown className="h-4 w-4 text-blue-600" />
                         {t('pdf')}
                       </a>
+                      {abilitiesOf(actor).applications.edit && (
+                        <Link
+                          href={`/admin/interviews/new?candidate=${encodeURIComponent(`form:${form.id}`)}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 transition hover:bg-gray-50"
+                        >
+                          <ClipboardCheck className="h-4 w-4 text-blue-600" />
+                          {t('evaluate')}
+                        </Link>
+                      )}
                       <DeleteApplicationForm id={form.id} name={form.nameTh} />
                     </div>
                   </TableCell>

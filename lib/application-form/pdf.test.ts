@@ -4,7 +4,8 @@ import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { APPLICATION_FORM_LETTERHEADS } from '@/lib/constants';
 import { applicationFormInput } from '@/tests/support/application-form';
-import { renderApplicationFormPdf, splitSaraAm } from './pdf';
+import { splitSaraAm } from '@/lib/pdf/thai';
+import { renderApplicationFormPdf } from './pdf';
 import { ApplicationFormInput } from './schema';
 
 /**

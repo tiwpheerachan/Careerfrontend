@@ -160,7 +160,8 @@
       "deleted": "已删除申请",
       "deleteFailed": "无法删除申请",
       "notFoundTitle": "未找到该申请",
-      "notFoundBody": "可能已被删除，或链接有误。"
+      "notFoundBody": "可能已被删除，或链接有误。",
+      "evaluate": "面试评估"
     },
     "tabs": {
       "label": "应聘者视图",
@@ -199,7 +200,8 @@
       "deleteFailed": "无法删除",
       "pageOf": "第 {page} / {pages} 页",
       "prev": "上一页",
-      "next": "下一页"
+      "next": "下一页",
+      "evaluate": "面试评估"
     }
   },
   "dashboard": {
@@ -541,6 +543,58 @@
       "3": "中等",
       "4": "达到标准",
       "5": "高于标准"
+    },
+    "pdf": {
+      "company": "SHD TECHNOLOGY CO.,LTD",
+      "address": "168 ICS building FL.7 Unit 703-704 Charoen Nakhon Road, Khlong Ton Sai Subdistrict, Khlong San District Bangkok Tel. 02-1151262",
+      "title": "面试评估表 (INTERVIEW APPRAISAL)",
+      "candidateSection": "应聘者信息",
+      "name": "姓名",
+      "position": "应聘岗位",
+      "department": "部门",
+      "interviewDate": "面试日期",
+      "formFor": {
+        "HR": "面试评估表（人力资源部）",
+        "DEPARTMENT": "面试评估表（用人部门）"
+      },
+      "scaleIntro": "请进行打分（0 – 5 分），评分标准如下：",
+      "item": "评估项目",
+      "round1": "初试得分",
+      "round2": "复试得分",
+      "generalTotal": "总分（满分 50 分）",
+      "seniorNote": "注：针对高级（Senior）及以上岗位，须同时进行第 11 – 15 项的评估。",
+      "seniorTotal": "总分（满分 25 分）",
+      "grandTotal": "合计",
+      "meets": "达到合格标准",
+      "notMeets": "未达合格标准",
+      "rules": "普通员工评估合格标准为 40 分及以上；高级（Senior）及以上岗位，专项评估部分须超过 20 分，且总分须达 60 分及以上，方可视为面试通过。",
+      "conclusion": "评估结论：",
+      "opinion1": "初试意见",
+      "opinion2": "复试意见",
+      "comment": "意见",
+      "signature": "签名",
+      "date": "日期",
+      "printed": "由 SHDcareers 系统打印于 {date}"
+    },
+    "candidate": {
+      "back": "返回评估列表",
+      "subtitle": "该应聘者的所有轮次和评估人",
+      "evaluateMore": "新增评估",
+      "empty": "该应聘者暂无评估",
+      "pdfTitle": "打印评估表（PDF）",
+      "pdfHint": "每一方各有一份评估表，初试和复试在同一页",
+      "pdfFor": {
+        "HR": "人力资源部",
+        "DEPARTMENT": "用人部门"
+      },
+      "noneYet": "该方尚未评估",
+      "languages": {
+        "th": "ไทย",
+        "en": "English",
+        "zh": "中文"
+      },
+      "open": "打开",
+      "viewAll": "查看该应聘者的全部评估"
     }
   }
 }

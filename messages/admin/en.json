@@ -160,7 +160,8 @@
       "deleted": "Application deleted",
       "deleteFailed": "Could not delete the application",
       "notFoundTitle": "Application not found",
-      "notFoundBody": "It may have been deleted, or the link is wrong."
+      "notFoundBody": "It may have been deleted, or the link is wrong.",
+      "evaluate": "Evaluate interview"
     },
     "tabs": {
       "label": "Applicant views",
@@ -199,7 +200,8 @@
       "deleteFailed": "Could not delete",
       "pageOf": "Page {page} of {pages}",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "evaluate": "Evaluate interview"
     }
   },
   "dashboard": {
@@ -541,6 +543,58 @@
       "3": "Fair",
       "4": "Meets the standard",
       "5": "Above the standard"
+    },
+    "pdf": {
+      "company": "SHD TECHNOLOGY CO.,LTD",
+      "address": "168 ICS building FL.7 Unit 703-704 Charoen Nakhon Road, Khlong Ton Sai Subdistrict, Khlong San District Bangkok Tel. 02-1151262",
+      "title": "INTERVIEW APPRAISAL FORM",
+      "candidateSection": "Candidate",
+      "name": "Name",
+      "position": "Position applied for",
+      "department": "Department",
+      "interviewDate": "Interview date",
+      "formFor": {
+        "HR": "Interview evaluation (Human Resources)",
+        "DEPARTMENT": "Interview evaluation (hiring department)"
+      },
+      "scaleIntro": "Score each item from 0 to 5:",
+      "item": "Item",
+      "round1": "1st round",
+      "round2": "2nd round",
+      "generalTotal": "Total (out of 50)",
+      "seniorNote": "Senior positions and above: also score items 11 – 15",
+      "seniorTotal": "Total (out of 25)",
+      "grandTotal": "Grand total",
+      "meets": "meets the pass mark",
+      "notMeets": "below the pass mark",
+      "rules": "Staff positions pass the interview with 40 points or more. Senior positions and above need more than 20 points on items 11 – 15, and 60 points or more in all.",
+      "conclusion": "Result:",
+      "opinion1": "1st round",
+      "opinion2": "2nd round",
+      "comment": "Comments",
+      "signature": "Signature",
+      "date": "Date",
+      "printed": "Printed from SHDcareers on {date}"
+    },
+    "candidate": {
+      "back": "Back to evaluations",
+      "subtitle": "Every round and every evaluator for this candidate",
+      "evaluateMore": "Add an evaluation",
+      "empty": "No evaluations of this candidate yet",
+      "pdfTitle": "Print the form (PDF)",
+      "pdfHint": "Each side has its own form, with the 1st and 2nd round on one page",
+      "pdfFor": {
+        "HR": "Human Resources",
+        "DEPARTMENT": "Hiring department"
+      },
+      "noneYet": "Not evaluated by this side yet",
+      "languages": {
+        "th": "ไทย",
+        "en": "English",
+        "zh": "中文"
+      },
+      "open": "Open",
+      "viewAll": "All of this candidate’s evaluations"
     }
   }
 }

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatDate } from '@/lib/admin/format';
 import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 import type { AdminLocale } from '@/lib/i18n/admin';
+import { candidateKey } from '@/lib/interview/candidate-key';
 import { store } from '@/lib/store';
 
 const PAGE_SIZE = 20;
@@ -88,14 +89,24 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
               {items.map((e) => (
                 <TableRow key={e.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <TableCell className="min-w-48 px-4 py-3 whitespace-normal">
-                    <Link href={`/admin/interviews/${e.id}`} className="font-semibold text-blue-700 hover:underline">
+                    <Link
+                      href={`/admin/interviews/candidate/${encodeURIComponent(candidateKey(e.candidate))}`}
+                      className="font-semibold text-blue-700 hover:underline"
+                    >
                       {e.candidate.name}
                     </Link>
                     <div className="text-xs text-gray-400">
                       {[e.candidate.position, e.candidate.department].filter(Boolean).join(' · ') || '—'}
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-700">{tf(`rounds.${e.round}`)}</TableCell>
+                  <TableCell className="px-4 py-3">
+                    <Link
+                      href={`/admin/interviews/${e.id}`}
+                      className="text-gray-700 hover:text-blue-700 hover:underline"
+                    >
+                      {tf(`rounds.${e.round}`)}
+                    </Link>
+                  </TableCell>
                   <TableCell className="px-4 py-3 text-gray-700">
                     <div>{e.evaluator.name || e.evaluator.email}</div>
                     <div className="text-xs text-gray-400">{tf(`roles.${e.evaluatorRole}`)}</div>

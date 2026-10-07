@@ -538,3 +538,13 @@ export const CandidatesList = z.object({
     }),
   ),
 });
+
+export const EvaluationPdfQuery = z.object({
+  candidate: z
+    .string()
+    .min(3)
+    .max(200)
+    .meta({ description: 'application:<id>, form:<id>, or name:<name> for a candidate typed in by hand.' }),
+  role: z.enum(EVALUATOR_ROLES).meta({ description: 'Whose form: HR, or the hiring department.' }),
+  lang: z.enum(['th', 'en', 'zh']).default('th'),
+});

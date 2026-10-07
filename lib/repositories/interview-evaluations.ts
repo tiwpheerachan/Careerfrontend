@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNull, ne, or, sql } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
 import {
   applicationForms,
@@ -8,6 +8,7 @@ import {
   type InterviewEvaluationRow,
 } from '@/lib/db/schema';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
+import type { CandidateRef } from '@/lib/interview/candidate-key';
 import type { InterviewEvaluationInput } from '@/lib/interview/schema';
 import { outcomeOf, type Outcome } from '@/lib/interview/scoring';
 import { jobTitle } from './applications';
@@ -219,6 +220,59 @@ export function createInterviewEvaluationRepository(db: Database) {
       ]
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, limit);
+    },
+
+    /** One applicant or application form, to start an evaluation with (prefill); undefined if not found. */
+    async candidate(kind: 'application' | 'form', id: string): Promise<Candidate | undefined> {
+      if (!isUuid(id)) return undefined;
+      if (kind === 'application') {
+        const [row] = await db
+          .select({
+            id: applications.id,
+            name: sql<string>`${applications.firstName} || ' ' || ${applications.lastName}`,
+            position: jobTitle,
+            department: jobs.department,
+            email: applications.email,
+            createdAt: applications.createdAt,
+          })
+          .from(applications)
+          .innerJoin(jobs, eq(jobs.pk, applications.jobsPk))
+          .where(and(eq(applications.id, id), ne(applications.status, 'DELETED')))
+          .limit(1);
+        return row && { ...row, kind };
+      }
+      const [row] = await db
+        .select({
+          id: applicationForms.id,
+          name: applicationForms.nameTh,
+          position: applicationForms.position,
+          department: jobs.department,
+          email: applicationForms.email,
+          createdAt: applicationForms.createdAt,
+        })
+        .from(applicationForms)
+        .leftJoin(jobs, eq(jobs.pk, applicationForms.jobsPk))
+        .where(and(eq(applicationForms.id, id), ne(applicationForms.status, 'DELETED')))
+        .limit(1);
+      return row && { ...row, kind };
+    },
+
+    /** Every evaluation of one candidate (see candidate-key.ts): round 1 then 2, newest first within a round. */
+    async forCandidate(ref: CandidateRef): Promise<InterviewEvaluation[]> {
+      const who =
+        ref.kind === 'application'
+          ? eq(applications.id, ref.id)
+          : ref.kind === 'form'
+            ? eq(applicationForms.id, ref.id)
+            : and(
+                isNull(interviewEvaluations.applicationsPk),
+                isNull(interviewEvaluations.applicationFormsPk),
+                sql`lower(btrim(${interviewEvaluations.candidateName})) = lower(btrim(${ref.name}))`,
+              );
+      const rows = await joined()
+        .where(and(live, who))
+        .orderBy(asc(interviewEvaluations.round), desc(interviewEvaluations.updatedAt));
+      return rows.map(present);
     },
 
     async create(input: InterviewEvaluationInput, evaluator: Evaluator): Promise<InterviewEvaluation> {

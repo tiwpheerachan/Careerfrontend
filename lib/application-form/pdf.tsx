@@ -5,6 +5,7 @@ import { Document, Font, Page, Path, Svg, Text, renderToBuffer } from '@react-pd
 import * as fontkit from 'fontkit';
 import { PDFDocument } from 'pdf-lib';
 import type { APPLICATION_FORM_LETTERHEADS } from '@/lib/constants';
+import { splitSaraAm } from '@/lib/pdf/thai';
 import { LAYOUT, TEMPLATES, type Box, type Line } from './layout';
 import type { ApplicationFormAnswers, ApplicationFormSensitive } from './schema';
 
@@ -189,19 +190,6 @@ function placements(form: PrintableForm): Placed[] {
   const d = form.submittedAt;
   put(L.signedDate, `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`);
   return out;
-}
-
-/**
- * SARA AM (ำ) written as its two parts: NIKHAHIT (ํ) then SARA AA (า), with a
- * tone mark between them ("น้ำ" → น ํ ้ า), which is how the font draws it.
- *
- * Not cosmetic. The font turns ำ into two glyphs, and react-pdf then loses
- * track of where the string ends by one character per ำ: "จำกัด" came out as
- * "จำกั", "ประจำเดือน" (after a "ชำระ") as "ประจำเดื". Splitting it first keeps
- * characters and glyphs one to one, and looks the same.
- */
-export function splitSaraAm(text: string): string {
-  return text.replace(/([\u0E48-\u0E4B]?)\u0E33/g, '\u0E4D$1\u0E32');
 }
 
 /** The largest size, down to MIN_SIZE, at which the text fits its line; past that, cut with "…". */

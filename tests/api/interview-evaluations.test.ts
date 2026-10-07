@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as candidates from '@/app/api/v1/admin/interview-candidates/route';
 import * as one from '@/app/api/v1/admin/interview-evaluations/[id]/route';
+import * as pdf from '@/app/api/v1/admin/interview-evaluations/pdf/route';
 import * as evaluations from '@/app/api/v1/admin/interview-evaluations/route';
 import { ApplicationFormInput } from '@/lib/application-form/schema';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
@@ -161,6 +162,34 @@ describe('evaluating', () => {
     expect((await call(one.GET, { params: { id } })).status).toBe(404);
   });
 });
+
+describe('one candidate, and the paper form', () => {
+  it('groups a typed-in candidate by name, whatever its case and spaces', async () => {
+    await post(evaluation({ candidateName: 'Somsri Dee', round: 1 }));
+    await post(evaluation({ candidateName: '  somsri dee ', round: 2 }));
+    await post(evaluation({ candidateName: 'Someone Else' }));
+    const mine = await repos.interviewEvaluations.forCandidate({ kind: 'manual', name: 'SOMSRI DEE' });
+    expect(mine.map((e) => e.round)).toEqual([1, 2]);
+  });
+
+  it('PDF: one side’s form for a linked applicant, in each language; 404 for a side that has not evaluated', async () => {
+    const application = await anApplication();
+    await post(evaluation({ applicationId: application.id, round: 1, evaluatorRole: 'HR' }));
+    await post(evaluation({ applicationId: application.id, round: 2, evaluatorRole: 'HR', result: 'PENDING' }));
+    const candidate = `application:${application.id}`;
+
+    for (const lang of ['th', 'en', 'zh']) {
+      const res = await call(pdf.GET, { query: { candidate, role: 'HR', lang } });
+      expect(res.status, lang).toBe(200);
+      expect(res.headers.get('content-type')).toBe('application/pdf');
+      expect(String(res.body).startsWith('%PDF-')).toBe(true);
+    }
+    expect(res404(await call(pdf.GET, { query: { candidate, role: 'DEPARTMENT' } }))).toBe(true);
+    expect(res404(await call(pdf.GET, { query: { candidate: 'application:nope', role: 'HR' } }))).toBe(true);
+  });
+});
+
+const res404 = (res: Awaited<ReturnType<typeof call>>) => res.status === 404;
 
 describe('with SSO on: an evaluation is its evaluator’s', () => {
   const SECRET = 'a-test-session-secret-0123456789abcdef';

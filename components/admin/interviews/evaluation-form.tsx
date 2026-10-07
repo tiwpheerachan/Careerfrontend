@@ -38,13 +38,21 @@ interface FormState {
   comment: string;
 }
 
-function initialState(evaluation: InterviewEvaluation | null, today: string): FormState {
+/** Who a new evaluation starts with (from ?candidate=), as the candidate picker would fill it. */
+export interface Prefill {
+  link: { kind: 'application' | 'form'; id: string } | null;
+  name: string;
+  position: string | null;
+  department: string | null;
+}
+
+function initialState(evaluation: InterviewEvaluation | null, today: string, prefill?: Prefill): FormState {
   if (!evaluation) {
     return {
-      link: null,
-      candidateName: '',
-      position: '',
-      department: '',
+      link: prefill?.link ?? null,
+      candidateName: prefill?.name ?? '',
+      position: prefill?.position ?? '',
+      department: prefill?.department ?? '',
       interviewDate: today,
       round: 1,
       evaluatorRole: 'HR',
@@ -94,8 +102,11 @@ export function EvaluationForm({
   today,
   evaluator,
   readOnly,
+  prefill,
 }: {
   evaluation: InterviewEvaluation | null;
+  /** A new evaluation's candidate, when it was started from their page. */
+  prefill?: Prefill;
   /** Today in Bangkok (YYYY-MM-DD), from the server, so the default date never mismatches. */
   today: string;
   /** Who it is (or will be) saved as. */
@@ -106,7 +117,7 @@ export function EvaluationForm({
   const items = useTranslations('interviews.items');
   const scale = useTranslations('interviews.scale');
   const router = useRouter();
-  const [initial] = useState(() => initialState(evaluation, today));
+  const [initial] = useState(() => initialState(evaluation, today, prefill));
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
