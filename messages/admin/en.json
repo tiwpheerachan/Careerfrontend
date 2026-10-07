@@ -160,6 +160,45 @@
       "deleteFailed": "Could not delete the application",
       "notFoundTitle": "Application not found",
       "notFoundBody": "It may have been deleted, or the link is wrong."
+    },
+    "tabs": {
+      "label": "Applicant views",
+      "applications": "Applied for a job",
+      "forms": "Application forms"
+    },
+    "forms": {
+      "title": "Application forms",
+      "total": "{count} in total",
+      "searchPlaceholder": "Search name / phone / email / position…",
+      "search": "Search",
+      "empty": "No application forms yet",
+      "emptyHint": "Forms filled in on the site’s “Application form” page appear here",
+      "emptySearch": "Try another search",
+      "sensitiveHidden": "Downloaded PDFs leave ethnicity, religion, blood type, weight and height blank (manage access on applicants shows them).",
+      "columns": {
+        "name": "Name",
+        "position": "Position",
+        "company": "Company",
+        "contact": "Contact",
+        "sent": "Sent",
+        "actions": "Actions"
+      },
+      "otherPosition": "Typed by the applicant",
+      "letterheads": {
+        "SHD": "SHD",
+        "RABBIT": "Rabbit",
+        "TOPONE": "TOP ONE",
+        "PLAIN": "Not set"
+      },
+      "pdf": "PDF",
+      "deleteFor": "Delete {name}’s form",
+      "deleteTitle": "Delete {name}’s form?",
+      "deleteBody": "It disappears from the list (kept in the system, not erased).",
+      "deleted": "Form deleted",
+      "deleteFailed": "Could not delete",
+      "pageOf": "Page {page} of {pages}",
+      "prev": "Previous",
+      "next": "Next"
     }
   },
   "dashboard": {

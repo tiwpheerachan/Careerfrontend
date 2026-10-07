@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: 'meta' });
   return {
     // Absolute urls for OpenGraph images and canonical links.
-    metadataBase: new URL(process.env.SITE_URL ?? `http://localhost:${process.env.PORT ?? 3100}`),
+    metadataBase: new URL(process.env.SITE_URL?.trim() || `http://localhost:${process.env.PORT || 3000}`),
     title: { default: t('title'), template: `%s · ${t('title')}` },
     description: t('description'),
   };

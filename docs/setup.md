@@ -17,10 +17,10 @@ cp .env.development.example .env.development.local   # local DB settings, gitign
 npm run db:dev:up        # postgres:17 in Docker — container shd-career-dev, 127.0.0.1:55434
 npm run db:dev:migrate   # apply drizzle/*.sql
 npm run db:dev:seed      # sample jobs + made-up applicants (safe to run twice)
-npm run dev              # http://localhost:3100 → redirects to /th, /en or /zh
+npm run dev              # http://localhost:3000 → redirects to /th, /en or /zh
 ```
 
-Check it works: `curl localhost:3100/api/v1/health` → `{"status":"ok","database":"shd_career_db_dev",...}`
+Check it works: `curl localhost:3000/api/v1/health` → `{"status":"ok","database":"shd_career_db_dev",...}`
 
 ## The three databases
 
@@ -65,7 +65,7 @@ production. `tests/api/contracts.test.ts` fails if a route checks a different pe
 
 ## The admin
 
-`http://localhost:3100/admin` — overview, jobs, applicants, site text. Thai or English (header picker, a cookie;
+`http://localhost:3000/admin` — overview, jobs, applicants, site text. Thai or English (header picker, a cookie;
 no url prefix). Its text is in `messages/admin/{th,en}.json`, separate from the public site's.
 
 ### Sign-in: SHD SSO (as in onelink)
@@ -91,7 +91,7 @@ Sign out (sidebar) ends this app's session only → `/sso/signed-out`.
 | `SSO_DEBUG`                          | `shape` while setting up — logs what `/sso/verify` answered, without personal data       |
 
 **Redirect URI to register** in the central console, exactly: `<SITE_URL>/api/sso/callback`
-(local: `http://localhost:3100/api/sso/callback`).
+(local: `http://localhost:3000/api/sso/callback`).
 
 **Permissions** — three resources, levels `none < view < edit < manage`. Upload `sso-schema/resources.xlsx`
 (built by `python3 scripts/build-sso-schema.py`) on the app's permissions page:
@@ -165,3 +165,7 @@ npm run build
 - **logs** — pino JSON; every API response carries `x-request-id`, and every log line for that request has it.
   Never log applicants' personal data.
 - **Sentry** — off until `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` are set (no account yet). Nothing is sent without them.
+- **pinned versions** — `tailwindcss` / `@tailwindcss/postcss` 4.3.3 (the classes were checked against it), and
+  `postcss` **8.5.28**: 8.5.29 with Tailwind's plugin writes a source-map entry at column −1 at the end of every CSS
+  module, which `next dev` prints as `Invalid mapping: {"generated":{"column":-1,…}}` for each `*.module.css`.
+  Harmless (the entry is dropped), but noise. Try 8.5.30+ when it ships, and unpin if the warning is gone.

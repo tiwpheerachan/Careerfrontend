@@ -34,6 +34,20 @@ export async function register(): Promise<void> {
 
   const { log } = await import('@/lib/log');
   log.info({ sentry: Boolean(env.SENTRY_DSN), env: env.NODE_ENV }, 'server starting');
+
+  // Development only, as in shd_onelink: where things are. A deployed server
+  // has no npm to run and no collection beside it. Deferred so it lands under
+  // Next's own banner rather than above it — this runs before the server is
+  // ready, and the banner prints when it is.
+  if (env.NODE_ENV !== 'development') return;
+  const origin = `http://localhost:${process.env.PORT || '3000'}`;
+  setTimeout(() => {
+    console.log(`- Site:          ${origin}/th`);
+    console.log(`- Admin:         ${origin}/admin`);
+    console.log(`- API docs:      ${origin}/api-docs`);
+    console.log('- API tests:     npm run api:test   (Bruno CLI, bruno/)');
+    console.log(`- API spec:      ${origin}/api/v1/openapi.json`);
+  }, 0);
 }
 
 /** Server errors Next.js caught (render, route handlers, proxy). Forwarded to Sentry when it is on. */

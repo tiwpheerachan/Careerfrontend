@@ -20,3 +20,19 @@ export const EDUCATION_LEVELS = [
   'INCOMPLETE',
   'OTHER',
 ] as const;
+
+/**
+ * The paper application form (ใบสมัครงาน), filled in on the public site and
+ * printed onto the company's own blank form — lib/application-form/.
+ * The letterhead is the company the applicant applies to.
+ */
+export const APPLICATION_FORM_LETTERHEADS = ['SHD', 'RABBIT', 'TOPONE', 'PLAIN'] as const;
+export const GENDERS = ['MALE', 'FEMALE'] as const;
+export const MARITAL_STATUSES = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'] as const;
+/** The form's five boxes: served, deferred, reserve officer training done (จบ รด.), black card, exempt. */
+export const MILITARY_STATUSES = ['SERVED', 'DEFERRED', 'RESERVIST', 'BLACK_CARD', 'EXEMPT'] as const;
+/** The form's three education rows. */
+export const FORM_EDUCATION_LEVELS = ['SECONDARY', 'DIPLOMA', 'DEGREE'] as const;
+/** "พอใช้" "ดี" "ดีมาก". */
+export const SKILL_LEVELS = ['FAIR', 'GOOD', 'EXCELLENT'] as const;
+export const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;

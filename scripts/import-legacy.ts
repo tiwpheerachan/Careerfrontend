@@ -47,26 +47,26 @@ const ACTOR = 'import (old system)';
 
 // --- Where from, where to -------------------------------------------------------------
 
-const sourceUrl = process.env.OLD_SNAPSHOT_URL ?? 'postgresql://root:dev_pass@127.0.0.1:55434/old_snapshot';
+const sourceUrl = process.env.OLD_SNAPSHOT_URL || 'postgresql://root:dev_pass@127.0.0.1:55434/old_snapshot';
 if (!describeTarget(sourceUrl).local) {
   throw new Error(
     'OLD_SNAPSHOT_URL must be a LOCAL copy of the old database. This script never reads the old project.',
   );
 }
-const targetUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+const targetUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
 if (!targetUrl) throw new Error('DATABASE_URL is not set.');
 const target = assertMayTouch(targetUrl, 'import-legacy');
 
 function storageOf(): ObjectStore {
-  if ((process.env.STORAGE_DRIVER ?? 'local') === 'supabase') {
+  if ((process.env.STORAGE_DRIVER || 'local') === 'supabase') {
     const origin = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!origin || !key)
       throw new Error('STORAGE_DRIVER=supabase needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
     if (origin.includes('yqofedmxrrurpjfaocys')) throw new Error('Refusing to write files into the OLD project.');
-    return createSupabaseStore({ origin, key, bucket: process.env.STORAGE_BUCKET ?? 'applications' });
+    return createSupabaseStore({ origin, key, bucket: process.env.STORAGE_BUCKET || 'applications' });
   }
-  return createLocalStore(process.env.LOCAL_STORAGE_DIR ?? '.storage');
+  return createLocalStore(process.env.LOCAL_STORAGE_DIR || '.storage');
 }
 
 // --- The old rows ----------------------------------------------------------------------

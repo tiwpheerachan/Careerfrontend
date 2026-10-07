@@ -18,7 +18,7 @@ Drizzle ORM · Postgres 17 (Supabase in production, Docker locally) · zod · pi
 npm ci
 cp .env.development.example .env.development.local
 npm run db:dev:up && npm run db:dev:migrate && npm run db:dev:seed
-npm run dev        # http://localhost:3100
+npm run dev        # http://localhost:3000
 ```
 
 ## Docs

@@ -330,12 +330,68 @@ export const adminRevertContent = endpoint({
   responses: { 204: { description: 'Reverted.' } },
 });
 
+// --- The paper application form (ใบสมัครงาน) ---------------------------------------------------
+
+export const submitApplicationForm = endpoint({
+  method: 'post',
+  path: '/application-forms',
+  tag: 'Application form',
+  summary: 'Send a filled-in application form',
+  description:
+    'The company’s one-page form (ใบสมัครงาน), from /application-form. Not tied to an application for a job. ' +
+    'Rate limited per IP; Turnstile when it is on. `sensitive` is stored only with `sensitiveConsent: true`. ' +
+    'Validation messages follow `?locale=`.',
+  auth: 'public',
+  query: S.LocaleQuery,
+  body: { schema: S.ApplicationFormInput, type: 'application/json' },
+  responses: { 201: { description: 'Received.', schema: S.ApplicationFormCreated } },
+});
+
+export const adminListApplicationForms = endpoint({
+  method: 'get',
+  path: '/admin/application-forms',
+  tag: 'Admin · Applications',
+  summary: 'Application forms sent from the site',
+  description: 'Newest first.',
+  auth: 'admin',
+  permission: 'applications.view',
+  query: S.AdminApplicationFormsQuery,
+  responses: { 200: { description: 'One page.', schema: S.AdminApplicationFormsList } },
+});
+
+export const adminApplicationFormPdf = endpoint({
+  method: 'get',
+  path: '/admin/application-forms/{id}/pdf',
+  tag: 'Admin · Applications',
+  summary: 'The form as a PDF',
+  description:
+    'Printed onto the company’s blank form (its letterhead). The sensitive fields are filled only for ' +
+    '`applications.manage`; with view they are left blank.',
+  auth: 'admin',
+  permission: 'applications.view',
+  params: S.IdParams,
+  responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
+});
+
+export const adminDeleteApplicationForm = endpoint({
+  method: 'delete',
+  path: '/admin/application-forms/{id}',
+  tag: 'Admin · Applications',
+  summary: 'Delete an application form',
+  description: 'Soft delete.',
+  auth: 'admin',
+  permission: 'applications.manage',
+  params: S.IdParams,
+  responses: { 204: { description: 'Deleted.' } },
+});
+
 export const ENDPOINTS = [
   health,
   openapiJson,
   listJobs,
   getJob,
   apply,
+  submitApplicationForm,
   content,
   adminListJobs,
   adminCreateJob,
@@ -352,6 +408,9 @@ export const ENDPOINTS = [
   adminAddNote,
   adminDeleteNote,
   adminDownloadFile,
+  adminListApplicationForms,
+  adminApplicationFormPdf,
+  adminDeleteApplicationForm,
   adminAnalytics,
   adminListContent,
   adminSetContent,
@@ -361,6 +420,7 @@ export const ENDPOINTS = [
 export const TAGS = [
   { name: 'System', description: 'Health and this document.' },
   { name: 'Jobs', description: 'The public site: published jobs and the application form. No sign-in.' },
+  { name: 'Application form', description: 'The company’s paper application form, filled in online. No sign-in.' },
   { name: 'Site content', description: 'Text the admin has edited.' },
   { name: 'Admin · Jobs', description: 'Create and manage jobs.' },
   { name: 'Admin · Applications', description: 'Review applicants.' },

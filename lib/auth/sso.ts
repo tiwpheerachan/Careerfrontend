@@ -14,7 +14,13 @@ import { requestOrigin } from '@/lib/api/origin';
 import { describeVerifyResponse } from './sso-debug';
 import { log } from '@/lib/log';
 
-export const SSO_ORIGIN = (process.env.SSO_ORIGIN ?? 'https://sso.shd-technology.co.th').trim().replace(/\/+$/, '');
+/**
+ * The central login service. `||`, not `??`: .env.example ships `SSO_ORIGIN=`
+ * (empty) to mean "the default", and an empty origin makes every url built
+ * from it relative — `new URL('/api/v1/sso/authorize')` throws, and sign-in
+ * is a 500.
+ */
+export const SSO_ORIGIN = (process.env.SSO_ORIGIN?.trim() || 'https://sso.shd-technology.co.th').replace(/\/+$/, '');
 
 export interface SsoCredentials {
   clientId: string;

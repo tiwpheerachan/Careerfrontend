@@ -105,6 +105,7 @@ export function Navbar() {
     { key: 'about', href: '/about' },
     { key: 'why', href: '/why-shd' },
     { key: 'jobs', href: '/jobs' },
+    { key: 'applicationForm', href: '/application-form' },
   ] as const;
 
   return (

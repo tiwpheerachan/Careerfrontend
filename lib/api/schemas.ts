@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   APPLICATION_FILE_KINDS,
+  APPLICATION_FORM_LETTERHEADS,
   APPLICATION_STAGES,
   EDUCATION_LEVELS,
   JOB_PUBLISH_STATES,
@@ -434,4 +435,35 @@ export const Health = z.object({
     })
     .optional()
     .meta({ description: 'The app’s and the database’s clocks, with offsets — for measuring drift against NTP.' }),
+});
+
+// --- The paper application form (ใบสมัครงาน) ---------------------------------------------------
+
+export { ApplicationFormInput } from '@/lib/application-form/schema';
+
+export const ApplicationFormCreated = z.object({ id: Id.meta({ description: 'The form’s reference.' }) });
+
+export const AdminApplicationFormsQuery = z.object({
+  q: z.string().trim().max(100).optional().meta({ description: 'Name, email, mobile or position.' }),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const ApplicationFormListItem = z.object({
+  id: Id,
+  letterhead: z.enum(APPLICATION_FORM_LETTERHEADS).meta({ description: 'The company whose form it is.' }),
+  position: z.string().meta({ description: 'The job’s Thai title when sent, or what the applicant wrote.' }),
+  jobCode: z.string().nullable(),
+  nameTh: z.string(),
+  nameEn: z.string().nullable(),
+  email: z.string(),
+  mobile: z.string(),
+  createdAt: DateTime,
+});
+
+export const AdminApplicationFormsList = z.object({
+  forms: z.array(ApplicationFormListItem),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
 });

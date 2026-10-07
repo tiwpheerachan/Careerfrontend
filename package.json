@@ -6,7 +6,7 @@
   "description": "SHD Careers — the careers site, its admin and API: Next.js + Drizzle + Supabase Postgres.",
   "scripts": {
     "predev": "npm run docs:api",
-    "dev": "next dev -p 3100",
+    "dev": "next dev -p 3000",
     "build": "npm run docs:api && next build",
     "start": "next start -H 0.0.0.0",
     "typecheck": "tsc --noEmit",
@@ -40,6 +40,7 @@
     "node": ">=24.11.0 <25"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "@sentry/nextjs": "^11.4.0",
@@ -49,12 +50,14 @@
     "cmdk": "^1.1.1",
     "cn": "^0.4.0",
     "drizzle-orm": "0.45.2",
+    "fontkit": "^2.0.4",
     "lucide-react": "^1.52.0",
     "next": "16.3.4",
     "next-intl": "^4.14.9",
     "next-themes": "^0.4.6",
+    "pdf-lib": "^1.17.1",
     "pino": "^10.4.0",
-    "postcss": "^8.5.29",
+    "postcss": "8.5.28",
     "postgres": "3.4.9",
     "radix-ui": "^1.7.0",
     "react": "19.2.8",
@@ -70,6 +73,7 @@
   },
   "devDependencies": {
     "@hrefcl/apidoc": "5.1.0",
+    "@types/fontkit": "^2.0.9",
     "@types/node": "^24.19.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",

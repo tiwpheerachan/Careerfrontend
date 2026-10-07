@@ -75,7 +75,7 @@ if (target.file) {
   process.loadEnvFile(target.file);
 }
 
-const url = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
 if (!url) fail(`Neither DIRECT_URL nor DATABASE_URL is set${target.file ? ` in ${target.file}` : ''}.`);
 const where = describeTarget(url);
 

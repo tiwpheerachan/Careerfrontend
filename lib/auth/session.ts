@@ -2,9 +2,9 @@
  * The signed cookie that says who is signed in to the admin.
  *
  * Ported from shd_onelink (lib/auth/session.ts) unchanged except for the cookie
- * names, which are this app's own: cookies are not port-scoped, so on
- * localhost onelink (:3000) and this app (:3100) would otherwise overwrite
- * each other's session.
+ * names, which are this app's own: cookies are not port-scoped, so two apps
+ * on localhost (onelink and this one, whatever ports they run on) would
+ * otherwise overwrite each other's session.
  *
  * Written with Web Crypto and no dependency, because this code has to run in
  * two places with different runtimes: the route handlers that create the

@@ -5,6 +5,7 @@ import { ApplicationsTable } from '@/components/admin/applications/applications-
 import { JobBanner, ListFilters, type JobOption } from '@/components/admin/applications/list-filters';
 import { ListPagination } from '@/components/admin/applications/list-pagination';
 import { exportHref, listHref, parseListQuery } from '@/components/admin/applications/list-query';
+import { ApplicationViewTabs } from '@/components/admin/applications/view-tabs';
 import { PageHeader } from '@/components/admin/ui';
 import type { AdminLocale } from '@/lib/i18n/admin';
 import type { AdminJob } from '@/lib/repositories/jobs';
@@ -75,6 +76,8 @@ export default async function ApplicationsPage({ searchParams }: PageProps<'/adm
           )
         }
       />
+
+      <ApplicationViewTabs current="applications" />
 
       <ListFilters query={query} jobs={jobOptions} stageCounts={stageCounts} />
 

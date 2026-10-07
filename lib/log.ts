@@ -14,7 +14,7 @@ import { isoWithOffset } from '@/lib/time';
  * contents) is never logged. Log ids and counts instead.
  */
 export const log = pino({
-  level: process.env.LOG_LEVEL ?? 'info',
+  level: process.env.LOG_LEVEL || 'info',
   base: { service: 'shd-careers' },
   // ISO with the offset (…+07:00): comparable across systems, readable in Bangkok time.
   timestamp: () => `,"time":"${isoWithOffset()}"`,

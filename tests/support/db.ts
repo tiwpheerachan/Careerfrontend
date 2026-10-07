@@ -32,7 +32,7 @@ export async function resetDatabase(): Promise<void> {
                    jobs, job_translations,
                    applications, application_educations, application_experiences, application_skills,
                    application_files, application_notes, application_stage_changes,
-                   site_content
+                   site_content, application_forms
     restart identity cascade
   `);
 }
