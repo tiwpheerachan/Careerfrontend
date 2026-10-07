@@ -21,7 +21,8 @@
     "unsavedTitle": "You have unsaved changes",
     "unsavedBody": "If you leave this page, the changes you have not saved will be lost.",
     "stay": "Stay on this page",
-    "leave": "Leave without saving"
+    "leave": "Leave without saving",
+    "interviews": "Interviews"
   },
   "stage": {
     "NEW": "New",
@@ -419,5 +420,127 @@
       "manage": "manage"
     },
     "unmanaged": "Permissions are not switched on (CENTRAL_API_KEY) — everyone who can sign in can use everything"
+  },
+  "interviews": {
+    "list": {
+      "title": "Interview evaluations",
+      "total": "{count} in total",
+      "new": "New evaluation",
+      "searchPlaceholder": "Search candidate / position / department / evaluator…",
+      "search": "Search",
+      "empty": "No evaluations yet",
+      "emptyHint": "Press “New evaluation” to evaluate a candidate",
+      "emptySearch": "Try another search",
+      "columns": {
+        "candidate": "Candidate",
+        "round": "Round",
+        "evaluator": "Evaluator",
+        "score": "Score",
+        "result": "Result",
+        "date": "Interview date",
+        "actions": "Actions"
+      },
+      "open": "Open",
+      "pageOf": "Page {page} of {pages}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "titleNew": "Evaluate an interview",
+      "titleEdit": "Interview evaluation",
+      "subtitle": "Score each item 0–5; the totals and the pass mark are worked out for you",
+      "back": "Back to evaluations",
+      "candidateSection": "Candidate",
+      "search": "Find the candidate",
+      "searchPlaceholder": "Type a name, email or phone…",
+      "searching": "Searching…",
+      "noMatch": "Not found — fill in the details below",
+      "linkedTo": "Linked to",
+      "unlink": "Unlink",
+      "kinds": {
+        "application": "Applied for a job",
+        "form": "Application form",
+        "manual": "Typed in"
+      },
+      "candidateName": "Full name",
+      "position": "Position applied for",
+      "department": "Department",
+      "interviewDate": "Interview date",
+      "round": "Interview",
+      "rounds": {
+        "1": "1st round",
+        "2": "2nd round"
+      },
+      "evaluatorRole": "Evaluating as",
+      "roles": {
+        "HR": "Human Resources",
+        "DEPARTMENT": "Hiring department"
+      },
+      "evaluatedBy": "Evaluator: {who}",
+      "scale": "Scale",
+      "general": "Items 1–10",
+      "seniorToggle": "Senior position or above — also score items 11–15",
+      "seniorSection": "Senior positions and above (items 11–15)",
+      "subtotal": "{score} / {max}",
+      "scoreFor": "{item}: {score} points",
+      "summary": "Score summary",
+      "total": "Total",
+      "generalPart": "Items 1–10",
+      "seniorPart": "Items 11–15",
+      "recommendation": "By the pass mark",
+      "meets": "Meets the pass mark",
+      "notMeets": "Below the pass mark",
+      "incomplete": "{count, plural, one {# item} other {# items}} still to score",
+      "ruleGeneral": "Staff positions: 40 points or more",
+      "ruleSenior": "Senior and above: items 11–15 over 20 points, and 60 or more in all",
+      "recommendationNote": "A recommendation — choose the result yourself below",
+      "result": "Result",
+      "results": {
+        "PENDING": "Pending / compare further",
+        "PASS": "Passed the interview",
+        "FAIL": "Did not pass"
+      },
+      "failReason": "Why not",
+      "comment": "Comments",
+      "commentPlaceholder": "Strengths, things to develop, notes from the interview…",
+      "save": "Save evaluation",
+      "saving": "Saving…",
+      "created": "Evaluation saved",
+      "saved": "Changes saved",
+      "saveFailed": "Could not save",
+      "readOnly": "This evaluation is {who}’s — only they, or someone with manage access, can change it",
+      "errors": {
+        "candidateName": "Enter the candidate’s name",
+        "interviewDate": "Choose the interview date",
+        "scores": "Score every item",
+        "result": "Choose a result",
+        "fix": "Please fix the fields marked in red"
+      }
+    },
+    "items": {
+      "fieldKnowledge": "General knowledge of the field",
+      "jobKnowledge": "Job-specific practical knowledge",
+      "tools": "Skill with the tools of the job",
+      "experienceFit": "Relevant experience",
+      "analysis": "Analysing and building on the work",
+      "businessKnowledge": "Business knowledge",
+      "coordination": "Communication and coordination",
+      "adaptability": "Handling situations and crises",
+      "workStandards": "Work standards",
+      "attitude": "Attitude and readiness to grow",
+      "leadership": "Leadership",
+      "strategicThinking": "Strategic thinking",
+      "planning": "Planning and organising",
+      "decisionMaking": "Decision-making",
+      "teamManagement": "Team management"
+    },
+    "scale": {
+      "0": "Unsatisfactory",
+      "1": "Needs improvement",
+      "2": "Satisfactory",
+      "3": "Fair",
+      "4": "Meets the standard",
+      "5": "Above the standard"
+    }
   }
 }

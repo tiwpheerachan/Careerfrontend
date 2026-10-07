@@ -1,6 +1,6 @@
 'use client';
 
-import { Briefcase, ExternalLink, FileText, LayoutDashboard, LogOut, Users } from 'lucide-react';
+import { Briefcase, ClipboardCheck, ExternalLink, FileText, LayoutDashboard, LogOut, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -37,6 +37,7 @@ const NAV = [
   { href: '/admin/dashboard', key: 'dashboard', icon: LayoutDashboard, area: 'applications' },
   { href: '/admin/jobs', key: 'jobs', icon: Briefcase, area: 'jobs' },
   { href: '/admin/applications', key: 'applications', icon: Users, area: 'applications' },
+  { href: '/admin/interviews', key: 'interviews', icon: ClipboardCheck, area: 'applications' },
   { href: '/admin/content', key: 'content', icon: FileText, area: 'content' },
 ] as const;
 
