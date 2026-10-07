@@ -11,6 +11,7 @@ import {
   GENDERS,
   MARITAL_STATUSES,
   MILITARY_STATUSES,
+  NAME_TITLES,
   SKILL_LEVELS,
 } from '@/lib/constants';
 import { Choices, Group, NumberField, TextField, Tick, read, useForm } from './controls';
@@ -105,7 +106,13 @@ export function PersonalStep() {
   const { draft } = useForm();
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <Group title={t('personalInfo')}>
+        <Choices
+          path="nameTitle"
+          label={t('nameTitle')}
+          options={NAME_TITLES.map((value) => ({ value, label: t(`nameTitles.${value}`) }))}
+          className="sm:col-span-2"
+        />
         <TextField
           path="nameTh"
           label={t('nameTh')}
@@ -123,7 +130,7 @@ export function PersonalStep() {
           label={t('gender')}
           options={GENDERS.map((value) => ({ value, label: t(`genders.${value}`) }))}
         />
-      </div>
+      </Group>
 
       <section className="rounded-3xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5">
         <h3 className="text-sm font-black text-slate-900">{t('sensitiveTitle')}</h3>
@@ -135,8 +142,8 @@ export function PersonalStep() {
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <TextField path="sensitive.ethnicity" label={t('ethnicity')} maxLength={50} />
             <TextField path="sensitive.religion" label={t('religion')} maxLength={50} />
-            <NumberField path="sensitive.weightKg" label={t('weight')} />
-            <NumberField path="sensitive.heightCm" label={t('height')} />
+            <NumberField path="sensitive.weightKg" label={t('weight')} decimal />
+            <NumberField path="sensitive.heightCm" label={t('height')} decimal />
             <Choices
               path="sensitive.bloodType"
               label={t('bloodType')}
@@ -155,11 +162,6 @@ export function ContactStep() {
   const t = useT();
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField path="mobile" label={t('mobile')} type="tel" required autoComplete="tel" maxLength={40} />
-        <TextField path="email" label={t('email')} type="email" required autoComplete="email" maxLength={200} />
-        <TextField path="homePhone" label={t('homePhone')} type="tel" maxLength={40} />
-      </div>
       <Group title={t('address')}>
         <TextField path="address.houseNo" label={t('houseNo')} maxLength={30} />
         <TextField path="address.moo" label={t('moo')} maxLength={10} />
@@ -174,7 +176,22 @@ export function ContactStep() {
           inputMode="numeric"
           maxLength={5}
           autoComplete="postal-code"
+          allow="digits"
         />
+      </Group>
+      <Group title={t('contactChannels')}>
+        <TextField
+          path="mobile"
+          label={t('mobile')}
+          type="tel"
+          required
+          autoComplete="tel"
+          maxLength={20}
+          allow="phone"
+          placeholder={t('phonePlaceholder')}
+        />
+        <TextField path="email" label={t('email')} type="email" required autoComplete="email" maxLength={200} />
+        <TextField path="homePhone" label={t('homePhone')} type="tel" maxLength={20} allow="phone" />
       </Group>
     </div>
   );
@@ -240,13 +257,20 @@ export function EducationStep() {
           <TextField path={`education.${level}.institute`} label={t('institute')} className="sm:col-span-2" />
           <TextField path={`education.${level}.major`} label={t('major')} />
           <TextField path={`education.${level}.country`} label={t('country')} maxLength={60} />
-          <TextField path={`education.${level}.gpa`} label={t('gpa')} inputMode="decimal" maxLength={10} />
+          <TextField
+            path={`education.${level}.gpa`}
+            label={t('gpa')}
+            inputMode="decimal"
+            maxLength={6}
+            allow="decimal"
+          />
           <TextField
             path={`education.${level}.graduationYear`}
             label={t('graduationYear')}
             placeholder={t('graduationYearPlaceholder')}
             inputMode="numeric"
-            maxLength={10}
+            maxLength={4}
+            allow="digits"
           />
         </Group>
       ))}
@@ -382,7 +406,7 @@ export function WorkStep() {
       <Group title={t('emergency')} hint={t('emergencyHint')}>
         <TextField path="emergency.name" label={t('emergencyName')} />
         <TextField path="emergency.relationship" label={t('relationship')} maxLength={50} />
-        <TextField path="emergency.phone" label={t('emergencyPhone')} type="tel" maxLength={40} />
+        <TextField path="emergency.phone" label={t('emergencyPhone')} type="tel" maxLength={20} allow="phone" />
       </Group>
       {errors.currentJob || errors.previousJob ? <FieldError id="af-work" error={te('invalid')} /> : null}
     </div>

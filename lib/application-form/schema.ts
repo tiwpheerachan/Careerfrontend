@@ -5,6 +5,7 @@ import {
   FORM_EDUCATION_LEVELS,
   GENDERS,
   LOCALES,
+  NAME_TITLES,
   MARITAL_STATUSES,
   MILITARY_STATUSES,
   SKILL_LEVELS,
@@ -38,10 +39,15 @@ const text = (max: number) =>
 
 const required = (max: number) => z.string().trim().min(1).max(max);
 
+/** A phone number: digits with + ( ) - and spaces, 9–15 digits (a Thai landline has 9, E.164 at most 15). */
 const phone = z
   .string()
   .trim()
-  .regex(/^\+?[0-9()\-\s]{6,40}$/, 'must be a phone number');
+  .regex(/^\+?[0-9()\-\s]{9,40}$/, 'must be a phone number')
+  .refine((value) => {
+    const digits = value.replace(/\D/g, '').length;
+    return digits >= 9 && digits <= 15;
+  }, 'must be a phone number of 9–15 digits');
 const optionalPhone = z
   .union([phone, z.literal('')])
   .nullable()
@@ -103,12 +109,23 @@ export const FormAddress = z.object({
 
 // --- 4. Sensitive (PDPA s.26) ---------------------------------------------------------------
 
+/** A measurement: 0 to max, to one decimal place (65.5 kg), or nothing. */
+const measure = (max: number) =>
+  z
+    .number()
+    .min(0)
+    .max(max)
+    .refine((value) => Math.abs(Math.round(value * 10) - value * 10) < 1e-9, 'one decimal place at most')
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null);
+
 export const FormSensitive = z.object({
   ethnicity: text(50),
   religion: text(50),
   bloodType: choice(BLOOD_TYPES),
-  weightKg: count(300),
-  heightCm: count(250),
+  weightKg: measure(300),
+  heightCm: measure(250),
 });
 
 // --- 5–7. Family, marriage, military ---------------------------------------------------------
@@ -196,7 +213,8 @@ export const ApplicationFormInput = z
     positionOther: text(150).meta({ description: 'The position, when it is not one of the published jobs.' }),
     expectedSalary: text(50),
 
-    // 2. Name
+    // 2. Name — the title apart, so it prints in each language (นาย … / Mr. …)
+    nameTitle: choice(NAME_TITLES),
     nameTh: required(150),
     nameEn: text(150),
     nickname: text(50),

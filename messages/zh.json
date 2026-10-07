@@ -1231,7 +1231,7 @@
     "errors": {
       "required": "请填写此项",
       "invalid": "格式不正确",
-      "phone": "请输入正确的电话号码",
+      "phone": "请输入 9–15 位数字的电话号码",
       "email": "请输入正确的邮箱",
       "birthDate": "请选择正确的出生日期",
       "postalCode": "邮政编码为 5 位数字",
@@ -1279,7 +1279,7 @@
       "expectedSalary": "期望薪资（泰铢）",
       "expectedSalaryPlaceholder": "例如 25,000",
       "nameTh": "姓名（泰文）",
-      "nameThPlaceholder": "与身份证一致",
+      "nameThPlaceholder": "与身份证一致（不含称谓）",
       "nameEn": "姓名（英文）",
       "nickname": "昵称",
       "gender": "性别",
@@ -1390,7 +1390,16 @@
       "certify": "本人保证以上所填内容全部属实。如公司日后发现任何信息与事实不符，公司有权依法取消本人的雇用资格。",
       "reviewHint": "提交前请核对，点击“修改”可返回该步骤。",
       "signNote": "面试当天请在打印的申请表上签名并贴上照片。",
-      "none": "—"
+      "none": "—",
+      "personalInfo": "个人信息",
+      "contactChannels": "联系方式",
+      "nameTitle": "称谓",
+      "nameTitles": {
+        "MR": "Mr. / นาย",
+        "MRS": "Mrs. / นาง",
+        "MISS": "Miss / นางสาว"
+      },
+      "phonePlaceholder": "例如 081 234 5678"
     },
     "backToReview": "返回核对页面"
   }

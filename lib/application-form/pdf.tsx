@@ -62,6 +62,10 @@ async function font(): Promise<fontkit.Font> {
   return metrics;
 }
 
+/** The name's title as each line of the form prints it. */
+const TITLE_TH = { MR: 'นาย', MRS: 'นาง', MISS: 'นางสาว' } as const;
+const TITLE_EN = { MR: 'Mr.', MRS: 'Mrs.', MISS: 'Miss' } as const;
+
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const SKILL = { FAIR: 'พอใช้', GOOD: 'ดี', EXCELLENT: 'ดีมาก' } as const;
 
@@ -101,8 +105,9 @@ export function placements(form: PrintableForm): Placed[] {
   put(L.position, form.position);
   put(L.expectedSalary, a.expectedSalary);
 
-  put(L.nameTh, a.nameTh);
-  put(L.nameEn, a.nameEn);
+  // The title before each name; an English name only gets one when there is an English name.
+  put(L.nameTh, a.nameTitle ? `${TITLE_TH[a.nameTitle]}${a.nameTh}` : a.nameTh);
+  put(L.nameEn, a.nameEn && a.nameTitle ? `${TITLE_EN[a.nameTitle]} ${a.nameEn}` : a.nameEn);
   put(L.nickname, a.nickname);
   if (a.gender) tick(L.gender[a.gender]);
 

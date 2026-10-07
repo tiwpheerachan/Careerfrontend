@@ -9,7 +9,7 @@ import { Turnstile } from '@/components/apply/turnstile';
 import { FORM_EDUCATION_LEVELS } from '@/lib/constants';
 import { cx } from '@/lib/cx';
 import { Link } from '@/lib/i18n/navigation';
-import { FormProvider, Tick, useForm, write } from './controls';
+import { FormProvider, read, Tick, useForm, write } from './controls';
 import {
   emptyDraft,
   fieldId,
@@ -113,7 +113,11 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
     if (outcome?.kind === 'sent') successRef.current?.focus({ preventScroll: true });
   }, [outcome]);
 
+  /** The sex was filled in from the title (not chosen): a later title change may still change it. */
+  const sexFromTitle = useRef(false);
+
   const set = (path: string, value: unknown) => {
+    if (path === 'gender') sexFromTitle.current = false;
     setDraft((current) => {
       const next = write(current, path, value);
       // A company letterhead lists only its country's jobs: a job from elsewhere is unchosen.
@@ -121,7 +125,13 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
         !next.jobCode ||
         next.jobCode === OTHER_JOB ||
         jobsFor(jobs, next.letterhead).some((j) => j.code === next.jobCode);
-      return path === 'letterhead' && !fits ? write(next, 'jobCode', '') : next;
+      if (path === 'letterhead' && !fits) return write(next, 'jobCode', '');
+      // นาย / Mr. is male, นาง / นางสาว female: the sex follows the title, unless already answered.
+      if (path === 'nameTitle' && value && (!next.gender || sexFromTitle.current)) {
+        sexFromTitle.current = true;
+        return write(next, 'gender', value === 'MR' ? 'MALE' : 'FEMALE');
+      }
+      return next;
     });
     // Choosing a job answers the "a job or a position" error, which is kept on positionOther.
     const answers = path === 'jobCode' ? [path, 'positionOther'] : [path];
@@ -133,6 +143,18 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
 
   const current: Step = STEPS[step]!;
   const last = step === STEPS.length - 1;
+
+  /** One field's error, now (on leaving it); an empty field waits for "Next". */
+  const check = (path: string) => {
+    const value = read(draft, path);
+    if (typeof value === 'string' && value.trim() === '') return;
+    const problem = validate(draft, locale, stepOf(path))[path];
+    setErrors((errors) => {
+      if (problem) return { ...errors, [path]: problem };
+      if (!errors[path]) return errors;
+      return Object.fromEntries(Object.entries(errors).filter(([p]) => p !== path));
+    });
+  };
 
   const scrollTop = () => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -269,7 +291,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
   const stepErrors = Object.keys(errors).some((path) => stepOf(path) === current);
 
   return (
-    <FormProvider value={{ draft, set, errors }}>
+    <FormProvider value={{ draft, set, errors, check }}>
       <div ref={topRef} className={cx(s.glassCard, 'scroll-mt-28 rounded-3xl p-5 sm:p-8')}>
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25">
@@ -463,6 +485,7 @@ function Review({
     {
       step: 'personal',
       rows: [
+        [f('nameTitle'), draft.nameTitle ? f(`nameTitles.${draft.nameTitle}`) : ''],
         [f('nameTh'), draft.nameTh],
         [f('nameEn'), draft.nameEn],
         [f('nickname'), draft.nickname],
@@ -482,9 +505,6 @@ function Review({
     {
       step: 'contact',
       rows: [
-        [f('mobile'), draft.mobile],
-        [f('email'), draft.email],
-        [f('homePhone'), draft.homePhone],
         [
           f('address'),
           join(
@@ -498,6 +518,9 @@ function Review({
             draft.address.postalCode,
           ),
         ],
+        [f('mobile'), draft.mobile],
+        [f('email'), draft.email],
+        [f('homePhone'), draft.homePhone],
       ],
     },
     {
@@ -506,7 +529,9 @@ function Review({
         [f('fatherName'), draft.family.fatherName],
         [f('motherName'), draft.family.motherName],
         [f('marital'), draft.marriage.status ? f(`maritals.${draft.marriage.status}`) : ''],
-        [f('military'), draft.military ? f(`militaries.${draft.military}`) : ''],
+        ...(draft.gender === 'FEMALE'
+          ? []
+          : ([[f('military'), draft.military ? f(`militaries.${draft.military}`) : '']] as Array<[string, string]>)),
       ],
     },
     {

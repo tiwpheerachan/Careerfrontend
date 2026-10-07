@@ -7,6 +7,7 @@ import {
   GENDERS,
   MARITAL_STATUSES,
   MILITARY_STATUSES,
+  NAME_TITLES,
   SKILL_LEVELS,
 } from '@/lib/constants';
 
@@ -49,6 +50,7 @@ export interface Draft {
   jobCode: string;
   positionOther: string;
   expectedSalary: string;
+  nameTitle: Choice<typeof NAME_TITLES>;
   nameTh: string;
   nameEn: string;
   nickname: string;
@@ -137,6 +139,7 @@ export function emptyDraft(): Draft {
     positionOther: '',
     expectedSalary: '',
     nameTh: '',
+    nameTitle: '',
     nameEn: '',
     nickname: '',
     gender: '',
@@ -199,6 +202,7 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
     jobCode: draft.jobCode === OTHER_JOB ? '' : draft.jobCode,
     positionOther: draft.jobCode === OTHER_JOB ? draft.positionOther : '',
     expectedSalary: draft.expectedSalary,
+    nameTitle: choice(draft.nameTitle),
     nameTh: draft.nameTh,
     nameEn: draft.nameEn,
     nickname: draft.nickname,
@@ -221,7 +225,8 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
       : null,
     family: { ...draft.family, siblings: num(draft.family.siblings), birthOrder: num(draft.family.birthOrder) },
     marriage: { ...draft.marriage, status: choice(draft.marriage.status), children: num(draft.marriage.children) },
-    military: choice(draft.military),
+    // Asked only of men: an answer left from before the sex was changed is not sent.
+    military: draft.gender === 'FEMALE' ? null : choice(draft.military),
     education: educationLevels.map((level) => ({ level, ...draft.education[level] })),
     skills: {
       ...draft.skills,
@@ -248,7 +253,17 @@ export type Step = (typeof STEPS)[number];
 /** Which top-level fields each step owns: an error is shown on the step whose field it is. */
 const STEP_FIELDS: Record<Step, string[]> = {
   position: ['letterhead', 'jobCode', 'positionOther', 'expectedSalary'],
-  personal: ['nameTh', 'nameEn', 'nickname', 'gender', 'birthDate', 'nationality', 'sensitiveConsent', 'sensitive'],
+  personal: [
+    'nameTitle',
+    'nameTh',
+    'nameEn',
+    'nickname',
+    'gender',
+    'birthDate',
+    'nationality',
+    'sensitiveConsent',
+    'sensitive',
+  ],
   contact: ['address', 'homePhone', 'mobile', 'email'],
   family: ['family', 'marriage', 'military'],
   education: ['education', 'skills'],

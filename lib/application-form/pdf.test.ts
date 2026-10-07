@@ -70,6 +70,13 @@ describe('the application form PDF', () => {
       expect(redacted).not.toContain(value);
     }
     expect(redacted).toContain(answers.nameTh);
+
+    // The title prints before each name, in that name's language.
+    const titled = placements({ ...form, answers: { ...answers, nameTitle: 'MISS' } }).flatMap((p) =>
+      p.kind === 'text' ? [p.text] : [],
+    );
+    expect(titled).toContain(`นางสาว${answers.nameTh}`);
+    if (answers.nameEn) expect(titled).toContain(`Miss ${answers.nameEn}`);
     expect(redacted).toContain(positionOther);
     expect(redacted.length).toBeGreaterThan(10);
   });

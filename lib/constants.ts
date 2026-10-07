@@ -28,6 +28,8 @@ export const EDUCATION_LEVELS = [
  */
 export const APPLICATION_FORM_LETTERHEADS = ['SHD', 'RABBIT', 'TOPONE', 'PLAIN'] as const;
 export const GENDERS = ['MALE', 'FEMALE'] as const;
+/** The name's title: นาย / Mr., นาง / Mrs., นางสาว / Miss. */
+export const NAME_TITLES = ['MR', 'MRS', 'MISS'] as const;
 export const MARITAL_STATUSES = ['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'] as const;
 /** The form's five boxes: served, deferred, reserve officer training done (จบ รด.), black card, exempt. */
 export const MILITARY_STATUSES = ['SERVED', 'DEFERRED', 'RESERVIST', 'BLACK_CARD', 'EXEMPT'] as const;

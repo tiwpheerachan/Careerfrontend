@@ -1275,7 +1275,7 @@
     "errors": {
       "required": "Please fill this in",
       "invalid": "This is not valid",
-      "phone": "Please enter a valid phone number",
+      "phone": "Please enter a phone number of 9–15 digits",
       "email": "Please enter a valid email",
       "birthDate": "Please choose a real birth date",
       "postalCode": "The postal code is 5 digits",
@@ -1323,7 +1323,7 @@
       "expectedSalary": "Expected salary (THB)",
       "expectedSalaryPlaceholder": "e.g. 25,000",
       "nameTh": "Full name (Thai)",
-      "nameThPlaceholder": "As on your ID card",
+      "nameThPlaceholder": "As on your ID card, without the title",
       "nameEn": "Full name (English)",
       "nickname": "Nickname",
       "gender": "Sex",
@@ -1434,7 +1434,16 @@
       "certify": "I certify that all the above is true. If the company later finds any of it untrue, it may rightfully cancel my employment.",
       "reviewHint": "Check before sending — “Edit” takes you back to that step.",
       "signNote": "You will sign the printed form and attach a photo at the interview.",
-      "none": "—"
+      "none": "—",
+      "personalInfo": "Personal information",
+      "contactChannels": "How to reach you",
+      "nameTitle": "Title",
+      "nameTitles": {
+        "MR": "Mr.",
+        "MRS": "Mrs.",
+        "MISS": "Miss"
+      },
+      "phonePlaceholder": "e.g. 081 234 5678"
     },
     "backToReview": "Back to review"
   }

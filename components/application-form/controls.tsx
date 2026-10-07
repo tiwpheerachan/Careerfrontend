@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type KeyboardEvent, type ReactNode } from 'react';
 import { Field, inputClass, invalidProps } from '@/components/apply/field';
 import { cx } from '@/lib/cx';
 import { fieldId, type Draft, type Errors } from './draft';
@@ -15,7 +15,31 @@ interface FormContext {
   draft: Draft;
   set: (path: string, value: unknown) => void;
   errors: Errors;
+  /** Check one field now (on leaving it), instead of waiting for "Next". */
+  check: (path: string) => void;
 }
+
+/**
+ * What a field lets through as it is typed: a phone number's characters, or
+ * digits only. Anything else never reaches the box ("sdf" in a phone number).
+ */
+const ALLOW = {
+  // Pasted "Tel 089-ABC-1234" becomes "089-1234…", not " 089--1234": no leading space, no doubled
+  // separators, and a + only at the start.
+  phone: (value: string) =>
+    value
+      .replace(/[^0-9+()\-\s]/g, '')
+      .replace(/(?!^)\+/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/-{2,}/g, '-')
+      .replace(/^\s+/, ''),
+  digits: (value: string) => value.replace(/\D/g, ''),
+  /** A number with at most one decimal point: weight 65.5, a GPA 3.25. */
+  decimal: (value: string) => {
+    const [whole, ...rest] = value.replace(/[^0-9.]/g, '').split('.');
+    return rest.length ? `${whole}.${rest.join('')}` : whole!;
+  },
+} as const;
 
 const Ctx = createContext<FormContext | null>(null);
 export const FormProvider = Ctx.Provider;
@@ -60,6 +84,7 @@ export function TextField({
   autoComplete,
   maxLength = 150,
   className,
+  allow,
 }: {
   path: string;
   label: string;
@@ -71,8 +96,10 @@ export function TextField({
   autoComplete?: string;
   maxLength?: number;
   className?: string;
+  /** Characters the box takes (phone, digits); everything when not given. */
+  allow?: keyof typeof ALLOW;
 }) {
-  const { draft, set } = useForm();
+  const { draft, set, check } = useForm();
   const t = useTranslations('apply');
   const id = fieldId(path);
   const error = useError(path);
@@ -90,16 +117,25 @@ export function TextField({
           value={read(draft, path)}
           aria-required={required || undefined}
           {...invalidProps(id, error)}
-          onChange={(e) => set(path, e.target.value)}
+          onChange={(e) => set(path, allow ? ALLOW[allow](e.target.value) : e.target.value)}
+          // A field says what is wrong as soon as it is left (an empty one waits for "Next").
+          onBlur={() => check(path)}
         />
       </Field>
     </div>
   );
 }
 
-/** A whole number, typed as text (so "2" on the way to "25" is never rewritten). */
-export function NumberField(props: Omit<Parameters<typeof TextField>[0], 'type' | 'inputMode' | 'maxLength'>) {
-  return <TextField {...props} inputMode="numeric" maxLength={6} />;
+/** A number, typed as text (so "2" on the way to "25" is never rewritten); `decimal` takes 65.5. */
+export function NumberField({
+  decimal,
+  ...props
+}: Omit<Parameters<typeof TextField>[0], 'type' | 'inputMode' | 'maxLength' | 'allow'> & { decimal?: boolean }) {
+  return decimal ? (
+    <TextField {...props} inputMode="decimal" maxLength={6} allow="decimal" />
+  ) : (
+    <TextField {...props} inputMode="numeric" maxLength={6} allow="digits" />
+  );
 }
 
 /**
@@ -132,7 +168,7 @@ export function Choices({
   const value = read(draft, path);
   return (
     <fieldset className={cx('space-y-2', className)} id={id} tabIndex={-1} {...invalidProps(id, error)}>
-      <legend className="text-xs font-semibold text-slate-600">
+      <legend id={`${id}-label`} className="text-xs font-semibold text-slate-600">
         {label}{' '}
         {required ? (
           <span className="text-rose-600">
@@ -141,15 +177,23 @@ export function Choices({
           </span>
         ) : null}
       </legend>
-      <div className={grid ? 'grid gap-2 sm:grid-cols-2' : 'flex flex-wrap gap-2'} role="radiogroup">
-        {options.map((option) => {
+      <div
+        className={grid ? 'grid gap-2 sm:grid-cols-2' : 'flex flex-wrap gap-2'}
+        role="radiogroup"
+        aria-labelledby={`${id}-label`}
+        onKeyDown={onRadioKeys}
+      >
+        {options.map((option, index) => {
           const checked = value === option.value;
+          // One Tab stop for the group: the chosen choice, or the first.
+          const tabbable = checked || (!options.some((o) => o.value === value) && index === 0);
           return (
             <button
               key={option.value}
               type="button"
               role="radio"
               aria-checked={checked}
+              tabIndex={tabbable ? 0 : -1}
               onClick={() => set(path, checked && !required ? '' : option.value)}
               className={cx(
                 'rounded-2xl border px-4 py-2 text-left text-sm font-semibold transition',
@@ -176,6 +220,25 @@ export function Choices({
       ) : null}
     </fieldset>
   );
+}
+
+/** A radio group's arrows (and Home/End): move to the next choice and choose it, as a native group does. */
+function onRadioKeys(event: KeyboardEvent<HTMLElement>) {
+  const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+  if (step === undefined && event.key !== 'Home' && event.key !== 'End') return;
+  const radios = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+  if (!radios.length) return;
+  event.preventDefault();
+  const at = radios.indexOf(document.activeElement as HTMLButtonElement);
+  const next =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? radios.length - 1
+        : (Math.max(at, 0) + step! + radios.length) % radios.length;
+  radios[next]!.focus();
+  // Moving onto the chosen one must not unchoose it (a click on it would).
+  if (radios[next]!.getAttribute('aria-checked') !== 'true') radios[next]!.click();
 }
 
 /** A tick box with its sentence. */
