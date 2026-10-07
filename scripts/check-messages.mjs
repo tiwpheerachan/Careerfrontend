@@ -20,7 +20,7 @@ import { join, sep } from 'node:path';
  */
 const CATALOGUES = {
   site: { locales: ['th', 'en', 'zh'], file: (l) => `messages/${l}.json` },
-  admin: { locales: ['th', 'en'], file: (l) => `messages/admin/${l}.json` },
+  admin: { locales: ['th', 'en', 'zh'], file: (l) => `messages/admin/${l}.json` },
 };
 const messages = Object.fromEntries(
   Object.entries(CATALOGUES).map(([name, c]) => [
@@ -76,4 +76,6 @@ if (problems.length) {
   for (const p of problems) console.error('  ' + p);
   process.exit(1);
 }
-console.log('ทุก key ที่โค้ดเรียก มีครบ: เว็บ (th, en, zh) · admin (th, en)');
+console.log(
+  `ทุก key ที่โค้ดเรียก มีครบ: เว็บ (${CATALOGUES.site.locales.join(', ')}) · admin (${CATALOGUES.admin.locales.join(', ')})`,
+);

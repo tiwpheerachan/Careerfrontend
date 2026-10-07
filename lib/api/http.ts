@@ -126,7 +126,7 @@ export function validationLanguage(request: Request, declared?: unknown): keyof 
   const url = new URL(request.url);
   if (url.pathname.startsWith('/api/v1/admin')) {
     const cookie = /(?:^|;\s*)admin_locale=(\w+)/.exec(request.headers.get('cookie') ?? '')?.[1];
-    return cookie === 'en' ? 'en' : 'th';
+    return cookie === 'en' || cookie === 'zh' ? cookie : 'th';
   }
   return known(declared) ?? known(url.searchParams.get('locale')) ?? 'en';
 }

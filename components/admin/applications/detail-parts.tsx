@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { AdminLocale } from '@/lib/i18n/admin';
+import { intlLocale, type AdminLocale } from '@/lib/i18n/admin';
 
 /** A label over a value ("—" when there is none) — the old detail page's Field. */
 export function Field({ label, value }: { label: string; value?: ReactNode }) {
@@ -29,7 +29,7 @@ export function formatMonth(ym: string | null, locale: AdminLocale): string | nu
   if (!ym) return null;
   const [y, m] = ym.split('-').map(Number);
   if (!y || !m) return ym;
-  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-GB', {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
@@ -43,7 +43,7 @@ export function monthRange(start: string | null, end: string | null, locale: Adm
 /** 77 B, 12.3 KB, 1.4 MB. */
 export function formatSize(bytes: number, locale: AdminLocale): string {
   const n = (value: number, digits: number) =>
-    new Intl.NumberFormat(locale === 'th' ? 'th-TH' : 'en-GB', { maximumFractionDigits: digits }).format(value);
+    new Intl.NumberFormat(intlLocale(locale), { maximumFractionDigits: digits }).format(value);
   if (bytes < 1024) return `${n(bytes, 0)} B`;
   if (bytes < 1024 * 1024) return `${n(bytes / 1024, 1)} KB`;
   return `${n(bytes / (1024 * 1024), 1)} MB`;

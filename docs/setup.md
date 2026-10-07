@@ -65,8 +65,8 @@ production. `tests/api/contracts.test.ts` fails if a route checks a different pe
 
 ## The admin
 
-`http://localhost:3000/admin` — overview, jobs, applicants, site text. Thai or English (header picker, a cookie;
-no url prefix). Its text is in `messages/admin/{th,en}.json`, separate from the public site's.
+`http://localhost:3000/admin` — overview, jobs, applicants, site text. Thai, English or Chinese (header picker, a cookie;
+no url prefix). Its text is in `messages/admin/{th,en,zh}.json`, separate from the public site's.
 
 ### Sign-in: SHD SSO (as in onelink)
 

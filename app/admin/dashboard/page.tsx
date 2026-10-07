@@ -7,7 +7,7 @@ import { PageHeader, Panel, STAGE_TONE, ToneBadge } from '@/components/admin/ui'
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/admin/format';
 import type { ApplicationStage } from '@/lib/constants-types';
-import type { AdminLocale } from '@/lib/i18n/admin';
+import { intlLocale, type AdminLocale } from '@/lib/i18n/admin';
 import { store } from '@/lib/store';
 import { requireAdminPage } from '@/lib/auth/admin';
 
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     store().applications.analytics({ days: DAYS, timeZone: 'Asia/Bangkok' }),
   ]);
 
-  const number = new Intl.NumberFormat(locale === 'th' ? 'th-TH' : 'en-GB');
+  const number = new Intl.NumberFormat(intlLocale(locale));
   const periodTotal = a.daily.reduce((sum, d) => sum + d.count, 0);
   const first = a.daily[0]?.date;
   const last = a.daily.at(-1)?.date;

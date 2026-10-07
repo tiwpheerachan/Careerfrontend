@@ -37,7 +37,7 @@ function withOverrides(base: Messages, overrides: Record<string, string>): Messa
  * is used — the site stays up.
  *
  * The admin (/admin — marked by proxy.ts): the language from the
- * admin_locale cookie, Thai unless English was chosen, and only the admin's
+ * admin_locale cookie (th, en or zh; Thai unless another was chosen), and only the admin's
  * own messages (messages/admin/<locale>.json) — the public site's text is not
  * shipped to it, nor the admin's to visitors.
  */

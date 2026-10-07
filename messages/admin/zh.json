@@ -1,0 +1,423 @@
+{
+  "meta": {
+    "title": "SHDcareers · 管理后台"
+  },
+  "brand": {
+    "console": "管理后台"
+  },
+  "nav": {
+    "menu": "菜单",
+    "dashboard": "概览",
+    "jobs": "职位",
+    "applications": "应聘者",
+    "content": "网站内容",
+    "viewSite": "查看网站",
+    "openMenu": "打开菜单",
+    "headerNote": "后台管理 · SHDcareers",
+    "signedInAs": "已登录",
+    "devUser": "管理员（开发）",
+    "signOut": "退出登录",
+    "language": "语言",
+    "unsavedTitle": "有未保存的更改",
+    "unsavedBody": "离开此页面后，尚未保存的更改将会丢失。",
+    "stay": "留在此页",
+    "leave": "不保存并离开"
+  },
+  "stage": {
+    "NEW": "新申请",
+    "REVIEWING": "审核中",
+    "SHORTLISTED": "入围",
+    "REJECTED": "未通过",
+    "HIRED": "已录用"
+  },
+  "publishState": {
+    "DRAFT": "草稿",
+    "PUBLISHED": "已发布",
+    "CLOSED": "已关闭"
+  },
+  "common": {
+    "all": "全部",
+    "save": "保存",
+    "saving": "保存中…",
+    "saved": "已保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "loading": "加载中…",
+    "noData": "暂无数据",
+    "back": "返回",
+    "search": "搜索",
+    "prev": "上一页",
+    "next": "下一页",
+    "error": "出错了",
+    "retry": "重试",
+    "confirm": "确认"
+  },
+  "unavailable": {
+    "title": "管理后台暂不可用",
+    "body": "需要先配置登录（SSO），管理后台才能在正式环境中使用。"
+  },
+  "applications": {
+    "list": {
+      "title": "应聘者",
+      "total": "共 {count} 人",
+      "export": "导出 CSV",
+      "searchPlaceholder": "搜索姓名 / 邮箱 / 电话…",
+      "allJobs": "全部职位",
+      "jobSearch": "搜索职位名称 / 职位编号…",
+      "jobEmpty": "未找到职位",
+      "applicantCount": "{count, plural, other {# 名应聘者}}",
+      "stageFilter": "按阶段筛选",
+      "filteringByJob": "当前显示职位的应聘者：",
+      "clearFilter": "清除筛选",
+      "empty": "未找到应聘者",
+      "emptyHint": "请尝试其他搜索词或筛选条件",
+      "columns": {
+        "name": "姓名",
+        "job": "职位 / 部门",
+        "contact": "联系方式",
+        "stage": "阶段",
+        "applied": "申请时间"
+      },
+      "sortBy": "按{column}排序",
+      "pageOf": "第 {page} / {pages} 页",
+      "range": "第 {from}–{to} 条，共 {total} 条",
+      "pageSize": "每页",
+      "perPage": "{count} 条/页",
+      "morePages": "更多页"
+    },
+    "detail": {
+      "back": "返回应聘者列表",
+      "appliedFor": "应聘职位",
+      "appliedAt": "申请于 {date}",
+      "contact": "联系方式",
+      "email": "邮箱",
+      "phone": "电话",
+      "address": "地址",
+      "website": "网站 / 作品集",
+      "position": "职位信息",
+      "jobCountry": "国家",
+      "department": "部门",
+      "level": "级别",
+      "residenceCountry": "居住国家",
+      "visaRequired": "需要签证",
+      "yes": "是",
+      "no": "否",
+      "availableFrom": "可入职日期",
+      "source": "了解渠道",
+      "formLanguage": "填写语言",
+      "skills": "技能",
+      "education": "教育经历",
+      "gpa": "绩点 {gpa}",
+      "experience": "工作经历",
+      "educationLevel": {
+        "HIGH_SCHOOL": "高中",
+        "VOCATIONAL_CERT": "职业证书（中专）",
+        "HIGHER_VOCATIONAL_CERT": "高级职业证书",
+        "DIPLOMA": "大专 / 副学士",
+        "BACHELOR": "本科",
+        "MASTER": "硕士",
+        "DOCTORATE": "博士",
+        "STUDYING": "在读",
+        "INCOMPLETE": "未毕业",
+        "OTHER": "其他 / 同等学历"
+      },
+      "stagePanel": "管理阶段",
+      "stage": "阶段",
+      "stageSaved": "已移至“{stage}”",
+      "stageUnchanged": "阶段未变化",
+      "stageFailed": "无法更改阶段",
+      "lastUpdated": "最近更新 {date}",
+      "notes": "内部备注",
+      "notePlaceholder": "评论 / 面试结果…",
+      "addNote": "添加备注",
+      "noteAdded": "已添加备注",
+      "noteFailed": "无法添加备注",
+      "noNotes": "暂无备注",
+      "deleteNote": "删除备注",
+      "deleteNoteTitle": "删除这条备注？",
+      "deleteNoteBody": "该备注将从此应聘者的记录中移除。",
+      "noteDeleted": "已删除备注",
+      "noteDeleteFailed": "无法删除备注",
+      "history": "阶段记录",
+      "received": "收到申请",
+      "byApplicant": "应聘者",
+      "bySystem": "系统",
+      "by": "操作人：{who}",
+      "documents": "文件",
+      "fileKind": {
+        "RESUME": "简历",
+        "TRANSCRIPT": "成绩单",
+        "ATTACHMENT": "附件"
+      },
+      "noResume": "无简历",
+      "noDocuments": "无文件",
+      "download": "下载 {name}",
+      "deleteApplication": "删除申请",
+      "deleteTitle": "删除 {name} 的申请？",
+      "deleteBody": "该申请将从应聘者列表和所有统计中消失。",
+      "deleted": "已删除申请",
+      "deleteFailed": "无法删除申请",
+      "notFoundTitle": "未找到该申请",
+      "notFoundBody": "可能已被删除，或链接有误。"
+    },
+    "tabs": {
+      "label": "应聘者视图",
+      "applications": "通过职位申请",
+      "forms": "求职申请表"
+    },
+    "forms": {
+      "title": "求职申请表",
+      "total": "共 {count} 份",
+      "searchPlaceholder": "搜索姓名 / 电话 / 邮箱 / 职位…",
+      "search": "搜索",
+      "empty": "暂无求职申请表",
+      "emptyHint": "在网站“填写申请表”页面填写的申请表会显示在这里",
+      "emptySearch": "请尝试其他搜索词",
+      "sensitiveHidden": "下载的 PDF 中民族、宗教、血型、体重和身高为空（需要应聘者的管理权限才能查看）。",
+      "columns": {
+        "name": "姓名",
+        "position": "职位",
+        "company": "公司",
+        "contact": "联系方式",
+        "sent": "提交时间",
+        "actions": "操作"
+      },
+      "otherPosition": "应聘者自行填写",
+      "letterheads": {
+        "SHD": "SHD",
+        "RABBIT": "Rabbit",
+        "TOPONE": "TOP ONE",
+        "PLAIN": "未指定"
+      },
+      "pdf": "PDF",
+      "deleteFor": "删除 {name} 的申请表",
+      "deleteTitle": "删除 {name} 的申请表？",
+      "deleteBody": "它将从列表中消失（仍保留在系统中，不会彻底删除）。",
+      "deleted": "已删除申请表",
+      "deleteFailed": "无法删除",
+      "pageOf": "第 {page} / {pages} 页",
+      "prev": "上一页",
+      "next": "下一页"
+    }
+  },
+  "dashboard": {
+    "title": "概览",
+    "subtitle": "一览职位与应聘者情况，用于评估和改进网站",
+    "allApplicants": "全部应聘者",
+    "kpi": {
+      "applications": "应聘者总数",
+      "publishedJobs": "招聘中的职位",
+      "hireRate": "录用率",
+      "avgPerJob": "每个招聘职位的平均应聘人数"
+    },
+    "trend": {
+      "title": "最近 {days} 天的应聘者",
+      "subtitle": "此期间共 {count} 份申请",
+      "badge": "{days} 天",
+      "today": "今天"
+    },
+    "byStage": {
+      "title": "按阶段",
+      "subtitle": "点击筛选应聘者"
+    },
+    "topJobs": {
+      "title": "热门职位",
+      "subtitle": "应聘人数最多"
+    },
+    "byDepartment": {
+      "title": "按部门",
+      "subtitle": "各部门应聘人数"
+    },
+    "bySource": {
+      "title": "来源渠道",
+      "subtitle": "应聘者如何得知我们"
+    },
+    "zeroJobs": {
+      "title": "尚无应聘者的招聘职位",
+      "subtitle": "可尝试更清晰的标题或描述，或加强推广"
+    },
+    "notSpecified": "未填写",
+    "untitled": "（无标题）"
+  },
+  "content": {
+    "title": "网站内容",
+    "subtitle": "编辑网站上的任意文字 · 已修改 {count} 项",
+    "siteLanguage": "网站语言",
+    "searchPlaceholder": "搜索键名或文字…（例如 nav、about、hero）",
+    "showing": "显示 {shown} / {total}",
+    "noMatch": "没有与“{q}”匹配的内容",
+    "edited": "已修改",
+    "unsaved": "未保存",
+    "unsavedCount": "{count} 项未保存",
+    "sectionCount": "{count} 个键",
+    "sectionEdited": "已修改 {count} 项",
+    "lastChanged": "最近由 {by} 修改 · {at}",
+    "lastChangedAt": "最近修改于 {at}",
+    "revert": "恢复默认",
+    "revertTitle": "恢复为默认文字？",
+    "revertBody": "{key}（{lang}）的修改将被移除，网站将重新显示内置文字。",
+    "reverted": "已恢复为默认文字",
+    "revertFailed": "无法恢复",
+    "savedToast": "已保存",
+    "saveFailed": "无法保存",
+    "discardTitle": "放弃未保存的更改？",
+    "discardBody": "有 {count} 项更改尚未保存。切换语言将放弃这些更改。",
+    "discard": "放弃并切换",
+    "keepEditing": "继续编辑",
+    "sections": {
+      "meta": "页面元数据（SEO）",
+      "brand": "品牌",
+      "nav": "导航",
+      "common": "通用文字",
+      "home": "首页",
+      "about": "关于我们",
+      "why": "为什么选择 SHD",
+      "jobs": "职位",
+      "partners": "合作伙伴",
+      "footer": "页脚",
+      "apply": "申请表"
+    }
+  },
+  "jobs": {
+    "list": {
+      "title": "职位",
+      "total": "共 {total} 个职位",
+      "showing": "显示 {shown} / {total} 个职位",
+      "create": "新建职位",
+      "searchPlaceholder": "搜索职位名称 / 职位编号 / 部门…",
+      "stateFilter": "按状态筛选",
+      "columns": {
+        "title": "职位",
+        "deptLevel": "部门 / 级别",
+        "openings": "招聘人数",
+        "applicants": "应聘者",
+        "status": "状态",
+        "updated": "最近更新",
+        "actions": "操作"
+      },
+      "sortBy": "按{column}排序",
+      "applicantCount": "{count} 人",
+      "viewApplicants": "查看此职位的应聘者",
+      "empty": "暂无职位 — 点击“新建职位”开始",
+      "noMatch": "没有符合搜索条件的职位",
+      "clearFilters": "清除筛选",
+      "actionsFor": "{code} 的操作",
+      "setState": "设置状态",
+      "stateChanged": "“{title}”已设为{state}",
+      "stateFailed": "无法更改状态"
+    },
+    "delete": {
+      "action": "删除职位",
+      "title": "删除此职位？",
+      "body": "“{title}”（{code}）将从网站和职位列表中移除。",
+      "applicantsKept": "{count, plural, =0 {该职位没有应聘者。} other {其 # 名应聘者会保留，不会被删除。}}",
+      "confirm": "删除职位",
+      "deleting": "删除中…",
+      "done": "已删除“{title}”",
+      "failed": "无法删除"
+    },
+    "editor": {
+      "back": "返回职位列表",
+      "titleNew": "新建职位",
+      "titleEdit": "编辑职位",
+      "subtitleNew": "请用 3 种语言填写职位信息",
+      "basic": "基本信息",
+      "code": "职位编号",
+      "codeHint": "职位代码，不能重复",
+      "codeLocked": "已锁定 — 用于公开链接",
+      "openings": "招聘人数",
+      "openingsHint": "留空 = 不注明",
+      "department": "部门",
+      "departmentPlaceholder": "例如 市场部、线下",
+      "level": "级别",
+      "levelPlaceholder": "例如 专员、高级",
+      "country": "国家",
+      "combo": {
+        "search": "搜索或输入新值…",
+        "inUse": "已使用",
+        "use": "使用“{value}”",
+        "clear": "不注明",
+        "empty": "暂无 — 输入即可添加"
+      },
+      "content": "招聘信息",
+      "languages": {
+        "th": "ไทย",
+        "en": "EN",
+        "zh": "中文"
+      },
+      "hasTitle": "已有标题",
+      "noTitle": "尚无标题",
+      "jobTitle": "职位名称（{lang}）",
+      "jobTitlePlaceholder": "例如 HR Business Partner",
+      "location": "工作地点（{lang}）",
+      "locationPlaceholder": "例如 泰国曼谷",
+      "description": "职位描述（{lang}）",
+      "qualifications": "任职要求（{lang}）",
+      "fallbackHint": "💡 留空的语言会在网站上自动使用其他语言显示（EN → TH → ZH）",
+      "publishing": "发布",
+      "stateHelp": {
+        "DRAFT": "📝 草稿 — 尚未在网站上显示",
+        "PUBLISHED": "✅ 显示在公开网站上，接受申请",
+        "CLOSED": "🔒 已关闭 — 不在网站上显示；职位及其应聘者均保留"
+      },
+      "create": "新建职位",
+      "creating": "创建中…",
+      "saveChanges": "保存更改",
+      "unsaved": "有未保存的更改",
+      "created": "已创建职位 {code}",
+      "saved": "已保存 {code}",
+      "saveFailed": "无法保存",
+      "discard": {
+        "title": "放弃更改？",
+        "body": "尚未保存的更改将会丢失。",
+        "confirm": "放弃",
+        "stay": "继续编辑"
+      },
+      "errors": {
+        "codeRequired": "请输入职位编号",
+        "codePattern": "只能使用 A–Z、0–9、- 和 _（2–64 个字符）",
+        "codeTaken": "已存在相同编号的职位",
+        "titleRequired": "请至少用一种语言填写职位名称",
+        "titleMissing": "请填写标题，否则此语言的内容不会保存",
+        "openings": "招聘人数须为 0 到 10,000 的整数",
+        "fixFields": "请修改标红的字段"
+      }
+    }
+  },
+  "auth": {
+    "signOut": "退出登录",
+    "signedOutTitle": "已退出登录",
+    "signedOutBody": "您在本应用的会话已结束。您仍登录着中央系统，再次登录时无需输入密码。",
+    "errorTitle": "登录失败",
+    "tryAgain": "重试",
+    "error_code": "该登录链接已被使用或已过期（有效期仅一分钟）。",
+    "error_state": "登录返回的信息与发出时不一致，请从此页重新开始。",
+    "error_client": "中央系统不接受本应用的凭证。这不是您能在这里解决的问题 — 请告知负责配置的人员。",
+    "error_access": "您的账号尚无权访问本应用，请向管理员申请。",
+    "error_inactive": "您的账号已在中央系统中被停用。",
+    "error_setup": "此部署尚未配置单点登录。",
+    "error_unavailable": "无法连接登录服务，可能是暂时故障，请重试。",
+    "signInAgain": "重新登录",
+    "noAccessTitle": "暂无访问权限",
+    "noAccessBody": "此账号已登录，但中央系统尚未在本应用中授予任何权限。请联系中央系统管理员分配角色，然后再次检查。",
+    "unavailableTitle": "暂时无法检查权限",
+    "unavailableBody": "中央系统没有响应，所以目前无法确定您的权限 — 并非被拒绝。请稍后重试。",
+    "checkAgain": "再次检查",
+    "signedInAs": "登录账号",
+    "forbiddenTitle": "您无法使用此部分",
+    "forbiddenBody": "此操作需要“{resource}”的“{level}”权限。请联系中央系统管理员授予权限，然后再次检查。",
+    "backToAdmin": "返回管理后台",
+    "resource": {
+      "jobs": "职位",
+      "applications": "应聘者",
+      "content": "网站内容"
+    },
+    "level": {
+      "view": "查看",
+      "edit": "编辑",
+      "manage": "管理"
+    },
+    "unmanaged": "权限系统未启用（CENTRAL_API_KEY）— 所有能登录的人都可以使用全部功能"
+  }
+}

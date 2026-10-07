@@ -231,13 +231,15 @@ describe('the admin gate with SSO on', () => {
 });
 
 describe('validation messages follow the language', () => {
-  it('the admin gets Thai by default and English when chosen', async () => {
+  it('the admin gets Thai by default, English or Chinese when chosen', async () => {
     const bad = { ...body, quantity: -1 };
     const th = await call(jobs.POST, { json: bad, path: '/api/v1/admin/jobs' });
     const en = await call(jobs.POST, { json: bad, path: '/api/v1/admin/jobs', headers: { cookie: 'admin_locale=en' } });
+    const zh = await call(jobs.POST, { json: bad, path: '/api/v1/admin/jobs', headers: { cookie: 'admin_locale=zh' } });
     const message = (res: Awaited<ReturnType<typeof call>>) =>
       res.body.error.issues.find((i: { path: string }) => i.path === 'quantity').message as string;
     expect(message(th)).toMatch(/[฀-๿]/); // Thai script
     expect(message(en)).toMatch(/too small/i);
+    expect(message(zh)).toMatch(/[\u4e00-\u9fff]/); // Chinese characters
   });
 });

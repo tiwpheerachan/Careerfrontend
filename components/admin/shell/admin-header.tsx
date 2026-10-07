@@ -52,6 +52,7 @@ export function AdminHeader() {
           <SelectContent position="popper" align="end">
             <SelectItem value="th">ไทย</SelectItem>
             <SelectItem value="en">English</SelectItem>
+            <SelectItem value="zh">中文</SelectItem>
           </SelectContent>
         </Select>
       </div>
