@@ -1,19 +1,14 @@
+import { Users } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
+import { HeaderSkeleton } from '@/components/admin/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /** The applicants list while it loads: header, filters and table rows in outline. */
-export default function Loading() {
+export default async function Loading() {
+  const t = await getTranslations('applications.list');
   return (
     <div aria-busy className="[contain:inline-size]">
-      <div className="mb-6 flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <Skeleton className="h-11 w-11 rounded-2xl bg-gray-200/70" />
-          <div className="space-y-2 pt-1">
-            <Skeleton className="h-6 w-28 bg-gray-200/70" />
-            <Skeleton className="h-4 w-24 bg-gray-200/70" />
-          </div>
-        </div>
-        <Skeleton className="h-9 w-32 rounded-xl bg-gray-200/70" />
-      </div>
+      <HeaderSkeleton icon={<Users className="h-5 w-5" />} title={t('title')} action />
 
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
         <Skeleton className="h-9 rounded-xl bg-gray-200/70 md:min-w-64 md:flex-1" />

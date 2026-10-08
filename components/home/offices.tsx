@@ -4,7 +4,7 @@ import { ArrowRight, Briefcase, ChevronLeft, ChevronRight, Flag, MapPin } from '
 import dynamic from 'next/dynamic';
 import { getImageProps } from 'next/image';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { flagOf } from '@/lib/countries';
 import { cx } from '@/lib/cx';
@@ -57,6 +57,18 @@ function OfficeBackground({ code, alt }: { code: string; alt: string }) {
 export function Offices({ jobs }: { jobs: HomeJob[] }) {
   const t = useTranslations('home.offices');
   const tc = useTranslations('common');
+  // The globe (three.js + textures, ~800 KB) loads only when it scrolls near: it sits far below the fold.
+  const globeBox = useRef<HTMLDivElement>(null);
+  const [globeNear, setGlobeNear] = useState(false);
+  useEffect(() => {
+    const box = globeBox.current;
+    if (!box || globeNear) return;
+    const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setGlobeNear(true), {
+      rootMargin: '600px',
+    });
+    io.observe(box);
+    return () => io.disconnect();
+  }, [globeNear]);
 
   const [officeCode, setOfficeCode] = useState(OFFICES[0]?.code ?? 'TH');
   const [page, setPage] = useState(1);
@@ -175,24 +187,28 @@ export function Offices({ jobs }: { jobs: HomeJob[] }) {
                             {/* mb-3: the space the old empty caption row took */}
                             <div className="relative mb-3 min-w-0">
                               <div className="relative h-[320px] w-full p-3 sm:h-[460px] sm:p-4 md:h-[560px] lg:h-[600px]">
-                                <div className="relative h-full w-full">
-                                  <Globe
-                                    offices={OFFICES}
-                                    labels={labels}
-                                    activeCode={officeCode}
-                                    onSelect={selectOffice}
-                                    loadingLabel={tc('loading')}
-                                    errorFallback={
-                                      <div className="flex h-full w-full items-center justify-center">
-                                        <div className="rounded-2xl border border-white/35 bg-black/35 px-4 py-3 text-xs font-semibold text-white backdrop-blur-sm">
-                                          {t('globe.unavailable')}
-                                          <div className="mt-1 text-[11px] font-medium text-white/70">
-                                            {t('globe.unavailableHint')}
+                                <div ref={globeBox} className="relative h-full w-full">
+                                  {globeNear ? (
+                                    <Globe
+                                      offices={OFFICES}
+                                      labels={labels}
+                                      activeCode={officeCode}
+                                      onSelect={selectOffice}
+                                      loadingLabel={tc('loading')}
+                                      errorFallback={
+                                        <div className="flex h-full w-full items-center justify-center">
+                                          <div className="rounded-2xl border border-white/35 bg-black/35 px-4 py-3 text-xs font-semibold text-white backdrop-blur-sm">
+                                            {t('globe.unavailable')}
+                                            <div className="mt-1 text-[11px] font-medium text-white/70">
+                                              {t('globe.unavailableHint')}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    }
-                                  />
+                                      }
+                                    />
+                                  ) : (
+                                    <GlobeLoading />
+                                  )}
                                   <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(70%_60%_at_50%_30%,rgba(255,255,255,0.14),transparent_65%)]" />
                                   <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(65%_55%_at_35%_40%,rgba(16,185,129,0.10),transparent_62%)]" />
                                 </div>

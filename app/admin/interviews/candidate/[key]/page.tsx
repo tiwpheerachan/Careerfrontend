@@ -258,6 +258,7 @@ export default async function CandidateEvaluationsPage({ params, searchParams }:
               {shownEvaluations.map((e) => (
                 <li key={e.id}>
                   <Link
+                    prefetch={false}
                     href={`/admin/interviews/${e.id}?from=candidate`}
                     className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-gray-50"
                   >
@@ -330,6 +331,7 @@ export default async function CandidateEvaluationsPage({ params, searchParams }:
                     <td className="py-3 pr-3 whitespace-nowrap text-gray-500">{formatDate(e.interviewDate, locale)}</td>
                     <td className="py-3 text-right">
                       <Link
+                        prefetch={false}
                         href={`/admin/interviews/${e.id}?from=candidate`}
                         className="text-sm font-semibold whitespace-nowrap text-blue-700 hover:underline"
                       >

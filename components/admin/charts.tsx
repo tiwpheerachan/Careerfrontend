@@ -38,7 +38,12 @@ export function BarList({
           </>
         );
         return item.href ? (
-          <Link key={index} href={item.href} className="-m-1 block rounded-lg p-1 transition hover:bg-gray-50">
+          <Link
+            prefetch={false}
+            key={index}
+            href={item.href}
+            className="-m-1 block rounded-lg p-1 transition hover:bg-gray-50"
+          >
             {inner}
           </Link>
         ) : (

@@ -47,7 +47,7 @@ export async function ApplicationsTable({
         {rows.map((r) => (
           <TableRow key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
             <TableCell className="px-4 py-3">
-              <Link href={detailHref(r.id)} className="font-semibold text-blue-700 hover:underline">
+              <Link prefetch={false} href={detailHref(r.id)} className="font-semibold text-blue-700 hover:underline">
                 {`${r.firstName} ${r.lastName}`}
               </Link>
             </TableCell>
@@ -108,6 +108,7 @@ function SortHeader({
   const Icon = !active ? ArrowUpDown : currentDir === 'asc' ? ArrowUp : ArrowDown;
   return (
     <Link
+      prefetch={false}
       href={listHref(query, { sort: sortKey, dir: nextDir })}
       aria-label={ariaLabel}
       className={cn(

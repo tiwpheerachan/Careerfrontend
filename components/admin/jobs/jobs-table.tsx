@@ -195,7 +195,11 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
                 className={cn('border-b border-gray-100 hover:bg-gray-50', busy === row.id && 'opacity-60')}
               >
                 <TableCell className="min-w-56 px-4 py-3 whitespace-normal">
-                  <Link href={`/admin/jobs/${row.id}`} className="font-semibold text-blue-700 hover:underline">
+                  <Link
+                    prefetch={false}
+                    href={`/admin/jobs/${row.id}`}
+                    className="font-semibold text-blue-700 hover:underline"
+                  >
                     {row.title}
                   </Link>
                   <div className="font-mono text-xs text-gray-400">{row.code}</div>
@@ -208,6 +212,7 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
                 <TableCell className="px-4 py-3">
                   {row.applicantCount ? (
                     <Link
+                      prefetch={false}
                       href={`/admin/applications?jobId=${row.id}`}
                       title={t('viewApplicants')}
                       className="inline-flex items-center gap-1 font-semibold text-blue-700 hover:underline"
@@ -237,7 +242,7 @@ export function JobsTable({ rows, total, filtered }: { rows: JobRow[]; total: nu
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem asChild>
-                        <Link href={`/admin/jobs/${row.id}`}>
+                        <Link prefetch={false} href={`/admin/jobs/${row.id}`}>
                           <Pencil /> {common('edit')}
                         </Link>
                       </DropdownMenuItem>

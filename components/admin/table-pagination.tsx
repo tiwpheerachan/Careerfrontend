@@ -143,6 +143,7 @@ function PageLink({
   }
   return (
     <Link
+      prefetch={false}
       href={href}
       scroll={scroll}
       aria-label={label}

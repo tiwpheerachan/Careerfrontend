@@ -1,5 +1,6 @@
 import { FileText } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { SubtitleSkeleton } from '@/components/admin/skeletons';
 import { PageHeader } from '@/components/admin/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -11,7 +12,7 @@ export default async function ContentLoading() {
       <PageHeader
         icon={<FileText className="h-5 w-5" />}
         title={t('title')}
-        subtitle={<Skeleton className="mt-1 h-4 w-64" />}
+        subtitle={<SubtitleSkeleton className="w-64" />}
         actions={<Skeleton className="h-[38px] w-48 rounded-xl" />}
       />
       <div className="py-2">

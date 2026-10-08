@@ -114,6 +114,7 @@ export default async function DashboardPage() {
             <div className="space-y-2">
               {STAGES.map((stage) => (
                 <Link
+                  prefetch={false}
                   key={stage}
                   href={`/admin/applications?stage=${stage}`}
                   className="flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-gray-50"
@@ -168,6 +169,7 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap gap-2">
               {a.publishedWithoutApplicants.map((job) => (
                 <Link
+                  prefetch={false}
                   key={job.id}
                   href={`/admin/jobs/${encodeURIComponent(job.id)}`}
                   className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:border-amber-300 hover:bg-amber-50"

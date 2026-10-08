@@ -113,6 +113,7 @@ export default async function ApplicationFormsPage({ searchParams }: PageProps<'
                       </a>
                       {abilitiesOf(actor).applications.edit && (
                         <Link
+                          prefetch={false}
                           href={`/admin/interviews/candidate/${encodeURIComponent(`form:${form.id}`)}`}
                           className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 transition hover:bg-gray-50"
                         >

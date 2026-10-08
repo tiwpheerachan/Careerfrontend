@@ -114,7 +114,7 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
               {rows.map((row) => (
                 <li key={row.href} className="px-4 py-3">
                   {/* The result under the name, the card wide: beside it, Thai wrapped a word per line. */}
-                  <Link href={row.href} className="font-semibold text-blue-700 hover:underline">
+                  <Link prefetch={false} href={row.href} className="font-semibold text-blue-700 hover:underline">
                     {row.candidate.name}
                   </Link>
                   <div className="truncate text-xs text-gray-400">
@@ -129,6 +129,7 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                       {row.evaluators} · {formatDate(row.date, locale)}
                     </span>
                     <Link
+                      prefetch={false}
                       href={row.href}
                       className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-blue-700 hover:underline"
                     >
@@ -155,7 +156,7 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                 {rows.map((row) => (
                   <TableRow key={row.href} className="border-b border-gray-100 align-top hover:bg-gray-50">
                     <TableCell className="min-w-48 px-4 py-3 whitespace-normal">
-                      <Link href={row.href} className="font-semibold text-blue-700 hover:underline">
+                      <Link prefetch={false} href={row.href} className="font-semibold text-blue-700 hover:underline">
                         {row.candidate.name}
                       </Link>
                       <div className="text-xs text-gray-400">
@@ -179,6 +180,7 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right">
                       <Link
+                        prefetch={false}
                         href={row.href}
                         className="text-sm font-semibold whitespace-nowrap text-blue-700 hover:underline"
                       >
