@@ -6,3 +6,4 @@ export * from './site-content';
 export * from './application-forms';
 export * from './interview-evaluations';
 export * from './interview-invitations';
+export * from './admin-audit-logs';

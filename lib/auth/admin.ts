@@ -71,8 +71,14 @@ function cookieFrom(request: Request): string | undefined {
 }
 
 /** The gate for API routes: 401 / 403 / 503 as AdminApiError-shaped JSON (lib/api/http.ts). */
+/** Who requireAdmin found for each request — the audit trail names them (lib/api/audit.ts), refused ones too. */
+const actors = new WeakMap<Request, AdminActor>();
+export const adminActorOf = (request: Request): AdminActor | undefined => actors.get(request);
+
 export async function requireAdmin(request: Request, need?: Need): Promise<AdminActor> {
-  return check(await actorFrom(cookieFrom(request)), need);
+  const actor = await actorFrom(cookieFrom(request));
+  actors.set(request, actor);
+  return check(actor, need);
 }
 
 /** Who is signed in to the admin, for server components (throws like requireAdmin). */

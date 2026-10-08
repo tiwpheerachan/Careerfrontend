@@ -93,14 +93,22 @@ Sign out (sidebar) ends this app's session only → `/sso/signed-out`.
 **Redirect URI to register** in the central console, exactly: `<SITE_URL>/api/sso/callback`
 (local: `http://localhost:3000/api/sso/callback`).
 
-**Permissions** — three resources, levels `none < view < edit < manage`. Upload `sso-schema/resources.xlsx`
-(built by `python3 scripts/build-sso-schema.py`) on the app's permissions page:
+**Permissions** — three resources, levels `none < view < edit < manage`; no capabilities or scopes.
+`python3 scripts/build-sso-schema.py` writes one sheet per kind to `sso-schema/` — `resources.xlsx`,
+`capabilities.xlsx` and `scopes.csv` (the last two empty) — to upload on the app's permissions page. Then tick them for
+roles: a new resource is nobody's until then.
 
-| Resource       | view                        | edit                        | manage             |
-| -------------- | --------------------------- | --------------------------- | ------------------ |
-| `jobs`         | job list, editor read-only  | create, edit, publish/close | delete             |
-| `applications` | applicants, files, overview | stage, notes                | delete, CSV export |
-| `content`      | site text, read-only        | change and revert           | —                  |
+| Resource       | view                                                                   | edit                                                  | manage                                                              |
+| -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------- |
+| `jobs`         | job list, editor read-only                                             | create, edit, publish/close                           | delete                                                              |
+| `applications` | applicants, files, overview, application forms, interviews, their PDFs | stage, notes, evaluate, invite evaluators, edit links | delete applications, forms and evaluations; CSV export; PDPA fields |
+| `content`      | site text, read-only                                                   | change and revert                                     | —                                                                   |
+
+**Audit trail** — `admin_audit_logs` (migration 0010): every admin API call that creates, changes or deletes, and
+every download of personal data (a resume, a PDF, the CSV export) — who, action, path, record id, status, the JSON sent
+(≤ 16 KB), IP. Written in one place, `handler()` → `lib/api/audit.ts`, so a new admin route is covered without doing
+anything; refused attempts (403/404) are kept too. Not shown in the app — read it in the database:
+`select created_at, actor_email, action, path, status from admin_audit_logs order by pk desc limit 50;`
 
 The menu shows only what the person may open, and buttons they cannot use are hidden — but the lock is on the
 server: every API route calls `requireAdmin(request, need)`, every page `requireAdminPage(need)` before reading data

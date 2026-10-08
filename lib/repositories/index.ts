@@ -1,4 +1,5 @@
 import type { Database } from '@/lib/db/client';
+import { createAdminAuditLogRepository } from './admin-audit-logs';
 import { createApplicationFormRepository } from './application-forms';
 import { createApplicationRepository } from './applications';
 import { createInterviewEvaluationRepository } from './interview-evaluations';
@@ -20,6 +21,7 @@ export function createRepositories(db: Database) {
     interviewInvitations: createInterviewInvitationRepository(db),
     siteContent: createSiteContentRepository(db),
     rateLimits: createRateLimitRepository(db),
+    adminAuditLogs: createAdminAuditLogRepository(db),
   };
 }
 

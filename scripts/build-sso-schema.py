@@ -1,13 +1,17 @@
 """
-Builds the resource sheet the Central Login console imports
-(App → Permissions → upload Excel), as in shd_onelink.
+Builds this app's permission sheets for Central Login (App → Permissions →
+upload), one per kind, as its templates have them:
+  sso-schema/resources.xlsx     resources — key, name, rtype, parent, verbs, sensitive, description
+  sso-schema/capabilities.xlsx  capabilities — key, name, description
+  sso-schema/scopes.csv         scopes — dim_key, dim_name, value_key, value_name
 
 Run: python3 scripts/build-sso-schema.py   (needs openpyxl)
 
-The keys must match lib/auth/permissions.ts (ResourceKey): the app asks
-/authz/effective for exactly these. What each level means is written in the
-description, so whoever assigns roles in the console reads what they grant.
-No capabilities or scopes: the careers admin has neither.
+The resource keys must match lib/auth/permissions.ts (ResourceKey): the app
+asks /authz/effective for exactly these. What each level means is written in
+the description, so whoever assigns roles in the console reads what they grant.
+Capabilities and scopes are empty: the careers admin checks neither — the
+levels cover everything, and no rows are limited by brand, warehouse or the like.
 """
 
 import csv
@@ -33,8 +37,10 @@ RESOURCES = [
         "rtype": "table",
         "verbs": "export",
         "sensitive": "TRUE",
-        "description": "ใบสมัครและไฟล์เรซูเม่ (ข้อมูลส่วนบุคคล) — view = ดูผู้สมัคร ไฟล์ และภาพรวม · "
-        "edit = เปลี่ยนสถานะ เขียน/ลบโน้ต · manage = ลบใบสมัคร และส่งออก CSV",
+        "description": "ผู้สมัคร แบบฟอร์มใบสมัคร และผลประเมินสัมภาษณ์ (ข้อมูลส่วนบุคคล) — "
+        "view = ดูผู้สมัคร ไฟล์ ภาพรวม แบบฟอร์มใบสมัคร ผลประเมินและลิงก์เชิญ พิมพ์ PDF · "
+        "edit = เปลี่ยนสถานะ เขียน/ลบโน้ต ประเมินสัมภาษณ์ เชิญผู้ประเมิน สร้างลิงก์แก้ไขผลประเมิน · "
+        "manage = ลบใบสมัคร แบบฟอร์ม และผลประเมิน ส่งออก CSV เห็นข้อมูลอ่อนไหว (PDPA) ในใบสมัคร PDF",
     },
     {
         "key": "content",
@@ -46,22 +52,37 @@ RESOURCES = [
     },
 ]
 
+CAPABILITY_COLUMNS = ["key", "name", "description"]
+CAPABILITIES: list[dict] = []
+
+SCOPE_COLUMNS = ["dim_key", "dim_name", "value_key", "value_name"]
+SCOPES: list[dict] = []
+
 out = Path(__file__).resolve().parent.parent / "sso-schema"
 out.mkdir(exist_ok=True)
 
-book = Workbook()
-sheet = book.active
-sheet.title = "resources"
-sheet.append(COLUMNS)
+
+def sheet(name: str, columns: list[str], rows: list[dict]) -> None:
+    book = Workbook()
+    page = book.active
+    page.title = name
+    page.append(columns)
+    for row in rows:
+        page.append([row.get(column) or None for column in columns])
+    book.save(out / f"{name}.xlsx")
+
+
 for row in RESOURCES:
-    sheet.append([row.get(column) or None for column in COLUMNS])
-book.save(out / "resources.xlsx")
+    assert len(row["description"]) <= 500, f"{row['key']}: description over 500 characters"
+sheet("resources", COLUMNS, RESOURCES)
+sheet("capabilities", CAPABILITY_COLUMNS, CAPABILITIES)
 
-# The same rows as CSV, so a change shows up readably in a diff.
-with open(out / "resources.csv", "w", newline="", encoding="utf-8-sig") as file:
-    writer = csv.DictWriter(file, fieldnames=COLUMNS)
+with open(out / "scopes.csv", "w", newline="", encoding="utf-8-sig") as file:
+    writer = csv.DictWriter(file, fieldnames=SCOPE_COLUMNS)
     writer.writeheader()
-    for row in RESOURCES:
-        writer.writerow({column: row.get(column, "") for column in COLUMNS})
+    writer.writerows(SCOPES)
 
-print(f"wrote {out / 'resources.xlsx'} and resources.csv ({len(RESOURCES)} resources)")
+print(
+    f"wrote resources.xlsx ({len(RESOURCES)}), capabilities.xlsx ({len(CAPABILITIES)}) "
+    f"and scopes.csv ({len(SCOPES)}) in {out}"
+)

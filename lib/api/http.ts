@@ -11,6 +11,7 @@ import {
   UnavailableError,
 } from '@/lib/errors';
 import { log, type Logger } from '@/lib/log';
+import { auditStart } from './audit';
 
 /**
  * The HTTP edge: input in, JSON and status codes out.
@@ -89,6 +90,7 @@ export function handler<P = unknown>(
     const id = requestId(request);
     const logger = log.child({ requestId: id });
     const started = performance.now();
+    const audit = auditStart(request);
 
     let response: Response;
     try {
@@ -98,6 +100,7 @@ export function handler<P = unknown>(
     }
 
     response.headers.set('x-request-id', id);
+    await audit?.(response, logger, id);
     logger.info(
       {
         method: request.method,

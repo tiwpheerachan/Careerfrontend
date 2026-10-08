@@ -71,6 +71,13 @@
       "when": 1791954000000,
       "tag": "0009_interview_edit_links",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792040400000,
+      "tag": "0010_admin_audit_logs",
+      "breakpoints": true
     }
   ]
 }
