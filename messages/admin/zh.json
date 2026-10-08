@@ -52,7 +52,12 @@
     "next": "下一页",
     "error": "出错了",
     "retry": "重试",
-    "confirm": "确认"
+    "confirm": "确认",
+    "pageOf": "第 {page} / {pages} 页",
+    "range": "第 {from}–{to} 条，共 {total} 条",
+    "morePages": "更多页",
+    "pageSize": "每页",
+    "perPage": "{count} 条/页"
   },
   "unavailable": {
     "title": "管理后台暂不可用",
@@ -81,11 +86,6 @@
         "applied": "申请时间"
       },
       "sortBy": "按{column}排序",
-      "pageOf": "第 {page} / {pages} 页",
-      "range": "第 {from}–{to} 条，共 {total} 条",
-      "pageSize": "每页",
-      "perPage": "{count} 条/页",
-      "morePages": "更多页",
       "showing": "显示 {shown} / {total} 人",
       "jobFilter": "按职位筛选"
     },
@@ -480,16 +480,15 @@
         "date": "面试日期",
         "actions": "操作"
       },
-      "pageOf": "第 {page} / {pages} 页",
-      "prev": "上一页",
-      "next": "下一页",
-      "openEvaluation": "查看此评估",
-      "openCandidate": "查看该候选人的全部评估"
+      "openResult": "查看结果",
+      "noneYet": "暂无"
     },
     "form": {
       "titleNew": "面试评估表",
       "titleEdit": "面试评估",
       "subtitle": "每项按 0–5 分打分，系统自动汇总并对照合格标准",
+      "readOnly": "此评估仅可查看 — 如需修改，请为 {who} 生成修改链接（仅 {who} 的账号可打开）",
+      "readOnlyNoRight": "此评估仅可查看 — 如需修改，请联系有编辑权限的人为 {who} 生成修改链接",
       "back": "返回评估列表",
       "candidateSection": "应聘者信息",
       "search": "在系统中查找应聘者",
@@ -557,7 +556,7 @@
         "fix": "请修改标红的字段",
         "signedOut": "登录已过期 — 请重新登录后再试",
         "forbidden": "此账号无权保存该评估",
-        "duplicate": "您已评估过该候选人的这一轮次和这一方 — 请编辑原有评估",
+        "duplicate": "您已在此轮次和此方评估过该应聘者 — 如需修改，请申请修改链接",
         "alreadySent": "您已通过此链接提交过评估",
         "gone": "此链接已过期或已被停用"
       },
@@ -578,14 +577,7 @@
       "deleteBodyInvited": "{who} 通过邀请链接提交的评估（{round}，{role}）将被删除。如需重新评估，请在候选人页面创建新的邀请链接。",
       "deleteKeep": "保留",
       "deleted": "评估已删除",
-      "deleteFailed": "删除失败",
-      "access": {
-        "own": "这是您的评估 — 可以修改",
-        "manage": "此评估属于 {who} — 您拥有管理权限，因此可以修改；保存时会记录您为修改人",
-        "locked": "{who} 通过邀请链接提交了此评估 — 不可修改，以保证分数为评估人本人所给。如有错误，请联系有管理权限的人删除后重新邀请",
-        "lockedManage": "{who} 通过邀请链接提交了此评估 — 不可修改，以保证分数为评估人本人所给。如有错误，请删除后重新邀请",
-        "other": "此评估属于 {who} — 仅评估人本人或有管理权限的人可以修改"
-      }
+      "deleteFailed": "删除失败"
     },
     "items": {
       "fieldKnowledge": "专业基础知识",
@@ -639,7 +631,7 @@
       "conclusion": "评估结论：",
       "opinion1": "初试意见",
       "opinion2": "复试意见",
-      "comment": "意见",
+      "from": "来自 {who}",
       "signature": "签名",
       "date": "日期",
       "printed": "由 SHDcareers 系统打印于 {date}",
@@ -654,8 +646,9 @@
     "candidate": {
       "back": "返回评估列表",
       "subtitle": "该应聘者的所有轮次和评估人",
-      "evaluateMore": "新增评估",
       "empty": "该应聘者暂无评估",
+      "listTitle": "个人评估结果",
+      "listHint": "每位评估人每轮的结果 — 点击“查看此评估”查看完整表单",
       "pdfTitle": "打印评估表（PDF）",
       "pdfHint": "每一方各有一份评估表，初试和复试在同一页",
       "pdfFor": {
@@ -668,13 +661,22 @@
         "en": "English",
         "zh": "中文"
       },
-      "open": "打开",
+      "open": "查看此评估",
       "viewAll": "查看该应聘者的全部评估",
       "summaryTitle": "评分汇总",
+      "overallHint": "所有评估方、两轮合计，与面试评估列表一致 — 结论为多数评估人所选，平票为待定",
+      "breakdownTitle": "按轮次和评估方",
       "summaryHint": "每一轮次、每一方评估人的平均分，按每人最新的评估计算（与 PDF 汇总页一致）— 每人的评估见下方列表",
       "averageOf": "{count} 人平均",
       "seniorAverage": "第 11–15 项平均 {score} / 25",
-      "meetsCount": "{count} 人中 {meets} 人达标"
+      "meetsCount": "{count} 人中 {meets} 人达标",
+      "formula": {
+        "title": "分数计算方式",
+        "general": "第 1–10 项（满分 50）— 每轮评估人平均",
+        "senior": "第 11–15 项（满分 25）— 仅对评分者平均",
+        "both": "两轮平均（每轮权重相同）",
+        "total": "合计"
+      }
     },
     "invite": {
       "title": "邀请评估人",
@@ -727,7 +729,24 @@
         "HR": "HR",
         "DEPARTMENT": "部门"
       },
-      "keep": "保留链接"
+      "keep": "保留链接",
+      "columns": {
+        "round": "轮次 · 评估方",
+        "state": "状态",
+        "invitees": "受邀人",
+        "created": "创建人",
+        "expires": "有效期至",
+        "actions": "操作"
+      },
+      "editLink": "修改链接"
+    },
+    "editLink": {
+      "create": "生成修改链接",
+      "createFailed": "生成修改链接失败",
+      "madeTitle": "修改链接已生成",
+      "madeBody": "复制链接发送给 {who} — 仅 {who} 的账号可打开。修改会记录时间。",
+      "linkLabel": "修改链接",
+      "rules": "未打开时有效 1 天 · 打开后有效 6 小时 · 只能提交一次 · 可在应聘者页面查看和停用"
     }
   },
   "invitee": {
@@ -735,6 +754,8 @@
     "brand": "受邀评估人",
     "title": "面试评估",
     "intro": "您受邀评估该应聘者。请先查看下方的申请资料，然后打分并提交（只能提交一次）。",
+    "editTitle": "修改面试评估",
+    "editIntro": "您的评估如下。修改后提交（仅一次），系统会记录修改时间。",
     "openUntil": "链接有效至 {time}",
     "materials": {
       "title": "应聘者的申请资料",

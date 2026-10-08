@@ -52,7 +52,12 @@
     "next": "Next",
     "error": "Something went wrong",
     "retry": "Try again",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "pageOf": "Page {page} of {pages}",
+    "range": "{from}–{to} of {total}",
+    "morePages": "More pages",
+    "pageSize": "Per page",
+    "perPage": "{count} / page"
   },
   "unavailable": {
     "title": "The admin is not available yet",
@@ -81,11 +86,6 @@
         "applied": "Applied"
       },
       "sortBy": "Sort by {column}",
-      "pageOf": "Page {page} of {pages}",
-      "range": "{from}–{to} of {total}",
-      "pageSize": "Per page",
-      "perPage": "{count} / page",
-      "morePages": "More pages",
       "showing": "Showing {shown} of {total}",
       "jobFilter": "Filter by job"
     },
@@ -480,16 +480,15 @@
         "date": "Interview date",
         "actions": "Actions"
       },
-      "pageOf": "Page {page} of {pages}",
-      "prev": "Previous",
-      "next": "Next",
-      "openEvaluation": "View this evaluation",
-      "openCandidate": "All evaluations of this candidate"
+      "openResult": "View result",
+      "noneYet": "none yet"
     },
     "form": {
       "titleNew": "Evaluate an interview",
       "titleEdit": "Interview evaluation",
       "subtitle": "Score each item 0–5; the totals and the pass mark are worked out for you",
+      "readOnly": "This evaluation is read only — to change it, make an edit link for {who} (only {who}’s account can open it)",
+      "readOnlyNoRight": "This evaluation is read only — to change it, ask someone with edit rights to make an edit link for {who}",
       "back": "Back to evaluations",
       "candidateSection": "Candidate",
       "search": "Find the candidate",
@@ -557,7 +556,7 @@
         "fix": "Please fix the fields marked in red",
         "signedOut": "Your sign-in has expired — sign in again and retry",
         "forbidden": "This account may not save this evaluation",
-        "duplicate": "You have already evaluated this candidate for this round and side — edit that one instead",
+        "duplicate": "You have already evaluated this candidate in this round for this side — to change it, ask for an edit link",
         "alreadySent": "You have already sent your evaluation through this link",
         "gone": "This link has expired or was switched off"
       },
@@ -578,14 +577,7 @@
       "deleteBodyInvited": "The evaluation {who} sent through an invitation link ({round}, {role}) will be deleted. To have it done again, make a new invitation link on the candidate page.",
       "deleteKeep": "Keep it",
       "deleted": "Evaluation deleted",
-      "deleteFailed": "Could not delete",
-      "access": {
-        "own": "Your evaluation — you can edit it",
-        "manage": "This is {who}’s evaluation — you can edit it because you have manage rights; saving records you as the editor",
-        "locked": "{who} sent this through an invitation link — it cannot be edited, so the scores stay the evaluator’s own. If it is wrong, ask someone with manage rights to delete it and invite again",
-        "lockedManage": "{who} sent this through an invitation link — it cannot be edited, so the scores stay the evaluator’s own. If it is wrong, delete it and invite again",
-        "other": "This is {who}’s evaluation — only its evaluator, or someone with manage rights, can edit it"
-      }
+      "deleteFailed": "Could not delete"
     },
     "items": {
       "fieldKnowledge": "General knowledge of the field",
@@ -639,7 +631,7 @@
       "conclusion": "Result:",
       "opinion1": "1st round",
       "opinion2": "2nd round",
-      "comment": "Comments",
+      "from": "From {who}",
       "signature": "Signature",
       "date": "Date",
       "printed": "Printed from SHDcareers on {date}",
@@ -654,8 +646,9 @@
     "candidate": {
       "back": "Back to evaluations",
       "subtitle": "Every round and every evaluator for this candidate",
-      "evaluateMore": "Add an evaluation",
       "empty": "No evaluations of this candidate yet",
+      "listTitle": "Evaluations by person",
+      "listHint": "Each evaluator’s result in each round — “View this evaluation” opens the full form",
       "pdfTitle": "Print the form (PDF)",
       "pdfHint": "Each side has its own form, with the 1st and 2nd round on one page",
       "pdfFor": {
@@ -668,13 +661,22 @@
         "en": "English",
         "zh": "中文"
       },
-      "open": "Open",
+      "open": "View this evaluation",
       "viewAll": "All of this candidate’s evaluations",
       "summaryTitle": "Scores",
+      "overallHint": "Everyone, both rounds, as on the interview evaluations list — the result most evaluators chose; a tie is pending",
+      "breakdownTitle": "By round and side",
       "summaryHint": "The evaluators’ average for each round and side, counting each one’s latest evaluation (as on the PDF’s summary page) — each evaluation is in the list below",
       "averageOf": "average of {count}",
       "seniorAverage": "Items 11–15: average {score} / 25",
-      "meetsCount": "{meets} of {count} meet the pass mark"
+      "meetsCount": "{meets} of {count} meet the pass mark",
+      "formula": {
+        "title": "How the score is worked out",
+        "general": "Items 1–10 (out of 50) — the evaluators of each round averaged",
+        "senior": "Items 11–15 (out of 25) — averaged over those who scored them",
+        "both": "Both rounds averaged (each counts the same)",
+        "total": "Total"
+      }
     },
     "invite": {
       "title": "Invite evaluators",
@@ -727,7 +729,24 @@
         "HR": "HR",
         "DEPARTMENT": "Department"
       },
-      "keep": "Keep the link"
+      "keep": "Keep the link",
+      "columns": {
+        "round": "Round · side",
+        "state": "Status",
+        "invitees": "Invited",
+        "created": "Made by",
+        "expires": "Open until",
+        "actions": "Actions"
+      },
+      "editLink": "Edit link"
+    },
+    "editLink": {
+      "create": "Make an edit link",
+      "createFailed": "Could not make the edit link",
+      "madeTitle": "Edit link made",
+      "madeBody": "Copy the link and send it to {who} — only {who}’s account can open it. The change is recorded with its time.",
+      "linkLabel": "Edit link",
+      "rules": "1 day if nobody opens it · 6 hours once opened · sent once · see and switch it off on the candidate’s page"
     }
   },
   "invitee": {
@@ -735,6 +754,8 @@
     "brand": "Invited evaluator",
     "title": "Interview evaluation",
     "intro": "You have been invited to evaluate this candidate. Read the application below, then score and send (once).",
+    "editTitle": "Change your interview evaluation",
+    "editIntro": "Your evaluation is below. Change it and send (once); the change is recorded with its time.",
     "openUntil": "Link works until {time}",
     "materials": {
       "title": "The candidate’s application",

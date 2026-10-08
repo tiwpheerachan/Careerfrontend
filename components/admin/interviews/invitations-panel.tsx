@@ -3,7 +3,7 @@
 import { Check, Copy, Link2, Loader2, Send, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { ToneBadge, type Tone } from '@/components/admin/ui';
 import {
@@ -32,6 +32,8 @@ export interface PanelInvitation {
   round: 1 | 2;
   evaluatorRole: (typeof EVALUATOR_ROLES)[number];
   senior: boolean;
+  /** An edit link: the evaluation it changes. */
+  editOf: string | null;
   createdBy: string;
   createdByName: string | null;
   createdAt: string;
@@ -72,9 +74,12 @@ const STATE_TONE: Record<InvitationState, Tone> = {
 export function InvitationsPanel({
   candidate,
   invitations,
+  footer,
 }: {
   candidate: PanelCandidate;
+  /** This page of them (the page pages the list; `footer` is its pagination). */
   invitations: PanelInvitation[];
+  footer?: ReactNode;
 }) {
   const t = useTranslations('interviews.invite');
   const tf = useTranslations('interviews.form');
@@ -166,6 +171,80 @@ export function InvitationsPanel({
 
   const live = (state: InvitationState) => state === 'PENDING' || state === 'OPEN';
 
+  // The pieces of a link, shared by its card (narrow screens) and its table row.
+  const which = (inv: PanelInvitation) => (
+    <>
+      <span className="font-semibold text-gray-900">
+        {tf(`rounds.${inv.round}`)} · {tf(`roles.${inv.evaluatorRole}`)}
+      </span>
+      {inv.senior && <ToneBadge tone="violet">Senior</ToneBadge>}
+      {inv.editOf && <ToneBadge tone="amber">{t('editLink')}</ToneBadge>}
+    </>
+  );
+  const madeBy = (inv: PanelInvitation) =>
+    t('madeBy', { who: inv.createdByName || inv.createdBy, time: when(inv.createdAt) });
+  const actions = (inv: PanelInvitation) => (
+    <div className="flex justify-end gap-1.5">
+      {live(inv.state) && (
+        <button
+          type="button"
+          onClick={() => void copy(inv.link, inv.id)}
+          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-gray-700 hover:bg-gray-50"
+        >
+          {copied === inv.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {t('copyLink')}
+        </button>
+      )}
+      {live(inv.state) && can.applications.edit && (
+        <button
+          type="button"
+          onClick={() => setRevoking(inv)}
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-red-600 hover:bg-red-50"
+        >
+          {t('revoke')}
+        </button>
+      )}
+    </div>
+  );
+  const invitees = (inv: PanelInvitation) => (
+    <ul className="flex flex-wrap gap-1.5">
+      {inv.invitees.map((p) => (
+        <li
+          key={p.id}
+          title={p.email}
+          className={
+            p.submittedAt
+              ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200'
+              : p.openedAt
+                ? 'rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200'
+                : 'rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200'
+          }
+        >
+          {p.name || p.email} ·{' '}
+          {p.submittedAt ? t('person.sent') : p.openedAt ? t('person.opened') : t('person.notYet')}
+        </li>
+      ))}
+    </ul>
+  );
+  /** The link to copy by hand (no clipboard), and what to do with a dead link. */
+  const afterRow = (inv: PanelInvitation) => (
+    <>
+      {copyByHand === inv.id && live(inv.state) && (
+        <input
+          readOnly
+          autoFocus
+          value={inv.link}
+          aria-label={t('linkLabel')}
+          onFocus={(e) => e.target.select()}
+          className="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 font-mono text-xs text-gray-800"
+        />
+      )}
+      {(inv.state === 'EXPIRED' || inv.state === 'REVOKED') && (
+        <p className="mt-2 text-xs text-gray-500">{t('makeNew')}</p>
+      )}
+    </>
+  );
+
   return (
     <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -191,79 +270,68 @@ export function InvitationsPanel({
       {invitations.length === 0 ? (
         <p className="mt-4 text-sm text-gray-400">{t('none')}</p>
       ) : (
-        <ul className="mt-4 space-y-3">
-          {invitations.map((inv) => (
-            <li key={inv.id} className="rounded-xl border border-gray-200 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-semibold text-gray-900">
-                    {tf(`rounds.${inv.round}`)} · {tf(`roles.${inv.evaluatorRole}`)}
-                  </span>
-                  {inv.senior && <ToneBadge tone="violet">Senior</ToneBadge>}
-                  <ToneBadge tone={STATE_TONE[inv.state]}>{t(`states.${inv.state}`)}</ToneBadge>
-                  <span className="text-xs text-gray-500">
-                    {live(inv.state)
-                      ? t('until', { time: when(inv.expiresAt) })
-                      : t('madeBy', { who: inv.createdByName || inv.createdBy, time: when(inv.createdAt) })}
-                  </span>
+        <>
+          {/* Below xl (the sidebar leaves a table too little room): one card per link. */}
+          <ul className="mt-4 space-y-3 xl:hidden">
+            {invitations.map((inv) => (
+              <li key={inv.id} className="rounded-xl border border-gray-200 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    {which(inv)}
+                    <ToneBadge tone={STATE_TONE[inv.state]}>{t(`states.${inv.state}`)}</ToneBadge>
+                    <span className="text-xs text-gray-500">
+                      {live(inv.state) ? t('until', { time: when(inv.expiresAt) }) : madeBy(inv)}
+                    </span>
+                  </div>
+                  {actions(inv)}
                 </div>
-                <div className="flex gap-1.5">
-                  {live(inv.state) && (
-                    <button
-                      type="button"
-                      onClick={() => void copy(inv.link, inv.id)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                    >
-                      {copied === inv.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      {t('copyLink')}
-                    </button>
-                  )}
-                  {live(inv.state) && can.applications.edit && (
-                    <button
-                      type="button"
-                      onClick={() => setRevoking(inv)}
-                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
-                    >
-                      {t('revoke')}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <ul className="mt-2 flex flex-wrap gap-1.5">
-                {inv.invitees.map((p) => (
-                  <li
-                    key={p.id}
-                    title={p.email}
-                    className={
-                      p.submittedAt
-                        ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200'
-                        : p.openedAt
-                          ? 'rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200'
-                          : 'rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200'
-                    }
-                  >
-                    {p.name || p.email} ·{' '}
-                    {p.submittedAt ? t('person.sent') : p.openedAt ? t('person.opened') : t('person.notYet')}
-                  </li>
-                ))}
-              </ul>
-              {copyByHand === inv.id && live(inv.state) && (
-                <input
-                  readOnly
-                  autoFocus
-                  value={inv.link}
-                  aria-label={t('linkLabel')}
-                  onFocus={(e) => e.target.select()}
-                  className="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 font-mono text-xs text-gray-800"
-                />
-              )}
-              {(inv.state === 'EXPIRED' || inv.state === 'REVOKED') && (
-                <p className="mt-2 text-xs text-gray-500">{t('makeNew')}</p>
-              )}
-            </li>
-          ))}
-        </ul>
+                <div className="mt-2">{invitees(inv)}</div>
+                {afterRow(inv)}
+              </li>
+            ))}
+          </ul>
+
+          <table className="mt-4 hidden w-full text-left text-sm xl:table">
+            <thead>
+              <tr className="border-b border-gray-200 text-xs text-gray-500">
+                <th className="py-2 pr-3 font-semibold">{t('columns.round')}</th>
+                <th className="py-2 pr-3 font-semibold">{t('columns.state')}</th>
+                <th className="py-2 pr-3 font-semibold">{t('columns.invitees')}</th>
+                <th className="py-2 pr-3 font-semibold">{t('columns.created')}</th>
+                <th className="py-2 pr-3 font-semibold">{t('columns.expires')}</th>
+                <th className="py-2 font-semibold">
+                  <span className="sr-only">{t('columns.actions')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {invitations.map((inv) => (
+                <tr key={inv.id} className="border-b border-gray-100 align-top last:border-0">
+                  <td className="py-3 pr-3 whitespace-nowrap">
+                    <div className="flex flex-wrap items-center gap-2">{which(inv)}</div>
+                  </td>
+                  <td className="py-3 pr-3 whitespace-nowrap">
+                    <ToneBadge tone={STATE_TONE[inv.state]}>{t(`states.${inv.state}`)}</ToneBadge>
+                  </td>
+                  <td className="py-3 pr-3">
+                    {invitees(inv)}
+                    {afterRow(inv)}
+                  </td>
+                  <td className="py-3 pr-3 text-xs text-gray-500">
+                    <div className="text-gray-700">{inv.createdByName || inv.createdBy}</div>
+                    {when(inv.createdAt)}
+                  </td>
+                  <td className="py-3 pr-3 text-xs whitespace-nowrap text-gray-500">
+                    {live(inv.state) ? when(inv.expiresAt) : '—'}
+                  </td>
+                  <td className="py-3 text-right">{actions(inv)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
+      {footer}
 
       <Dialog open={open} onOpenChange={(next) => !creating && setOpen(next)}>
         <DialogContent className="sm:max-w-lg">

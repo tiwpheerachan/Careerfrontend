@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Briefcase } from 'lucide-react';
-import type { ApplicationStage, JobPublishState } from '@/lib/constants-types';
+import type { ApplicationStage, EvaluationResult, JobPublishState } from '@/lib/constants-types';
 import { cn } from '@/lib/utils';
 
 /**
@@ -110,6 +110,16 @@ export const PUBLISH_TONE: Record<JobPublishState, Tone> = {
   PUBLISHED: 'emerald',
   DRAFT: 'amber',
   CLOSED: 'gray',
+};
+
+/** Interview result → tone. */
+export const RESULT_TONE: Record<EvaluationResult, Tone> = { PENDING: 'amber', PASS: 'emerald', FAIL: 'red' };
+
+/** Interview result → a chosen result's border, fill and text (the form's choice, a verdict). */
+export const RESULT_STYLE: Record<EvaluationResult, string> = {
+  PENDING: 'border-amber-300 bg-amber-50 text-amber-800',
+  PASS: 'border-emerald-300 bg-emerald-50 text-emerald-800',
+  FAIL: 'border-red-300 bg-red-50 text-red-700',
 };
 
 /** A dashboard section card: title + subtitle, something on the right, content. */

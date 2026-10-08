@@ -142,7 +142,7 @@ describe('evaluating', () => {
     expect(res.body.error.issues[0].path).toBe('applicationId');
   });
 
-  it('list (newest interview first), search, get, change, delete', async () => {
+  it('list (newest interview first), search, get, delete — and no changing it here', async () => {
     await post(evaluation({ candidateName: 'Earlier', interviewDate: '2026-10-01' }));
     const { body } = await post(evaluation({ candidateName: 'Later', interviewDate: '2026-10-05', round: 2 }));
     const id = body.evaluation.id;
@@ -155,12 +155,8 @@ describe('evaluating', () => {
     expect((await call(evaluations.GET, { query: { q: 'earl' } })).body.total).toBe(1);
     expect((await call(one.GET, { params: { id } })).body.evaluation.round).toBe(2);
 
-    const changed = await call(one.PUT, {
-      method: 'PUT',
-      params: { id },
-      json: evaluation({ candidateName: 'Later', round: 2, generalScores: scores(3), result: 'FAIL', failReason: 'x' }),
-    });
-    expect(changed.body.evaluation).toMatchObject({ generalTotal: 30, meetsPassMark: false, result: 'FAIL' });
+    // Read only: it changes through an edit link (tests/api/interview-invitations.test.ts).
+    expect('PUT' in one).toBe(false);
 
     expect((await call(one.DELETE, { method: 'DELETE', params: { id } })).status).toBe(204);
     expect((await call(one.GET, { params: { id } })).status).toBe(404);
@@ -174,6 +170,37 @@ describe('one candidate, and the paper form', () => {
     await post(evaluation({ candidateName: 'Someone Else' }));
     const mine = await repos.interviewEvaluations.forCandidate({ kind: 'manual', name: 'SOMSRI DEE' });
     expect(mine.map((e) => e.round)).toEqual([1, 2]);
+  });
+
+  it('the admin list: one row per candidate, newest interview first, searched and paged by candidate', async () => {
+    await post(evaluation({ candidateName: 'Somsri Dee', round: 1, interviewDate: '2026-10-01' }));
+    await post(evaluation({ candidateName: '  somsri dee ', round: 2, interviewDate: '2026-10-03' }));
+    await post(
+      evaluation({
+        candidateName: 'Somsri Dee',
+        department: 'Sales',
+        interviewDate: '2026-10-02',
+        evaluatorRole: 'DEPARTMENT',
+        result: 'FAIL',
+        failReason: 'x',
+      }),
+    );
+    await post(evaluation({ candidateName: 'Someone Else', interviewDate: '2026-10-05' }));
+
+    const all = await repos.interviewEvaluations.byCandidate({ page: 1, pageSize: 10 });
+    expect(all.total).toBe(2);
+    expect(all.items.map((c) => [c.candidate.name, c.evaluations.length])).toEqual([
+      ['Someone Else', 1],
+      ['Somsri Dee', 3],
+    ]);
+    expect(all.items[1]!.key).toBe('name:Somsri Dee');
+
+    // A match on one evaluation brings the candidate's whole interview.
+    const sales = await repos.interviewEvaluations.byCandidate({ page: 1, pageSize: 10, q: 'sales' });
+    expect(sales.items.map((c) => [c.candidate.name, c.evaluations.length])).toEqual([['Somsri Dee', 3]]);
+
+    const second = await repos.interviewEvaluations.byCandidate({ page: 2, pageSize: 1 });
+    expect(second).toMatchObject({ total: 2, items: [{ candidate: { name: 'Somsri Dee' } }] });
   });
 
   it('PDF: one side’s form for a linked applicant, in each language; 404 for a side that has not evaluated', async () => {
@@ -222,31 +249,15 @@ describe('with SSO on: an evaluation is its evaluator’s', () => {
     resetPermissionsCache();
   });
 
-  it('the evaluator is the signed-in person; others with edit cannot change it, manage can', async () => {
+  it('the evaluator is the signed-in person', async () => {
     grant('edit');
     const mine = await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), await as('head@shd-technology.co.th'));
     expect(mine.status).toBe(201);
     expect(mine.body.evaluation.evaluator).toEqual({ email: 'head@shd-technology.co.th', name: 'head' });
-    const id = mine.body.evaluation.id;
-
-    const put = (headers: Record<string, string>) =>
-      call(one.PUT, { method: 'PUT', params: { id }, json: evaluation({ generalScores: scores(5) }), headers });
-    expect((await put(await as('other@shd-technology.co.th'))).status).toBe(403);
-    expect((await put(await as('HEAD@shd-technology.co.th'))).status).toBe(200);
-
-    const own = await put(await as('HEAD@shd-technology.co.th'));
-    expect(own.body.evaluation.edited).toBeNull();
-
-    resetPermissionsCache();
-    grant('manage');
-    const managed = await put(await as('hr-lead@shd-technology.co.th'));
-    expect(managed.status).toBe(200);
-    // Still the department head's evaluation — with who changed it, and when.
-    expect(managed.body.evaluation.evaluator.email).toBe('head@shd-technology.co.th');
-    expect(managed.body.evaluation.edited).toEqual({ by: 'hr-lead@shd-technology.co.th', at: expect.any(String) });
+    expect(mine.body.evaluation.edited).toBeNull();
   });
 
-  it('409: the same evaluator, round and side twice — edit the first instead', async () => {
+  it('409: the same evaluator, round and side twice — the first changes through an edit link', async () => {
     grant('edit');
     const head = await as('head@shd-technology.co.th');
     const first = await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), head);
@@ -254,6 +265,7 @@ describe('with SSO on: an evaluation is its evaluator’s', () => {
     const again = await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), head);
     expect(again.status).toBe(409);
     expect(again.body.error.message).toContain(first.body.evaluation.id);
+    expect(again.body.error.message).toContain('edit link');
     // Another round, another side or another person is a new evaluation.
     expect((await post(evaluation({ evaluatorRole: 'DEPARTMENT', round: 2 }), head)).status).toBe(201);
     expect((await post(evaluation({ evaluatorRole: 'HR' }), head)).status).toBe(201);

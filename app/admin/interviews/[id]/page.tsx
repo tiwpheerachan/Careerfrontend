@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { EditLink } from '@/components/admin/interviews/edit-link';
 import { EvaluationForm } from '@/components/admin/interviews/evaluation-form';
 import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 import { candidateKey } from '@/lib/interview/candidate-key';
@@ -28,19 +29,15 @@ export async function generateMetadata({ params }: Props) {
 }
 
 /**
- * /admin/interviews/{id} — one evaluation. Editable by its evaluator (with
- * edit) or by manage; read-only for everyone else, and for everyone when it
- * was sent through an invitation link (the API checks the same).
+ * /admin/interviews/{id} — one evaluation: one evaluator's one round, read
+ * only for everyone. To change it, someone with edit makes an edit link for
+ * its evaluator; manage may delete it (and invite its evaluator again).
  */
 export default async function EvaluationPage({ params, searchParams }: Props) {
   const actor = await requireAdminPage({ resource: 'applications', level: 'view' });
   const evaluation = await load((await params).id);
   const can = abilitiesOf(actor).applications;
-  const own = evaluation.evaluator.email.toLowerCase() === actor.email.toLowerCase();
-  // Sent through an invitation link: nobody changes it (the API refuses too); manage may delete it.
-  const locked = evaluation.viaInvitation;
-  const editable = !locked && (can.manage || (can.edit && own));
-  const access = locked ? 'locked' : !editable ? 'other' : own ? 'own' : 'manage';
+  const who = evaluation.evaluator.name || evaluation.evaluator.email;
   // ?from=candidate: opened from the candidate's page, so back goes there (a flag, never a url).
   const fromCandidate = (await searchParams).from === 'candidate';
   return (
@@ -52,9 +49,9 @@ export default async function EvaluationPage({ params, searchParams }: Props) {
       }
       evaluation={evaluation}
       today={evaluation.interviewDate}
-      evaluator={evaluation.evaluator.name || evaluation.evaluator.email}
-      readOnly={!editable}
-      access={access}
+      evaluator={who}
+      readOnly
+      editLink={can.edit ? <EditLink evaluationId={evaluation.id} who={who} /> : undefined}
       canDelete={can.manage}
     />
   );

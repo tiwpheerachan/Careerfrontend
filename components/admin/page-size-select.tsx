@@ -4,22 +4,31 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { listHref, PAGE_SIZES, type ListQuery } from './list-query';
+import { tableHref, type TablePaging } from './table-href';
 
-/** 20 / 50 / 100 per page (a size typed into the url is kept and shown too). */
-export function PageSizeSelect({ query }: { query: ListQuery }) {
-  const t = useTranslations('applications.list');
+/** How many rows a page shows (a size typed into the url is kept and shown too). Changing it goes to page 1. */
+export function PageSizeSelect({
+  paging,
+  pageSize,
+  sizes: offered,
+  scroll = true,
+}: {
+  paging: TablePaging;
+  pageSize: number;
+  sizes: readonly number[];
+  /** false: stay where the table is (a table lower on the page). */
+  scroll?: boolean;
+}) {
+  const t = useTranslations('common');
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const sizes = (PAGE_SIZES as readonly number[]).includes(query.pageSize)
-    ? [...PAGE_SIZES]
-    : [...PAGE_SIZES, query.pageSize].sort((a, b) => a - b);
+  const sizes = offered.includes(pageSize) ? [...offered] : [...offered, pageSize].sort((a, b) => a - b);
 
   return (
     <Select
-      value={String(query.pageSize)}
+      value={String(pageSize)}
       disabled={pending}
-      onValueChange={(value) => startTransition(() => router.push(listHref(query, { pageSize: Number(value) })))}
+      onValueChange={(value) => startTransition(() => router.push(tableHref(paging, 1, Number(value)), { scroll }))}
     >
       <SelectTrigger
         aria-label={t('pageSize')}

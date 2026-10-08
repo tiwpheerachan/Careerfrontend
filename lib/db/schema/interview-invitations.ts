@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, index, pgTable, smallint, text, timestamp, uniqueIndex, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { applicationForms } from './application-forms';
 import { applications } from './applications';
@@ -31,6 +31,8 @@ export const interviewInvitations = pgTable(
     openedAt: timestamp('opened_at', { withTimezone: true, mode: 'date' }),
     revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
     revokedBy: text('revoked_by'),
+    /** An edit link: for changing this evaluation (its evaluator is the one invitee) — migration 0009. */
+    evaluationsPk: refPk('interview_evaluations_pk').references((): AnyPgColumn => interviewEvaluations.pk),
     ...timestamps(),
   },
   (table) => [
@@ -38,6 +40,7 @@ export const interviewInvitations = pgTable(
     uniqueIndex('interview_invitations_token_idx').on(table.token),
     index('interview_invitations_application_idx').on(table.applicationsPk),
     index('interview_invitations_form_idx').on(table.applicationFormsPk),
+    index('interview_invitations_evaluation_idx').on(table.evaluationsPk),
   ],
 );
 

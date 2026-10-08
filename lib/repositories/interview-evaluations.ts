@@ -8,7 +8,7 @@ import {
   type InterviewEvaluationRow,
 } from '@/lib/db/schema';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
-import type { CandidateRef } from '@/lib/interview/candidate-key';
+import { candidateKey, type CandidateRef } from '@/lib/interview/candidate-key';
 import type { InterviewEvaluationInput } from '@/lib/interview/schema';
 import { outcomeOf, type Outcome } from '@/lib/interview/scoring';
 import { jobTitle } from './applications';
@@ -54,6 +54,14 @@ export interface InterviewEvaluation extends Outcome {
   edited: { by: string; at: Date } | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** One candidate and every evaluation of theirs — a row of the admin list. */
+export interface CandidateEvaluations {
+  /** For the candidate page's url (lib/interview/candidate-key.ts). */
+  key: string;
+  candidate: EvaluationCandidate;
+  evaluations: InterviewEvaluation[];
 }
 
 /** The signed-in admin who fills it in. */
@@ -299,7 +307,7 @@ export function createInterviewEvaluationRepository(db: Database) {
 
     async create(input: InterviewEvaluationInput, evaluator: Evaluator): Promise<InterviewEvaluation> {
       // One evaluation per evaluator, candidate, round and side — a second is a
-      // 409 pointing at the first, which they can edit instead.
+      // 409 pointing at the first (changed through an edit link, not again).
       const ref: CandidateRef = input.applicationId
         ? { kind: 'application', id: input.applicationId }
         : input.applicationFormId
@@ -313,7 +321,7 @@ export function createInterviewEvaluationRepository(db: Database) {
       );
       if (twin)
         throw new ConflictError(
-          `You have already evaluated this round of this candidate (evaluation ${twin.id}) — edit it instead.`,
+          `You have already evaluated this round of this candidate (evaluation ${twin.id}) — ask for an edit link to change it.`,
         );
       const [row] = await db
         .insert(interviewEvaluations)
@@ -349,23 +357,41 @@ export function createInterviewEvaluationRepository(db: Database) {
       return { items: rows.map(present), total: total?.n ?? 0 };
     },
 
-    get,
-
-    /** Replaces the scores and verdict. The evaluator stays who it was. */
     /**
-     * Replaces the scores and verdict. `editor` is set when it is not the
-     * evaluator's own change (manage): who and when are kept and shown.
+     * The admin list: one item per candidate (grouped as forCandidate does),
+     * with every evaluation of theirs. Newest interview first; `q` matches the
+     * candidate, position, department or evaluator of any of them.
+     * ponytail: grouped in memory over every live evaluation — fine for an HR
+     * team's interviews; a GROUP BY on the key in SQL once there are tens of thousands.
      */
-    async update(id: string, input: InterviewEvaluationInput, editor?: string | null): Promise<InterviewEvaluation> {
-      if (!isUuid(id)) throw new NotFoundError('interview evaluation', id);
-      const [row] = await db
-        .update(interviewEvaluations)
-        .set({ ...(await valuesOf(input)), ...(editor ? { editedBy: editor, editedAt: new Date() } : {}) })
-        .where(and(live, eq(interviewEvaluations.id, id)))
-        .returning({ id: interviewEvaluations.id });
-      if (!row) throw new NotFoundError('interview evaluation', id);
-      return get(row.id);
+    async byCandidate(filter: Page & { q?: string }): Promise<{ items: CandidateEvaluations[]; total: number }> {
+      const rows = (await joined().where(live)).map(present);
+      const groups = new Map<string, InterviewEvaluation[]>();
+      for (const e of rows) {
+        // lower(): a typed-in name groups case-insensitively, as in forCandidate (ids are lower case already).
+        const key = candidateKey(e.candidate).toLowerCase();
+        groups.set(key, [...(groups.get(key) ?? []), e]);
+      }
+      const q = filter.q?.trim().toLowerCase();
+      const matches = (e: InterviewEvaluation) =>
+        [e.candidate.name, e.candidate.position, e.candidate.department, e.evaluator.email, e.evaluator.name].some(
+          (field) => field?.toLowerCase().includes(q!),
+        );
+      const newest = (list: InterviewEvaluation[]) =>
+        list.reduce((a, b) => (b.interviewDate > a.interviewDate ? b : a));
+      const all = [...groups.values()]
+        .filter((list) => !q || list.some(matches))
+        .sort((a, b) => newest(b).interviewDate.localeCompare(newest(a).interviewDate))
+        .map((evaluations): CandidateEvaluations => {
+          // Who it is: as the newest change has them (as the candidate page shows them).
+          const { candidate } = evaluations.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a));
+          return { key: candidateKey(candidate), candidate, evaluations };
+        });
+      const from = offsetOf(filter);
+      return { items: all.slice(from, from + filter.pageSize), total: all.length };
     },
+
+    get,
 
     async softDelete(id: string, actor: string | null): Promise<void> {
       if (!isUuid(id)) throw new NotFoundError('interview evaluation', id);

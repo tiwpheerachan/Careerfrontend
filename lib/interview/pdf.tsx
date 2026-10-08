@@ -161,7 +161,8 @@ const s = StyleSheet.create({
   choice: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   box: { width: 9, height: 9, borderWidth: 0.7, borderColor: INK, marginRight: 4 },
   reason: { color: PEN, marginLeft: 13, fontSize: 8.5 },
-  comment: { marginTop: 4, fontSize: 8.5 },
+  commentRound: { fontSize: 10.5, fontWeight: 'bold', marginTop: 12 },
+  commentFrom: { fontWeight: 'bold', color: PEN, marginTop: 6 },
   edited: { marginTop: 3, fontSize: 7.5, color: MUTED },
   spacer: { flexGrow: 1 },
   signature: { marginTop: 10, flexDirection: 'row', alignItems: 'flex-end' },
@@ -340,9 +341,6 @@ function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRo
       {round?.result === 'FAIL' && round.failReason ? (
         <Text style={s.reason}>{prepared(round.failReason, ROUND_WIDTH - 13, 8.5)}</Text>
       ) : null}
-      {round?.comment ? (
-        <Text style={s.comment}>{prepared(`${p.comment}: ${round.comment}`, ROUND_WIDTH, 8.5)}</Text>
-      ) : null}
       {round?.viaInvitation ? <T style={s.edited}>{p.viaInvitation}</T> : null}
       {round?.edited ? (
         <Text style={s.edited}>
@@ -411,6 +409,43 @@ function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRo
           {roundBlock(p.opinion2, r2)}
         </View>
       </View>
+
+      <Printed ctx={ctx} />
+    </Page>
+  );
+}
+
+/**
+ * Every evaluator's comment, on a page of its own after the form(s): per round,
+ * "from" whom. Long ones flow on to further pages. Nothing when nobody commented.
+ */
+function CommentsPage({ ctx, byRound }: { ctx: Ctx; byRound: Record<1 | 2, PrintedRound[]> }) {
+  const { p, input } = ctx;
+  const rounds = ([1, 2] as const)
+    .map((n) => ({ n, said: byRound[n].filter((r) => r.comment) }))
+    .filter(({ said }) => said.length > 0);
+  if (!rounds.length) return null;
+  return (
+    <Page size="A4" style={s.page}>
+      <Top ctx={ctx} dates={datesOf(ctx, [...byRound[1], ...byRound[2]])} />
+      <T style={s.formFor}>{p.formFor[input.role]}</T>
+      {rounds.map(({ n, said }) =>
+        said.map((r, i) => {
+          const lines = prepared(r.comment!, CONTENT_WIDTH, 9).split('\n');
+          return (
+            <View key={`${n}-${r.evaluator.email}`}>
+              {/* The round's heading, who wrote it and the first two lines stay together:
+                  a heading never stays behind alone at the foot of a page. */}
+              <View wrap={false}>
+                {i === 0 ? <T style={s.commentRound}>{n === 1 ? p.opinion1 : p.opinion2}</T> : null}
+                <T style={s.commentFrom}>{`${p.from.replace('{who}', r.evaluator.name || r.evaluator.email)}:`}</T>
+                <Text>{lines.slice(0, 2).join('\n')}</Text>
+              </View>
+              {lines.length > 2 ? <Text>{lines.slice(2).join('\n')}</Text> : null}
+            </View>
+          );
+        }),
+      )}
       <Printed ctx={ctx} />
     </Page>
   );
@@ -535,6 +570,7 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
       ) : (
         <FormPage ctx={ctx} r1={byRound[1][0]} r2={byRound[2][0]} />
       )}
+      <CommentsPage ctx={ctx} byRound={byRound} />
     </Document>
   );
 }

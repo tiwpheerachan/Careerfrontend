@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
 import {
   applicationForms,
@@ -38,6 +38,8 @@ export interface Invitation {
   round: 1 | 2;
   evaluatorRole: InterviewInvitationRow['evaluatorRole'];
   senior: boolean;
+  /** An edit link: the evaluation it changes (its evaluator is the one invitee); null for a new one. */
+  editOf: string | null;
   createdBy: string;
   createdByName: string | null;
   createdAt: Date;
@@ -52,13 +54,24 @@ export interface Invitation {
 export function createInterviewInvitationRepository(db: Database) {
   const joined = () =>
     db
-      .select({ row: interviewInvitations, applicationId: applications.id, applicationFormId: applicationForms.id })
+      .select({
+        row: interviewInvitations,
+        applicationId: applications.id,
+        applicationFormId: applicationForms.id,
+        evaluationId: interviewEvaluations.id,
+      })
       .from(interviewInvitations)
       .leftJoin(applications, eq(applications.pk, interviewInvitations.applicationsPk))
-      .leftJoin(applicationForms, eq(applicationForms.pk, interviewInvitations.applicationFormsPk));
+      .leftJoin(applicationForms, eq(applicationForms.pk, interviewInvitations.applicationFormsPk))
+      .leftJoin(interviewEvaluations, eq(interviewEvaluations.pk, interviewInvitations.evaluationsPk));
 
   async function withInvitees(
-    rows: Array<{ row: InterviewInvitationRow; applicationId: string | null; applicationFormId: string | null }>,
+    rows: Array<{
+      row: InterviewInvitationRow;
+      applicationId: string | null;
+      applicationFormId: string | null;
+      evaluationId: string | null;
+    }>,
     now: Date,
   ): Promise<Invitation[]> {
     if (!rows.length) return [];
@@ -72,7 +85,7 @@ export function createInterviewInvitationRepository(db: Database) {
         ),
       )
       .orderBy(asc(interviewInvitees.pk));
-    return rows.map(({ row, applicationId, applicationFormId }) => {
+    return rows.map(({ row, applicationId, applicationFormId, evaluationId }) => {
       const mine = people.filter((p) => p.invitationsPk === row.pk);
       const invitees = mine.map((p) => ({
         id: p.id,
@@ -96,6 +109,7 @@ export function createInterviewInvitationRepository(db: Database) {
         round: row.round as 1 | 2,
         evaluatorRole: row.evaluatorRole,
         senior: row.senior,
+        editOf: evaluationId,
         createdBy: row.createdBy,
         createdByName: row.createdByName,
         createdAt: row.createdAt,
@@ -179,6 +193,53 @@ export function createInterviewInvitationRepository(db: Database) {
       return (await byToken(token, now))!;
     },
 
+    /**
+     * An edit link for one evaluation: its candidate, round and side, and its
+     * evaluator as the only one on it. The same rules as an invitation (24
+     * hours unopened, 6 once opened, sent once); sending changes the evaluation.
+     */
+    async createEditLink(
+      evaluationId: string,
+      createdBy: string,
+      now = new Date(),
+      createdByName: string | null = null,
+    ): Promise<Invitation> {
+      if (!isUuid(evaluationId)) throw new NotFoundError('interview evaluation', evaluationId);
+      const [evaluation] = await db
+        .select()
+        .from(interviewEvaluations)
+        .where(and(eq(interviewEvaluations.id, evaluationId), ne(interviewEvaluations.status, 'DELETED')))
+        .limit(1);
+      if (!evaluation) throw new NotFoundError('interview evaluation', evaluationId);
+      const token = newToken();
+      await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(interviewInvitations)
+          .values({
+            token,
+            applicationsPk: evaluation.applicationsPk,
+            applicationFormsPk: evaluation.applicationFormsPk,
+            candidateName: evaluation.candidateName,
+            position: evaluation.position,
+            department: evaluation.department,
+            round: evaluation.round,
+            evaluatorRole: evaluation.evaluatorRole,
+            senior: evaluation.senior,
+            evaluationsPk: evaluation.pk,
+            createdBy,
+            createdByName,
+            createdAt: now,
+          })
+          .returning({ pk: interviewInvitations.pk });
+        await tx.insert(interviewInvitees).values({
+          invitationsPk: row!.pk,
+          email: evaluation.evaluatorEmail,
+          name: evaluation.evaluatorName,
+        });
+      });
+      return (await byToken(token, now))!;
+    },
+
     /** Every invitation for one candidate, newest first. */
     async forCandidate(ref: CandidateRef, now = new Date()): Promise<Invitation[]> {
       const who =
@@ -216,9 +277,10 @@ export function createInterviewInvitationRepository(db: Database) {
     },
 
     /**
-     * One invitee's evaluation: saved, and their part of the link closed, in
-     * one transaction — a second send (a double click, another tab) is a 409
-     * and saves nothing.
+     * One invitee's evaluation: saved — or, through an edit link, the
+     * evaluation it is for changed (and marked edited) — and their part of the
+     * link closed, in one transaction. A second send (a double click, another
+     * tab) is a 409 and saves nothing.
      */
     async submit(
       token: string,
@@ -238,30 +300,41 @@ export function createInterviewInvitationRepository(db: Database) {
           ]);
         }
         const outcome = outcomeOf({ general: input.generalScores, senior: input.senior ? input.seniorScores : null });
-        const [evaluation] = await tx
-          .insert(interviewEvaluations)
-          .values({
-            applicationsPk: inv.applicationsPk,
-            applicationFormsPk: inv.applicationFormsPk,
-            candidateName: inv.candidateName,
-            position: inv.position,
-            department: inv.department,
-            interviewDate: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date()),
-            round: inv.round,
-            evaluatorRole: inv.evaluatorRole,
-            evaluatorEmail: evaluator.email,
-            evaluatorName: evaluator.name,
-            senior: input.senior,
-            generalScores: input.generalScores,
-            seniorScores: input.senior ? input.seniorScores : null,
-            generalTotal: outcome.generalTotal,
-            seniorTotal: outcome.seniorTotal,
-            result: input.result,
-            failReason: input.result === 'FAIL' ? input.failReason : null,
-            comment: input.comment,
-            invitationsPk: inv.pk,
-          })
-          .returning({ pk: interviewEvaluations.pk, id: interviewEvaluations.id });
+        const verdict = {
+          senior: input.senior,
+          generalScores: input.generalScores,
+          seniorScores: input.senior ? input.seniorScores : null,
+          generalTotal: outcome.generalTotal,
+          seniorTotal: outcome.seniorTotal,
+          result: input.result,
+          failReason: input.result === 'FAIL' ? input.failReason : null,
+          comment: input.comment,
+        };
+        const [evaluation] = inv.evaluationsPk
+          ? await tx
+              .update(interviewEvaluations)
+              .set({ ...verdict, editedBy: evaluator.email, editedAt: new Date() })
+              .where(and(eq(interviewEvaluations.pk, inv.evaluationsPk), ne(interviewEvaluations.status, 'DELETED')))
+              .returning({ pk: interviewEvaluations.pk, id: interviewEvaluations.id })
+          : await tx
+              .insert(interviewEvaluations)
+              .values({
+                applicationsPk: inv.applicationsPk,
+                applicationFormsPk: inv.applicationFormsPk,
+                candidateName: inv.candidateName,
+                position: inv.position,
+                department: inv.department,
+                interviewDate: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date()),
+                round: inv.round,
+                evaluatorRole: inv.evaluatorRole,
+                evaluatorEmail: evaluator.email,
+                evaluatorName: evaluator.name,
+                ...verdict,
+                invitationsPk: inv.pk,
+              })
+              .returning({ pk: interviewEvaluations.pk, id: interviewEvaluations.id });
+        // The evaluation an edit link is for was deleted since.
+        if (!evaluation) throw new NotFoundError('interview evaluation', 'of this link');
         const [closed] = await tx
           .update(interviewInvitees)
           .set({ submittedAt: new Date(), evaluationsPk: evaluation!.pk })

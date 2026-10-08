@@ -422,17 +422,19 @@ export const adminGetEvaluation = endpoint({
   responses: { 200: { description: 'The evaluation.', schema: z.object({ evaluation: S.InterviewEvaluation }) } },
 });
 
-export const adminUpdateEvaluation = endpoint({
-  method: 'put',
-  path: '/admin/interview-evaluations/{id}',
+export const adminCreateEditLink = endpoint({
+  method: 'post',
+  path: '/admin/interview-evaluations/{id}/edit-link',
   tag: 'Admin · Interviews',
-  summary: 'Change an evaluation',
-  description: 'Only by whoever wrote it, or with applications.manage (403 otherwise).',
+  summary: 'A link for the evaluator to change their evaluation',
+  description:
+    'Evaluations are read only; this is the only way one changes. The link is for its evaluator alone, under ' +
+    'the same rules as an invitation (24 hours unopened, 6 once opened, sent once); sending it changes the ' +
+    'evaluation and marks it edited.',
   auth: 'admin',
   permission: 'applications.edit',
   params: S.IdParams,
-  body: { schema: S.InterviewEvaluationInput, type: 'application/json' },
-  responses: { 200: { description: 'Saved.', schema: z.object({ evaluation: S.InterviewEvaluation }) } },
+  responses: { 201: { description: 'The link.', schema: z.object({ invitation: S.Invitation }) } },
 });
 
 export const adminDeleteEvaluation = endpoint({
@@ -514,7 +516,9 @@ export const inviteeSubmit = endpoint({
   path: '/evaluate/{token}',
   tag: 'Invited evaluators',
   summary: 'Send an evaluation through an invitation link',
-  description: 'The candidate, round and side are the link’s; the evaluator is the signed-in person. Once per person.',
+  description:
+    'The candidate, round and side are the link’s; the evaluator is the signed-in person. Once per person. ' +
+    'Through an edit link, the evaluation it is for is changed instead.',
   auth: 'invitee',
   params: S.TokenParams,
   body: { schema: S.GuestEvaluationInput, type: 'application/json' },
@@ -584,7 +588,7 @@ export const ENDPOINTS = [
   adminListEvaluations,
   adminCreateEvaluation,
   adminGetEvaluation,
-  adminUpdateEvaluation,
+  adminCreateEditLink,
   adminDeleteEvaluation,
   adminEvaluationPdf,
   adminSearchCandidates,

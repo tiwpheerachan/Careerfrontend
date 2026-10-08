@@ -10,9 +10,7 @@ import {
   Mail,
   PencilLine,
   Save,
-  ShieldCheck,
   Trash2,
-  UserRound,
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -20,7 +18,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { GuardedLink } from '@/components/admin/shell/unsaved-guard';
-import { PageHeader } from '@/components/admin/ui';
+import { PageHeader, RESULT_STYLE } from '@/components/admin/ui';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,22 +104,15 @@ function initialState(evaluation: InterviewEvaluation | null, today: string, pre
   };
 }
 
-const RESULT_STYLE: Record<Result, string> = {
-  PENDING: 'border-amber-300 bg-amber-50 text-amber-800',
-  PASS: 'border-emerald-300 bg-emerald-50 text-emerald-800',
-  FAIL: 'border-red-300 bg-red-50 text-red-700',
-};
-
 /**
  * The interview evaluation form (แบบประเมินผลสัมภาษณ์), as on paper, made
  * quick: each item is a row of 0–5 buttons, the totals and the pass mark
  * (lib/interview/scoring.ts) update as you go, and items 11–15 appear only
  * for a Senior position.
  *
- * `evaluation` null = a new one. `readOnly` = someone else's (only its
- * evaluator, or manage, may change it — the API checks the same), or one
- * sent through an invitation link (nobody changes it). `access` says which,
- * in a line above the form.
+ * `evaluation` null = a new one. An existing one is read only in the admin
+ * (`readOnly`): it changes only through an edit link (`editLink`, for whoever
+ * may make one), which opens this form for its evaluator (`guest`).
  */
 export function EvaluationForm({
   evaluation,
@@ -132,7 +123,7 @@ export function EvaluationForm({
   guest,
   backHref = '/admin/interviews',
   materials,
-  access,
+  editLink,
   canDelete = false,
 }: {
   evaluation: InterviewEvaluation | null;
@@ -153,12 +144,8 @@ export function EvaluationForm({
   /** Who it is (or will be) saved as. */
   evaluator: string;
   readOnly: boolean;
-  /**
-   * An existing evaluation, and why this person may (not) change it:
-   *   own      theirs                     manage  someone else's, changed with manage (recorded)
-   *   locked   sent through a link         other   someone else's, and no manage
-   */
-  access?: 'own' | 'manage' | 'locked' | 'other';
+  /** An existing evaluation, read only: the control that makes an edit link (applications.edit), if any. */
+  editLink?: ReactNode;
   /** manage: it can be deleted (and its evaluator invited again). */
   canDelete?: boolean;
 }) {
@@ -247,13 +234,8 @@ export function EvaluationForm({
 
     setSaving(true);
     try {
-      if (evaluation) {
-        await adminFetch(`/interview-evaluations/${evaluation.id}`, { method: 'PUT', json: body });
-        toast.success(t('saved'));
-      } else {
-        await adminFetch('/interview-evaluations', { method: 'POST', json: body });
-        toast.success(t('created'));
-      }
+      await adminFetch('/interview-evaluations', { method: 'POST', json: body });
+      toast.success(t('created'));
       discardUnsavedChanges();
       router.push(backHref);
       router.refresh();
@@ -356,7 +338,8 @@ export function EvaluationForm({
       }
       setConfirming(false);
       discardUnsavedChanges();
-      toast.success(t('created'));
+      // Through an edit link the evaluation was changed, not made.
+      toast.success(evaluation ? t('saved') : t('created'));
       router.refresh();
     } catch {
       toast.error(t('saveFailed'));
@@ -472,35 +455,19 @@ export function EvaluationForm({
         </div>
       )}
 
-      {/* Whose this is, and why it can (not) be changed — so nobody edits someone else's score by surprise. */}
-      {evaluation && access && (
-        <p
-          className={cn(
-            'mb-4 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm',
-            {
-              own: 'border-gray-200 bg-white text-gray-700',
-              manage: 'border-amber-200 bg-amber-50 text-amber-900',
-              locked: 'border-violet-200 bg-violet-50 text-violet-900',
-              other: 'border-gray-200 bg-gray-50 text-gray-700',
-            }[access],
-          )}
-        >
-          {
-            {
-              own: <UserRound className="mt-0.5 h-4 w-4 shrink-0" />,
-              manage: <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />,
-              locked: <Lock className="mt-0.5 h-4 w-4 shrink-0" />,
-              other: <Lock className="mt-0.5 h-4 w-4 shrink-0" />,
-            }[access]
-          }
-          <span>
-            {access === 'locked'
-              ? t(canDelete ? 'access.lockedManage' : 'access.locked', {
-                  who: evaluation.evaluator.name || evaluation.evaluator.email,
-                })
-              : t(`access.${access}`, { who: evaluation.evaluator.name || evaluation.evaluator.email })}
-          </span>
-        </p>
+      {/* Read only, and how it changes instead: an edit link for its evaluator. */}
+      {evaluation && readOnly && !guest && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+          <p className="flex min-w-0 items-start gap-2">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {t(editLink ? 'readOnly' : 'readOnlyNoRight', {
+                who: evaluation.evaluator.name || evaluation.evaluator.email,
+              })}
+            </span>
+          </p>
+          {editLink}
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

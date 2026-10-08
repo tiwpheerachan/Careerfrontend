@@ -5,6 +5,7 @@ import * as people from '@/app/api/v1/admin/people/route';
 import * as formPdf from '@/app/api/v1/evaluate/[token]/application-form/route';
 import * as files from '@/app/api/v1/evaluate/[token]/files/[fileId]/route';
 import * as evaluate from '@/app/api/v1/evaluate/[token]/route';
+import * as editLinkRoute from '@/app/api/v1/admin/interview-evaluations/[id]/edit-link/route';
 import * as oneEvaluation from '@/app/api/v1/admin/interview-evaluations/[id]/route';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
 import { seal, SESSION_COOKIE } from '@/lib/auth/session';
@@ -183,7 +184,7 @@ describe('invitation links', () => {
     expect(saved).toMatchObject({ viaInvitation: true, edited: null });
   });
 
-  it('what was sent through a link stays as sent: nobody changes it, manage may delete it', async () => {
+  it('what was sent through a link is read only in the admin; manage may delete it', async () => {
     const application = await anApplication();
     const token = tokenOf((await made(application.id)).link);
     const sent = await call(evaluate.POST, {
@@ -193,24 +194,99 @@ describe('invitation links', () => {
     });
     const id = sent.body.evaluationId;
     const hr = await as('hr@shd-technology.co.th');
-    const put = await call(oneEvaluation.PUT, {
-      method: 'PUT',
-      params: { id },
-      headers: hr,
-      json: {
-        candidateName: 'Somchai Jaidee',
-        applicationId: application.id,
-        interviewDate: '2026-10-07',
-        round: 1,
-        evaluatorRole: 'DEPARTMENT',
-        senior: false,
-        generalScores: scores(5),
-        result: 'PASS',
-      },
-    });
-    expect(put.status).toBe(403);
+    expect('PUT' in oneEvaluation).toBe(false);
     expect((await repos.interviewEvaluations.get(id)).total).toBe(40);
     expect((await call(oneEvaluation.DELETE, { method: 'DELETE', params: { id }, headers: hr })).status).toBe(204);
+  });
+
+  describe('edit links: the only way an evaluation changes', () => {
+    /** An evaluation the department head sent through an invitation, and an edit link HR made for it. */
+    async function sentAndLinked() {
+      const application = await anApplication();
+      const sent = await call(evaluate.POST, {
+        params: { token: tokenOf((await made(application.id)).link) },
+        json: evaluation({ comment: 'ก่อนแก้' }),
+        headers: await as('head@shd-technology.co.th'),
+      });
+      const id = sent.body.evaluationId as string;
+      const res = await call(editLinkRoute.POST, {
+        method: 'POST',
+        params: { id },
+        headers: await as('hr@shd-technology.co.th'),
+      });
+      expect(res.status).toBe(201);
+      return { application, id, invitation: res.body.invitation, token: tokenOf(res.body.invitation.link) };
+    }
+
+    it('is for the evaluator alone, and changes the same evaluation — marked edited', async () => {
+      const { application, id, invitation, token } = await sentAndLinked();
+      expect(invitation).toMatchObject({ editOf: id, round: 1, evaluatorRole: 'DEPARTMENT', state: 'PENDING' });
+      expect(invitation.invitees.map((p: { email: string }) => p.email)).toEqual(['head@shd-technology.co.th']);
+
+      const send = async (email: string) =>
+        call(evaluate.POST, {
+          params: { token },
+          json: evaluation({ generalScores: scores(3), result: 'FAIL', failReason: 'x', comment: 'หลังแก้' }),
+          headers: await as(email),
+        });
+      // HR made it, but it is not HR's to send — nor anyone else's.
+      expect((await send('hr@shd-technology.co.th')).status).toBe(403);
+      expect((await send('lead@shd-technology.co.th')).status).toBe(403);
+
+      const changed = await send('head@shd-technology.co.th');
+      expect(changed.status).toBe(201);
+      expect(changed.body.evaluationId).toBe(id);
+      const after = await repos.interviewEvaluations.get(id);
+      expect(after).toMatchObject({
+        total: 30,
+        result: 'FAIL',
+        comment: 'หลังแก้',
+        viaInvitation: true,
+        evaluator: { email: 'head@shd-technology.co.th' },
+        edited: { by: 'head@shd-technology.co.th' },
+      });
+      // Changed, not added; and once only.
+      expect(await repos.interviewEvaluations.forCandidate({ kind: 'application', id: application.id })).toHaveLength(
+        1,
+      );
+      expect((await send('head@shd-technology.co.th')).status).toBe(409);
+    });
+
+    it('needs edit to make; 404 once the evaluation is deleted', async () => {
+      const { id, token } = await sentAndLinked();
+      // The head has no role in the admin: no edit link for them to make.
+      expect(
+        (
+          await call(editLinkRoute.POST, {
+            method: 'POST',
+            params: { id },
+            headers: await as('head@shd-technology.co.th'),
+          })
+        ).status,
+      ).toBe(403);
+      expect((await call(editLinkRoute.POST, { method: 'POST', params: { id } })).status).toBe(401);
+
+      await call(oneEvaluation.DELETE, {
+        method: 'DELETE',
+        params: { id },
+        headers: await as('hr@shd-technology.co.th'),
+      });
+      const late = await call(evaluate.POST, {
+        params: { token },
+        json: evaluation(),
+        headers: await as('head@shd-technology.co.th'),
+      });
+      expect(late.status).toBe(404);
+      expect(
+        (
+          await call(editLinkRoute.POST, {
+            method: 'POST',
+            params: { id },
+            headers: await as('hr@shd-technology.co.th'),
+          })
+        ).status,
+      ).toBe(404);
+    });
   });
 
   it('HR sets Senior on the link; the invitee cannot change it', async () => {

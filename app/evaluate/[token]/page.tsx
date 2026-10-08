@@ -6,6 +6,7 @@ import { EvaluationForm } from '@/components/admin/interviews/evaluation-form';
 import { LanguagePicker } from '@/components/admin/shell/language-picker';
 import { SsoShell, ssoButton } from '@/components/auth/sso-shell';
 import { checkInviteePage, type InviteeRefusal } from '@/lib/auth/invitee';
+import { NotFoundError } from '@/lib/errors';
 import { intlLocale, type AdminLocale } from '@/lib/i18n/admin';
 import { store } from '@/lib/store';
 
@@ -23,6 +24,9 @@ const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' 
  * are, the link starts its 6 hours (the first time anyone opens it) and they
  * get the candidate's application and the form, once. If not, the page says
  * why, in words — the wrong account, too late, already sent.
+ *
+ * An edit link (`editOf`) opens the evaluation it is for, filled in, for its
+ * evaluator to change and send once.
  */
 export default async function EvaluatePage({ params }: Props) {
   const { token } = await params;
@@ -35,6 +39,17 @@ export default async function EvaluatePage({ params }: Props) {
   await store().interviewInvitations.markOpened(token, identity.email);
   // Re-read: opening it may have just started the 6 hours.
   const fresh = (await store().interviewInvitations.byToken(token)) ?? invitation;
+
+  // An edit link: the evaluation it changes (gone if it was deleted since).
+  const editing = fresh.editOf
+    ? await store()
+        .interviewEvaluations.get(fresh.editOf)
+        .catch((error: unknown) => {
+          if (error instanceof NotFoundError) return null;
+          throw error;
+        })
+    : null;
+  if (fresh.editOf && !editing) return <Refused reason="notFound" />;
 
   const candidate = fresh.candidate;
   const application =
@@ -57,11 +72,13 @@ export default async function EvaluatePage({ params }: Props) {
           <LanguagePicker label={t('language')} />
         </div>
       </header>
-      <h1 className="text-xl font-black tracking-tight text-gray-900 sm:text-2xl">{t('title')}</h1>
-      <p className="mt-1 mb-6 text-sm text-gray-500">{t('intro')}</p>
+      <h1 className="text-xl font-black tracking-tight text-gray-900 sm:text-2xl">
+        {editing ? t('editTitle') : t('title')}
+      </h1>
+      <p className="mt-1 mb-6 text-sm text-gray-500">{editing ? t('editIntro') : t('intro')}</p>
 
       <EvaluationForm
-        evaluation={null}
+        evaluation={editing}
         today={today()}
         evaluator={identity.name || identity.email}
         readOnly={false}

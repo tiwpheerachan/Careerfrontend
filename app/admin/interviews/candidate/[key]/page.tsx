@@ -1,22 +1,55 @@
-import { ArrowLeft, ChevronRight, FileDown, Mail, Plus, UserRound } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FileDown, Mail, UserRound } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { ResultScore, ResultVerdict, ScoreFormula } from '@/components/admin/interviews/candidate-result';
 import { InvitationsPanel } from '@/components/admin/interviews/invitations-panel';
-import { PageHeader, ToneBadge, type Tone } from '@/components/admin/ui';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TablePagination } from '@/components/admin/table-pagination';
+import { PageHeader, RESULT_TONE, ToneBadge } from '@/components/admin/ui';
 import { formatDate } from '@/lib/admin/format';
 import { requestOrigin } from '@/lib/api/origin';
-import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
+import { requireAdminPage } from '@/lib/auth/admin';
 import { EVALUATOR_ROLES } from '@/lib/constants';
 import type { AdminLocale } from '@/lib/i18n/admin';
 import { parseCandidateKey } from '@/lib/interview/candidate-key';
-import { formatAverage, summarize } from '@/lib/interview/summary';
+import { candidateResult, formatAverage, summarize } from '@/lib/interview/summary';
 import { store } from '@/lib/store';
 
-const RESULT_TONE: Record<'PENDING' | 'PASS' | 'FAIL', Tone> = { PENDING: 'amber', PASS: 'emerald', FAIL: 'red' };
 const PDF_LANGUAGES = ['th', 'en', 'zh'] as const;
+/** Rows per page on offer for both tables here; the first is the default. */
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+/** The url's names for each table's paging: the two page apart. */
+const INVITATIONS = { page: 'invPage', size: 'invPageSize' };
+const EVALUATIONS = { page: 'evPage', size: 'evPageSize' };
+
+type Raw = Record<string, string | string[] | undefined>;
+
+/**
+ * One table's page and size from the url (any size 1–100 works; the picker
+ * offers PAGE_SIZES). A page past the last (a stale link, or rows deleted
+ * since) shows the last.
+ */
+function pagingOf(raw: Raw, names: { page: string; size: string }, total: number) {
+  const get = (name: string) => Number.parseInt(typeof raw[name] === 'string' ? raw[name] : '', 10);
+  const page = get(names.page);
+  const size = get(names.size);
+  const pageSize = size >= 1 && size <= 100 ? size : PAGE_SIZES[0];
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  return { page: page >= 1 ? Math.min(page, pages) : 1, pageSize };
+}
+
+/** A table's paging, as url params (left out when the default) — what the other table's links keep. */
+function paramsOf(paging: { page: number; pageSize: number }, names: { page: string; size: string }) {
+  return {
+    ...(paging.page > 1 ? { [names.page]: String(paging.page) } : {}),
+    ...(paging.pageSize !== PAGE_SIZES[0] ? { [names.size]: String(paging.pageSize) } : {}),
+  };
+}
+
+/** The rows of one page. */
+const pageOf = <T,>(rows: T[], { page, pageSize }: { page: number; pageSize: number }) =>
+  rows.slice((page - 1) * pageSize, page * pageSize);
 
 type Props = PageProps<'/admin/interviews/candidate/[key]'>;
 
@@ -59,9 +92,15 @@ export async function generateMetadata({ params }: Props) {
  * evaluator, and the paper form per side (HR / the department) as a PDF.
  * `key` is application:<id>, form:<id> or name:<name> (lib/interview/candidate-key.ts).
  */
-export default async function CandidateEvaluationsPage({ params }: Props) {
-  const actor = await requireAdminPage({ resource: 'applications', level: 'view' });
+export default async function CandidateEvaluationsPage({ params, searchParams }: Props) {
+  await requireAdminPage({ resource: 'applications', level: 'view' });
   const { key, ref, evaluations, invitations, who } = await load((await params).key);
+  const raw = (await searchParams) as Raw;
+  const invPaging = pagingOf(raw, INVITATIONS, invitations.length);
+  const evPaging = pagingOf(raw, EVALUATIONS, evaluations.length);
+  const overall = candidateResult(evaluations);
+  const shownEvaluations = pageOf(evaluations, evPaging);
+  const path = `/admin/interviews/candidate/${encodeURIComponent(key)}`;
   const origin = requestOrigin(new Request('http://localhost', { headers: await headers() }));
 
   const locale = (await getLocale()) as AdminLocale;
@@ -83,24 +122,25 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
         icon={<UserRound className="h-5 w-5" />}
         title={who.name}
         subtitle={[who.position, who.department].filter(Boolean).join(' · ') || t('subtitle')}
-        actions={
-          abilitiesOf(actor).applications.edit && (
-            <Link
-              href={`/admin/interviews/new?candidate=${encodeURIComponent(key)}`}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" /> {t('evaluateMore')}
-            </Link>
-          )
-        }
       />
 
-      {/* The scores per side and round: each evaluator's own is in the list below; this is them together. */}
-      {evaluations.length > 0 && (
+      {/* The result over everything, as the list's row has it; then per round and side, where it comes from.
+          Each evaluator's own is in the list below. */}
+      {overall && (
         <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
           <h2 className="text-sm font-bold text-gray-900">{t('summaryTitle')}</h2>
+          <p className="mt-0.5 text-xs text-gray-500">{t('overallHint')}</p>
+          <div className="mt-4 flex flex-wrap items-start gap-x-8 gap-y-3 rounded-xl bg-gray-50 p-4">
+            <ResultScore result={overall} large />
+            <ResultVerdict result={overall} />
+            <div className="w-full border-t border-gray-200 pt-3">
+              <ScoreFormula result={overall} />
+            </div>
+          </div>
+
+          <h3 className="mt-5 text-xs font-bold text-gray-700">{t('breakdownTitle')}</h3>
           <p className="mt-0.5 text-xs text-gray-500">{t('summaryHint')}</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {summarize(evaluations).map((s) => (
               <div key={`${s.role}-${s.round}`} className="rounded-xl border border-gray-200 p-3">
                 <div className="text-xs font-semibold text-gray-500">
@@ -142,7 +182,7 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
           position: who.position,
           department: who.department,
         }}
-        invitations={invitations.map(({ token, ...inv }) => ({
+        invitations={pageOf(invitations, invPaging).map(({ token, ...inv }) => ({
           ...inv,
           link: `${origin}/evaluate/${token}`,
           createdAt: inv.createdAt.toISOString(),
@@ -153,6 +193,20 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
             submittedAt: p.submittedAt?.toISOString() ?? null,
           })),
         }))}
+        footer={
+          invitations.length > 0 && (
+            <TablePagination
+              path={path}
+              params={paramsOf(evPaging, EVALUATIONS)}
+              page={invPaging.page}
+              pageSize={invPaging.pageSize}
+              total={invitations.length}
+              sizes={PAGE_SIZES}
+              names={INVITATIONS}
+              scroll={false}
+            />
+          )
+        }
       />
 
       {/* One paper form per side */}
@@ -191,18 +245,21 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
         </div>
       </section>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+      {/* Each evaluator's own round, as a card like the invitations above; each opens its full form. */}
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
+        <h2 className="text-sm font-bold text-gray-900">{t('listTitle')}</h2>
+        <p className="mt-0.5 text-xs text-gray-500">{t('listHint')}</p>
         {evaluations.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm text-gray-500">{t('empty')}</p>
+          <p className="mt-4 text-sm text-gray-400">{t('empty')}</p>
         ) : (
           <>
-            {/* Phones: one card per evaluation, the whole card opens it. */}
-            <ul className="divide-y divide-gray-100 md:hidden">
-              {evaluations.map((e) => (
+            {/* Below xl (the sidebar leaves the table too little room): one row per evaluation, the whole row opens it. */}
+            <ul className="mt-4 divide-y divide-gray-100 xl:hidden">
+              {shownEvaluations.map((e) => (
                 <li key={e.id}>
                   <Link
                     href={`/admin/interviews/${e.id}?from=candidate`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
+                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-gray-50"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -227,24 +284,27 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
                 </li>
               ))}
             </ul>
-            <Table className="hidden text-left md:table">
-              <TableHeader className="border-b border-gray-200 bg-gray-50 text-xs text-gray-500 uppercase [&_tr]:border-0">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="px-4 py-3">{tl('columns.round')}</TableHead>
-                  <TableHead className="px-4 py-3">{tl('columns.evaluator')}</TableHead>
-                  <TableHead className="px-4 py-3">{tl('columns.score')}</TableHead>
-                  <TableHead className="px-4 py-3">{tl('columns.result')}</TableHead>
-                  <TableHead className="px-4 py-3">{tl('columns.date')}</TableHead>
-                  <TableHead className="px-4 py-3 text-right">
+
+            <table className="mt-4 hidden w-full text-left text-sm xl:table">
+              <thead>
+                <tr className="border-b border-gray-200 text-xs text-gray-500">
+                  <th className="py-2 pr-3 font-semibold">{tl('columns.round')}</th>
+                  <th className="py-2 pr-3 font-semibold">{tl('columns.evaluator')}</th>
+                  <th className="py-2 pr-3 font-semibold">{tl('columns.score')}</th>
+                  <th className="py-2 pr-3 font-semibold">{tl('columns.result')}</th>
+                  <th className="py-2 pr-3 font-semibold">{tl('columns.date')}</th>
+                  <th className="py-2 font-semibold">
                     <span className="sr-only">{tl('columns.actions')}</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {evaluations.map((e) => (
-                  <TableRow key={e.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <TableCell className="px-4 py-3 font-semibold text-gray-800">{tf(`rounds.${e.round}`)}</TableCell>
-                    <TableCell className="px-4 py-3 text-gray-700">
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {shownEvaluations.map((e) => (
+                  <tr key={e.id} className="border-b border-gray-100 align-top last:border-0">
+                    <td className="py-3 pr-3 font-semibold whitespace-nowrap text-gray-900">
+                      {tf(`rounds.${e.round}`)}
+                    </td>
+                    <td className="py-3 pr-3 text-gray-700">
                       <div className="flex items-center gap-1.5">
                         {e.evaluator.name || e.evaluator.email}
                         {e.viaInvitation && (
@@ -252,39 +312,48 @@ export default async function CandidateEvaluationsPage({ params }: Props) {
                         )}
                       </div>
                       <div className="text-xs text-gray-400">{tf(`roles.${e.evaluatorRole}`)}</div>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                    </td>
+                    <td className="py-3 pr-3 whitespace-nowrap">
                       <span className="font-semibold text-gray-900">
                         {e.total}/{e.max}
                       </span>
                       <span className={e.meetsPassMark ? 'ml-2 text-xs text-emerald-700' : 'ml-2 text-xs text-red-600'}>
                         {e.meetsPassMark ? tf('meets') : tf('notMeets')}
                       </span>
-                    </TableCell>
-                    <TableCell className="px-4 py-3">
+                    </td>
+                    <td className="py-3 pr-3">
                       <ToneBadge tone={RESULT_TONE[e.result]}>{tf(`results.${e.result}`)}</ToneBadge>
                       {e.result === 'FAIL' && e.failReason && (
                         <div className="mt-1 text-xs text-gray-500">{e.failReason}</div>
                       )}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 whitespace-nowrap text-gray-500">
-                      {formatDate(e.interviewDate, locale)}
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-right">
+                    </td>
+                    <td className="py-3 pr-3 whitespace-nowrap text-gray-500">{formatDate(e.interviewDate, locale)}</td>
+                    <td className="py-3 text-right">
                       <Link
                         href={`/admin/interviews/${e.id}?from=candidate`}
-                        className="text-sm font-semibold text-blue-700 hover:underline"
+                        className="text-sm font-semibold whitespace-nowrap text-blue-700 hover:underline"
                       >
                         {t('open')}
                       </Link>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
+
+            <TablePagination
+              path={path}
+              params={paramsOf(invPaging, INVITATIONS)}
+              page={evPaging.page}
+              pageSize={evPaging.pageSize}
+              total={evaluations.length}
+              sizes={PAGE_SIZES}
+              names={EVALUATIONS}
+              scroll={false}
+            />
           </>
         )}
-      </div>
+      </section>
     </div>
   );
 }

@@ -74,9 +74,18 @@ export interface Outcome {
   meetsPassMark: boolean;
 }
 
-const sum = (values: readonly number[]) => values.reduce((a, b) => a + b, 0);
+/**
+ * Sums rounded to 6 decimals: averaged scores (lib/interview/summary.ts) add up
+ * to 20.000000000000004 where they are exactly 20, which would pass "over 20".
+ * Whole scores are unaffected.
+ */
+const settle = (value: number) => Math.round(value * 1e6) / 1e6;
+const sum = (values: readonly number[]) => settle(values.reduce((a, b) => a + b, 0));
 
-/** Totals and whether they pass. Missing scores (a form half filled in) count as 0. */
+/**
+ * Totals and whether they pass. Missing scores (a form half filled in) count as 0.
+ * Scores may be averages, as on a candidate's combined result.
+ */
 export function outcomeOf(scores: Scores): Outcome {
   const generalTotal = sum(scores.general);
   if (!scores.senior) {
@@ -89,7 +98,7 @@ export function outcomeOf(scores: Scores): Outcome {
     };
   }
   const seniorTotal = sum(scores.senior);
-  const total = generalTotal + seniorTotal;
+  const total = settle(generalTotal + seniorTotal);
   return {
     generalTotal,
     seniorTotal,

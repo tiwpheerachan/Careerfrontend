@@ -584,6 +584,7 @@ export const Invitation = z.object({
   round: z.union([z.literal(1), z.literal(2)]),
   evaluatorRole: z.enum(EVALUATOR_ROLES),
   senior: z.boolean(),
+  editOf: Id.nullable().meta({ description: 'An edit link: the evaluation it changes. Null: for a new one.' }),
   createdBy: z.string(),
   createdByName: z.string().nullable(),
   createdAt: DateTime,
