@@ -49,7 +49,9 @@ export interface Draft {
   /** A published job's code, OTHER_JOB, or '' (nothing chosen yet). */
   jobCode: string;
   positionOther: string;
-  expectedSalary: string;
+  /** Baht, digits only (the field lets nothing else in). */
+  expectedSalaryMin: string;
+  expectedSalaryMax: string;
   nameTitle: Choice<typeof NAME_TITLES>;
   nameTh: string;
   nameEn: string;
@@ -137,7 +139,8 @@ export function emptyDraft(): Draft {
     letterhead: '',
     jobCode: '',
     positionOther: '',
-    expectedSalary: '',
+    expectedSalaryMin: '',
+    expectedSalaryMax: '',
     nameTh: '',
     nameTitle: '',
     nameEn: '',
@@ -192,6 +195,9 @@ const yesNo = (value: YesNo) => (value === '' ? null : value === 'yes');
  * entry of `education` is, so an error on `education.1.gpa` can be put on the
  * right row.
  */
+/** A typed amount as a number; nothing typed is null. */
+const amount = (value: string) => (value.trim() ? Number(value) : null);
+
 export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
   const educationLevels = FORM_EDUCATION_LEVELS.filter((level) =>
     Object.values(draft.education[level]).some((v) => v.trim() !== ''),
@@ -201,7 +207,8 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
     letterhead: draft.letterhead || undefined,
     jobCode: draft.jobCode === OTHER_JOB ? '' : draft.jobCode,
     positionOther: draft.jobCode === OTHER_JOB ? draft.positionOther : '',
-    expectedSalary: draft.expectedSalary,
+    expectedSalaryMin: amount(draft.expectedSalaryMin),
+    expectedSalaryMax: amount(draft.expectedSalaryMax),
     nameTitle: choice(draft.nameTitle),
     nameTh: draft.nameTh,
     nameEn: draft.nameEn,
@@ -252,7 +259,7 @@ export type Step = (typeof STEPS)[number];
 
 /** Which top-level fields each step owns: an error is shown on the step whose field it is. */
 const STEP_FIELDS: Record<Step, string[]> = {
-  position: ['letterhead', 'jobCode', 'positionOther', 'expectedSalary'],
+  position: ['letterhead', 'jobCode', 'positionOther', 'expectedSalaryMin', 'expectedSalaryMax'],
   personal: [
     'nameTitle',
     'nameTh',
@@ -268,7 +275,7 @@ const STEP_FIELDS: Record<Step, string[]> = {
   family: ['family', 'marriage', 'military'],
   education: ['education', 'skills'],
   work: ['currentJob', 'previousJob', 'emergency'],
-  review: ['certified', 'turnstileToken', 'locale'],
+  review: ['resume', 'certified', 'turnstileToken', 'locale'],
 };
 
 export function stepOf(path: string): Step {
@@ -289,6 +296,9 @@ export type ErrorKey =
   | 'position'
   | 'certify'
   | 'number'
+  | 'salaryRange'
+  | 'resumeSize'
+  | 'resumeType'
   | 'salary'
   | 'gpa'
   | 'year'
@@ -301,12 +311,10 @@ const PHONE = /(^|\.)(mobile|homePhone|phone)$/;
 
 function errorKey(path: string, issue: z.core.$ZodIssue, empty: boolean): ErrorKey {
   if (path === 'certified') return 'certify';
+  if (path === 'expectedSalaryMax' && issue.code === 'custom') return 'salaryRange';
   if (path === 'positionOther' || path === 'jobCode') return 'position';
-  if (
-    empty &&
-    (path === 'letterhead' || path === 'nameTh' || path === 'mobile' || path === 'email' || path === 'birthDate')
-  )
-    return 'required';
+  // Left empty: "required", whatever the field — not a phone or postal-code format message.
+  if (empty) return 'required';
   if (PHONE.test(path)) return 'phone';
   if (path === 'email') return 'email';
   if (path === 'birthDate') return 'birthDate';
@@ -347,7 +355,6 @@ function extraChecks(draft: Draft): Errors {
   const money = (path: string, value: string) => {
     if (/\d/.test(value) && !MONEY.test(value.trim())) errors[path] = 'salary';
   };
-  money('expectedSalary', draft.expectedSalary);
   for (const which of ['currentJob', 'previousJob'] as const) {
     if (which === 'currentJob' ? !draft.hasCurrentJob : !draft.hasPreviousJob) continue;
     money(`${which}.lastSalary`, draft[which].lastSalary);

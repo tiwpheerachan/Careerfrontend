@@ -103,7 +103,7 @@ export function placements(form: PrintableForm): Placed[] {
   const L = LAYOUT;
 
   put(L.position, form.position);
-  put(L.expectedSalary, a.expectedSalary);
+  put(L.expectedSalary, salaryOf(a));
 
   // The title before each name; an English name only gets one when there is an English name.
   put(L.nameTh, a.nameTitle ? `${TITLE_TH[a.nameTitle]}${a.nameTh}` : a.nameTh);
@@ -279,4 +279,18 @@ export async function renderApplicationFormPdf(form: PrintableForm): Promise<Uin
   doc.setTitle(`ใบสมัครงาน — ${form.answers.nameTh}`);
   doc.setProducer('SHD Careers');
   return doc.save();
+}
+
+/**
+ * The expected salary as printed: "25,000 - 30,000", one end alone ("25,000 ขึ้นไป",
+ * "ไม่เกิน 30,000"), or — a form sent before the range — the text it was sent with.
+ */
+export function salaryOf(a: ApplicationFormAnswers & { expectedSalary?: string | null }): string | null {
+  const min = a.expectedSalaryMin ?? null;
+  const max = a.expectedSalaryMax ?? null;
+  const baht = (value: number) => value.toLocaleString('en-US');
+  if (min !== null && max !== null) return min === max ? baht(min) : `${baht(min)} - ${baht(max)}`;
+  if (min !== null) return `${baht(min)} ขึ้นไป`;
+  if (max !== null) return `ไม่เกิน ${baht(max)}`;
+  return a.expectedSalary ?? null;
 }

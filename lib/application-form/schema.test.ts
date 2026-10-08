@@ -14,9 +14,44 @@ describe('the application form: phone numbers', () => {
     expect(withField({ mobile }).success).toBe(false);
   });
 
-  it('home phone and the emergency phone: optional, but a phone when given', () => {
+  it('home phone: optional, but a phone when given', () => {
     expect(withField({ homePhone: '' }).success).toBe(true);
     expect(withField({ homePhone: 'sdfsdf' }).success).toBe(false);
+  });
+});
+
+describe('the application form: expected salary, a range in baht', () => {
+  it('either end, both, or neither; the top not below the bottom', () => {
+    expect(withField({ expectedSalaryMin: 25000, expectedSalaryMax: 30000 }).success).toBe(true);
+    expect(withField({ expectedSalaryMin: 25000, expectedSalaryMax: null }).success).toBe(true);
+    expect(withField({ expectedSalaryMin: null, expectedSalaryMax: null }).success).toBe(true);
+    expect(withField({ expectedSalaryMin: 30000, expectedSalaryMax: 30000 }).success).toBe(true);
+    const below = withField({ expectedSalaryMin: 30000, expectedSalaryMax: 25000 });
+    expect(below.success).toBe(false);
+    expect(below.error!.issues[0]!.path).toEqual(['expectedSalaryMax']);
+  });
+
+  it('numbers only — no text', () => {
+    expect(withField({ expectedSalaryMin: 'ตามตกลง' }).success).toBe(false);
+    expect(withField({ expectedSalaryMin: -1 }).success).toBe(false);
+  });
+});
+
+describe('the application form: every line of the address and the emergency contact', () => {
+  const address = applicationFormInput().address;
+
+  it.each(Object.keys(address))('address.%s is required', (key) => {
+    expect(withField({ address: { ...address, [key]: '' } }).success).toBe(false);
+  });
+
+  it('"-" for a line the address does not have; the postal code stays 5 digits', () => {
+    expect(withField({ address: { ...address, moo: '-', soi: '-', road: '-' } }).success).toBe(true);
+    expect(withField({ address: { ...address, postalCode: '-' } }).success).toBe(false);
+  });
+
+  it.each(['name', 'relationship', 'phone'])('emergency.%s is required', (key) => {
+    const emergency = { name: 'นางมาลี ศรีสุข', relationship: 'มารดา', phone: '089-765-4321', [key]: '' };
+    expect(withField({ emergency }).success).toBe(false);
   });
 });
 

@@ -151,6 +151,11 @@ export async function parseBody<S extends z.ZodType>(request: Request, schema: S
   } catch {
     throw new BadRequestError('Request body must be valid JSON.');
   }
+  return parseValue(request, schema, raw);
+}
+
+/** Validates a body already read (a JSON part of a multipart form), as parseBody does. */
+export function parseValue<S extends z.ZodType>(request: Request, schema: S, raw: unknown): z.infer<S> {
   const parsed = schema.safeParse(raw, { error: errorMapFor(validationLanguage(request)) });
   if (!parsed.success) throw new BadRequestError('The request body is not valid.', issuesOf(parsed.error));
   return parsed.data;

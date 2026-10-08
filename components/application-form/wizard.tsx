@@ -1,10 +1,23 @@
 'use client';
 
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Loader2, Send } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  Loader2,
+  Paperclip,
+  Send,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import s from '@/components/apply/apply.module.css';
 import { FieldError } from '@/components/apply/field';
+import { acceptOf, checkFile } from '@/components/apply/files';
 import { Turnstile } from '@/components/apply/turnstile';
 import { FORM_EDUCATION_LEVELS } from '@/lib/constants';
 import { cx } from '@/lib/cx';
@@ -68,6 +81,8 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileReset, setTurnstileReset] = useState(0);
+  /** The résumé/CV, if any: kept here only (a File cannot go into sessionStorage), so a refresh drops it. */
+  const [resume, setResume] = useState<File | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
   // Screen readers: on a step change the new step's heading takes focus; on sending, the success heading.
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -202,10 +217,19 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
     setOutcome(null);
     const { input, educationLevels } = toInput(draft, locale, turnstileToken || undefined);
     try {
+      // With a résumé the form goes as multipart (the browser sets its boundary): the JSON in `data`, the file in `resume`.
+      let payload: BodyInit = JSON.stringify(input);
+      if (resume) {
+        payload = new FormData();
+        payload.append('data', JSON.stringify(input));
+        payload.append('resume', resume);
+      }
       const response = await fetch(`/api/v1/application-forms?locale=${locale}`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify(input),
+        headers: resume
+          ? { accept: 'application/json' }
+          : { 'content-type': 'application/json', accept: 'application/json' },
+        body: payload,
       });
       const body = (await response.json().catch(() => null)) as {
         id?: string;
@@ -218,6 +242,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
         } catch {
           /* nothing to clear */
         }
+        setResume(null);
         setOutcome({ kind: 'sent', id: body.id });
         scrollTop();
         return;
@@ -254,6 +279,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
 
   const startOver = () => {
     setDraft(emptyDraft());
+    setResume(null);
     setErrors({});
     setOutcome(null);
     setStep(0);
@@ -319,7 +345,20 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
           {current === 'education' && <EducationStep />}
           {current === 'work' && <WorkStep />}
           {current === 'review' && (
-            <Review jobs={jobs} onEdit={goTo}>
+            <Review
+              jobs={jobs}
+              onEdit={goTo}
+              upload={
+                <ResumeCard
+                  file={resume}
+                  onPick={(file) => {
+                    setResume(file);
+                    setErrors(({ resume: _, ...rest }) => rest);
+                  }}
+                  onProblem={(problem) => setErrors((e) => ({ ...e, resume: problem }))}
+                />
+              }
+            >
               <Tick path="certified" required>
                 {t('fields.certify')}
               </Tick>
@@ -456,13 +495,21 @@ function Progress({ step, furthest, onJump }: { step: number; furthest: number; 
 }
 
 /** The last step: what was filled in, by section, each with its "Edit". */
+/** "25,000 – 30,000", or the end that was given ("25,000 –", "– 30,000"). */
+const salaryText = (min: string, max: string) => {
+  const baht = (v: string) => (v ? Number(v).toLocaleString('en-US') : '');
+  return min || max ? (min === max ? baht(min) : [baht(min), baht(max)].join(' – ').trim()) : '';
+};
+
 function Review({
   jobs,
   onEdit,
+  upload,
   children,
 }: {
   jobs: JobOption[];
   onEdit: (index: number) => void;
+  upload: ReactNode;
   children: ReactNode;
 }) {
   const t = useTranslations('applicationForm');
@@ -479,7 +526,7 @@ function Review({
       rows: [
         [f('letterhead'), draft.letterhead ? f(`letterheads.${draft.letterhead}`) : ''],
         [f('job'), position],
-        [f('expectedSalary'), draft.expectedSalary],
+        [f('expectedSalary'), salaryText(draft.expectedSalaryMin, draft.expectedSalaryMax)],
       ],
     },
     {
@@ -585,7 +632,114 @@ function Review({
           </dl>
         </section>
       ))}
+      {upload}
       <div className="space-y-4 rounded-3xl border border-blue-200 bg-blue-50/60 p-4 sm:p-5">{children}</div>
     </div>
+  );
+}
+
+/** The optional résumé/CV: the same rules as applying for a job (PDF, DOC or DOCX, ≤ 5 MB), checked on picking. */
+function ResumeCard({
+  file,
+  onPick,
+  onProblem,
+}: {
+  file: File | null;
+  onPick: (file: File | null) => void;
+  onProblem: (problem: 'resumeSize' | 'resumeType') => void;
+}) {
+  const f = useTranslations('applicationForm.fields');
+  const te = useTranslations('applicationForm.errors');
+  const ta = useTranslations('apply');
+  const tc = useTranslations('common');
+  const { errors } = useForm();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const id = fieldId('resume');
+  const error = errors.resume ? te(errors.resume) : undefined;
+  const [dragging, setDragging] = useState(false);
+
+  const pick = async (picked: File | null) => {
+    const problem = picked && (await checkFile(picked, 'RESUME'));
+    if (!picked || problem) {
+      if (inputRef.current) inputRef.current.value = '';
+      onPick(null);
+    }
+    if (problem) return onProblem(problem === 'size' ? 'resumeSize' : 'resumeType');
+    if (picked) onPick(picked);
+  };
+
+  const drop = (e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setDragging(false);
+    void pick(e.dataTransfer.files[0] ?? null);
+  };
+
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white/75 p-4 sm:p-5">
+      <h3 id={`${id}-label`} className="flex items-center gap-2 text-sm font-black text-slate-900">
+        <Paperclip className="h-4 w-4 text-blue-600" aria-hidden="true" />
+        {f('resume')}
+      </h3>
+      {file ? (
+        <div className={cx('mt-3', s.fileRow)}>
+          <div className={s.fileMeta}>
+            <FileText className="h-4 w-4 text-slate-500" aria-hidden="true" />
+            <div className="min-w-0">
+              <div className={s.fileName}>{file.name}</div>
+              <div className={s.fileSize}>{ta('files.size', { size: Math.round(file.size / 1024) })}</div>
+            </div>
+          </div>
+          <button type="button" className="btn btn-ghost" onClick={() => void pick(null)}>
+            <Trash2 className="h-4 w-4" aria-hidden="true" /> {tc('remove')}
+          </button>
+        </div>
+      ) : (
+        // The whole box is the input's label: a click opens the picker, a file dropped on it is taken.
+        <label
+          htmlFor={id}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={drop}
+          className={cx(
+            'mt-3 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 text-center transition',
+            'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:focus-visible]:ring-offset-2',
+            dragging
+              ? 'border-blue-500 bg-blue-50'
+              : error
+                ? 'border-rose-300 bg-rose-50/40 hover:border-rose-400'
+                : 'border-slate-300 bg-slate-50/60 hover:border-blue-400 hover:bg-blue-50/50',
+          )}
+        >
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-600/10 text-blue-600">
+            <Upload className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="text-sm font-semibold text-slate-800">
+            {f('resumeDrop')} <span className="text-blue-700 underline underline-offset-2">{f('resumeBrowse')}</span>
+          </span>
+          <span id={`${id}-hint`} className="text-xs text-slate-500">
+            {f('resumeHint')}
+          </span>
+          <input
+            id={id}
+            ref={inputRef}
+            type="file"
+            className="sr-only"
+            accept={acceptOf('RESUME')}
+            aria-labelledby={`${id}-label`}
+            aria-describedby={error ? `${id}-hint ${id}-error` : `${id}-hint`}
+            aria-invalid={error ? true : undefined}
+            onChange={(e) => void pick(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      )}
+      {error ? (
+        <div className="mt-2">
+          <FieldError id={id} error={error} />
+        </div>
+      ) : null}
+    </section>
   );
 }

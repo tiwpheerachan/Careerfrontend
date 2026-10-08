@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, FileDown, SearchX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardCheck, ClipboardList, FileDown, Paperclip, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ApplicationViewTabs } from '@/components/admin/applications/view-tabs';
@@ -111,6 +111,15 @@ export default async function ApplicationFormsPage({ searchParams }: PageProps<'
                         <FileDown className="h-4 w-4 text-blue-600" />
                         {t('pdf')}
                       </a>
+                      {form.hasResume && (
+                        <a
+                          href={`/api/v1/admin/application-forms/${form.id}/resume`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 transition hover:bg-gray-50"
+                        >
+                          <Paperclip className="h-4 w-4 text-blue-600" />
+                          {t('resume')}
+                        </a>
+                      )}
                       {abilitiesOf(actor).applications.edit && (
                         <Link
                           prefetch={false}

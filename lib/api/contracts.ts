@@ -340,7 +340,8 @@ export const submitApplicationForm = endpoint({
   description:
     'The company’s one-page form (ใบสมัครงาน), from /application-form. Not tied to an application for a job. ' +
     'Rate limited per IP; Turnstile when it is on. `sensitive` is stored only with `sensitiveConsent: true`. ' +
-    'Validation messages follow `?locale=`.',
+    'Validation messages follow `?locale=`. With a résumé/CV: multipart/form-data, this JSON in `data` and the ' +
+    'file in `resume` (PDF, DOC or DOCX, ≤ 5 MB, checked from its contents).',
   auth: 'public',
   query: S.LocaleQuery,
   body: { schema: S.ApplicationFormInput, type: 'application/json' },
@@ -371,6 +372,18 @@ export const adminApplicationFormPdf = endpoint({
   permission: 'applications.view',
   params: S.IdParams,
   responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
+});
+
+export const adminApplicationFormResume = endpoint({
+  method: 'get',
+  path: '/admin/application-forms/{id}/resume',
+  tag: 'Admin · Applications',
+  summary: 'The résumé/CV sent with the form',
+  description: 'A download (PDF, DOC or DOCX); 404 when none was sent. Kept in the admin audit trail.',
+  auth: 'admin',
+  permission: 'applications.view',
+  params: S.IdParams,
+  responses: { 200: { description: 'The file, or a redirect to it.', contentType: 'application/octet-stream' } },
 });
 
 export const adminDeleteApplicationForm = endpoint({
@@ -584,6 +597,7 @@ export const ENDPOINTS = [
   adminDownloadFile,
   adminListApplicationForms,
   adminApplicationFormPdf,
+  adminApplicationFormResume,
   adminDeleteApplicationForm,
   adminListEvaluations,
   adminCreateEvaluation,

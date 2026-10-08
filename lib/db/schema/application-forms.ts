@@ -35,6 +35,10 @@ export const applicationForms = pgTable(
     sensitive: jsonb('sensitive').$type<ApplicationFormSensitive>(),
     sensitiveConsentAt: timestamp('sensitive_consent_at', { withTimezone: true, mode: 'date' }),
     certifiedAt: timestamp('certified_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** An optional résumé/CV (migration 0011): its object path in storage, sent name and type — all or none. */
+    resumePath: text('resume_path'),
+    resumeName: text('resume_name'),
+    resumeType: text('resume_type'),
     ...timestamps(),
   },
   (table) => [

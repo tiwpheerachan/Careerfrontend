@@ -89,11 +89,20 @@ export function PositionStep({ jobs }: { jobs: JobOption[] }) {
           <div className="hidden sm:block" />
         )}
         <TextField
-          path="expectedSalary"
-          label={t('expectedSalary')}
-          placeholder={t('expectedSalaryPlaceholder')}
+          path="expectedSalaryMin"
+          label={t('expectedSalaryMin')}
+          placeholder={t('expectedSalaryMinPlaceholder')}
           inputMode="numeric"
-          maxLength={50}
+          maxLength={8}
+          allow="digits"
+        />
+        <TextField
+          path="expectedSalaryMax"
+          label={t('expectedSalaryMax')}
+          placeholder={t('expectedSalaryMaxPlaceholder')}
+          inputMode="numeric"
+          maxLength={8}
+          allow="digits"
         />
       </div>
     </div>
@@ -162,14 +171,14 @@ export function ContactStep() {
   const t = useT();
   return (
     <div className="space-y-6">
-      <Group title={t('address')}>
-        <TextField path="address.houseNo" label={t('houseNo')} maxLength={30} />
-        <TextField path="address.moo" label={t('moo')} maxLength={10} />
-        <TextField path="address.soi" label={t('soi')} maxLength={100} />
-        <TextField path="address.road" label={t('road')} maxLength={100} />
-        <TextField path="address.subdistrict" label={t('subdistrict')} maxLength={100} />
-        <TextField path="address.district" label={t('district')} maxLength={100} />
-        <TextField path="address.province" label={t('province')} maxLength={100} />
+      <Group title={t('address')} hint={t('addressHint')}>
+        <TextField path="address.houseNo" label={t('houseNo')} maxLength={30} required />
+        <TextField path="address.moo" label={t('moo')} maxLength={10} required />
+        <TextField path="address.soi" label={t('soi')} maxLength={100} required />
+        <TextField path="address.road" label={t('road')} maxLength={100} required />
+        <TextField path="address.subdistrict" label={t('subdistrict')} maxLength={100} required />
+        <TextField path="address.district" label={t('district')} maxLength={100} required />
+        <TextField path="address.province" label={t('province')} maxLength={100} required />
         <TextField
           path="address.postalCode"
           label={t('postalCode')}
@@ -177,6 +186,7 @@ export function ContactStep() {
           maxLength={5}
           autoComplete="postal-code"
           allow="digits"
+          required
         />
       </Group>
       <Group title={t('contactChannels')}>
@@ -404,9 +414,16 @@ export function WorkStep() {
         ) : null}
       </section>
       <Group title={t('emergency')} hint={t('emergencyHint')}>
-        <TextField path="emergency.name" label={t('emergencyName')} />
-        <TextField path="emergency.relationship" label={t('relationship')} maxLength={50} />
-        <TextField path="emergency.phone" label={t('emergencyPhone')} type="tel" maxLength={20} allow="phone" />
+        <TextField path="emergency.name" label={t('emergencyName')} required />
+        <TextField path="emergency.relationship" label={t('relationship')} maxLength={50} required />
+        <TextField
+          path="emergency.phone"
+          label={t('emergencyPhone')}
+          type="tel"
+          maxLength={20}
+          allow="phone"
+          required
+        />
       </Group>
       {errors.currentJob || errors.previousJob ? <FieldError id="af-work" error={te('invalid')} /> : null}
     </div>

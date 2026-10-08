@@ -12,7 +12,7 @@ const ACTIONS: Record<string, 'create' | 'update' | 'delete' | 'download'> = {
   GET: 'download',
 };
 /** The GETs that take personal data out: a resume file, a PDF, the CSV export. */
-const DOWNLOAD = /\/(files\/[^/]+|pdf|export)$/;
+const DOWNLOAD = /\/(files\/[^/]+|resume|pdf|export)$/;
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const BODY_LIMIT = 16_000;
 

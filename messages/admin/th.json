@@ -195,6 +195,7 @@
         "PLAIN": "ไม่ระบุ"
       },
       "pdf": "PDF",
+      "resume": "Resume/CV",
       "deleteFor": "ลบใบสมัครของ {name}",
       "deleteTitle": "ลบใบสมัครของ {name}?",
       "deleteBody": "ใบสมัครจะหายจากรายการ (เก็บไว้ในระบบ ไม่ได้ลบถาวร)",

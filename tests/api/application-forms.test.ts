@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as formPdf from '@/app/api/v1/admin/application-forms/[id]/pdf/route';
+import * as formResume from '@/app/api/v1/admin/application-forms/[id]/resume/route';
 import * as formOne from '@/app/api/v1/admin/application-forms/[id]/route';
 import * as formList from '@/app/api/v1/admin/application-forms/route';
 import * as submit from '@/app/api/v1/application-forms/route';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
 import { seal, SESSION_COOKIE } from '@/lib/auth/session';
 import { resetServerEnv } from '@/lib/env';
-import { call } from '@/tests/support/api';
+import { call, FILES } from '@/tests/support/api';
 import { applicationFormInput } from '@/tests/support/application-form';
 import { openJob, repos } from '@/tests/support/fixtures';
 
@@ -61,6 +62,45 @@ describe('sending the application form', () => {
     expect(without!.sensitiveConsentAt).toBeNull();
     expect(withConsent!.sensitive).toMatchObject({ religion: 'พุทธ', bloodType: 'O' });
     expect(withConsent!.sensitiveConsentAt).toBeInstanceOf(Date);
+  });
+});
+
+describe('a résumé/CV with the form', () => {
+  const sendWith = (resume?: File, data: unknown = applicationFormInput()) => {
+    const form = new FormData();
+    form.append('data', JSON.stringify(data));
+    if (resume) form.append('resume', resume);
+    return call(submit.POST, { path: '/api/v1/application-forms', query: { locale: 'th' }, form });
+  };
+
+  it('multipart: stored, flagged in the list, and the admin downloads it', async () => {
+    const res = await sendWith(FILES.pdf());
+    expect(res.status).toBe(201);
+    expect((await call(formList.GET)).body.forms[0].hasResume).toBe(true);
+    const file = await call(formResume.GET, { params: { id: res.body.id } });
+    expect(file.status).toBe(200);
+    expect(file.headers.get('content-disposition')).toContain(encodeURIComponent('ประวัติ resume.pdf'));
+    expect(String(file.body)).toMatch(/^%PDF-/);
+  });
+
+  it('multipart without a file, or plain JSON: no résumé, and its download is 404', async () => {
+    const res = await sendWith();
+    expect(res.status).toBe(201);
+    expect((await call(formList.GET)).body.forms[0].hasResume).toBe(false);
+    expect((await call(formResume.GET, { params: { id: res.body.id } })).status).toBe(404);
+  });
+
+  it('400 for a file that is not a PDF/DOC/DOCX by its contents; nothing is stored', async () => {
+    const res = await sendWith(FILES.fakePdf());
+    expect(res.status).toBe(400);
+    expect(res.body.error.issues[0].path).toBe('resume');
+    expect((await call(formList.GET)).body.total).toBe(0);
+  });
+
+  it('the form itself is still checked when sent as multipart', async () => {
+    const res = await sendWith(FILES.pdf(), applicationFormInput({ mobile: 'x' }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.issues.map((i: { path: string }) => i.path)).toContain('mobile');
   });
 });
 

@@ -195,6 +195,7 @@
         "PLAIN": "Not set"
       },
       "pdf": "PDF",
+      "resume": "Résumé/CV",
       "deleteFor": "Delete {name}’s form",
       "deleteTitle": "Delete {name}’s form?",
       "deleteBody": "It disappears from the list (kept in the system, not erased).",

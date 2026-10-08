@@ -1291,9 +1291,12 @@
       "birthDateFuture": "The birth date can't be in the future",
       "birthDateYoung": "Applicants must be at least 15 years old",
       "salary": "Enter an amount, e.g. 25,000 or 25,000-30,000",
+      "salaryRange": "The maximum must not be below the minimum",
       "gpa": "Enter the GPA as a number, e.g. 3.25",
       "year": "Enter a 4-digit year, e.g. 2022",
-      "birthOrder": "Can't be more than the number of siblings"
+      "birthOrder": "Can't be more than the number of siblings",
+      "resumeSize": "The file is larger than 5 MB.",
+      "resumeType": "Only PDF, DOC or DOCX files are accepted."
     },
     "success": {
       "title": "Application sent",
@@ -1321,7 +1324,10 @@
       "jobOther": "Other (type it)",
       "positionOther": "The position you want",
       "expectedSalary": "Expected salary (THB)",
-      "expectedSalaryPlaceholder": "e.g. 25,000",
+      "expectedSalaryMin": "Expected salary, from (THB)",
+      "expectedSalaryMax": "Expected salary, up to (THB)",
+      "expectedSalaryMinPlaceholder": "e.g. 25000",
+      "expectedSalaryMaxPlaceholder": "e.g. 30000",
       "nameTh": "Full name (Thai)",
       "nameThPlaceholder": "As on your ID card, without the title",
       "nameEn": "Full name (English)",
@@ -1342,6 +1348,7 @@
       "weight": "Weight (kg)",
       "height": "Height (cm)",
       "address": "Contact address",
+      "addressHint": "Fill in every line — write - where the address has none (no moo, soi or road)",
       "houseNo": "House no.",
       "moo": "Moo",
       "soi": "Soi",
@@ -1443,7 +1450,11 @@
         "MRS": "Mrs.",
         "MISS": "Miss"
       },
-      "phonePlaceholder": "e.g. 081 234 5678"
+      "phonePlaceholder": "e.g. 081 234 5678",
+      "resume": "Résumé / CV (optional)",
+      "resumeDrop": "Drag and drop a file here, or",
+      "resumeBrowse": "choose a file",
+      "resumeHint": "A PDF, DOC or DOCX file, up to 5 MB."
     },
     "backToReview": "Back to review"
   }

@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, ne, or } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import type { ApplicationFormAnswers, ApplicationFormSensitive } from '@/lib/application-form/schema';
 import type { Database } from '@/lib/db/client';
 import { applicationForms, jobs, type ApplicationFormRow, type Locale } from '@/lib/db/schema';
@@ -20,6 +20,8 @@ export interface ApplicationFormCreate {
   answers: ApplicationFormAnswers;
   /** Null unless consented to. */
   sensitive: ApplicationFormSensitive | null;
+  /** The résumé/CV sent with it, already in storage; null for none. */
+  resume?: { path: string; name: string; type: string } | null;
 }
 
 export interface ApplicationFormListItem {
@@ -31,6 +33,8 @@ export interface ApplicationFormListItem {
   nameEn: string | null;
   email: string;
   mobile: string;
+  /** A résumé/CV was sent with it. */
+  hasResume: boolean;
   createdAt: Date;
 }
 
@@ -39,12 +43,15 @@ export function createApplicationFormRepository(db: Database) {
   const live = ne(applicationForms.status, 'DELETED');
 
   return {
-    async create(input: ApplicationFormCreate): Promise<{ id: string }> {
+    async create({ resume, ...input }: ApplicationFormCreate): Promise<{ id: string }> {
       const now = new Date();
       const [row] = await db
         .insert(applicationForms)
         .values({
           ...input,
+          resumePath: resume?.path ?? null,
+          resumeName: resume?.name ?? null,
+          resumeType: resume?.type ?? null,
           sensitiveConsentAt: input.sensitive ? now : null,
           certifiedAt: now,
         })
@@ -79,6 +86,7 @@ export function createApplicationFormRepository(db: Database) {
             nameEn: applicationForms.nameEn,
             email: applicationForms.email,
             mobile: applicationForms.mobile,
+            hasResume: sql<boolean>`${applicationForms.resumePath} is not null`,
             createdAt: applicationForms.createdAt,
           })
           .from(applicationForms)
@@ -102,6 +110,13 @@ export function createApplicationFormRepository(db: Database) {
         .limit(1);
       if (!row) throw new NotFoundError('application form', id);
       return row;
+    },
+
+    /** The form's résumé/CV in storage. 404 when the form, or its résumé, is not there. */
+    async resume(id: string): Promise<{ path: string; name: string; type: string }> {
+      const form = await this.get(id);
+      if (!form.resumePath || !form.resumeName || !form.resumeType) throw new NotFoundError('résumé', id);
+      return { path: form.resumePath, name: form.resumeName, type: form.resumeType };
     },
 
     async softDelete(id: string, actor: string | null): Promise<void> {

@@ -1247,9 +1247,12 @@
       "birthDateFuture": "出生日期不能晚于今天",
       "birthDateYoung": "申请人须年满 15 周岁",
       "salary": "请输入金额，例如 25,000 或 25,000-30,000",
+      "salaryRange": "最高薪资不能低于最低薪资",
       "gpa": "请以数字填写平均成绩，例如 3.25",
       "year": "请填写 4 位年份，例如 2022",
-      "birthOrder": "排行不能大于兄弟姐妹总数"
+      "birthOrder": "排行不能大于兄弟姐妹总数",
+      "resumeSize": "文件超过 5 MB。",
+      "resumeType": "仅支持 PDF、DOC 或 DOCX 文件。"
     },
     "success": {
       "title": "申请已提交",
@@ -1277,7 +1280,10 @@
       "jobOther": "其他（自行填写）",
       "positionOther": "想应聘的职位",
       "expectedSalary": "期望薪资（泰铢）",
-      "expectedSalaryPlaceholder": "例如 25,000",
+      "expectedSalaryMin": "期望薪资 最低（泰铢）",
+      "expectedSalaryMax": "期望薪资 最高（泰铢）",
+      "expectedSalaryMinPlaceholder": "例如 25000",
+      "expectedSalaryMaxPlaceholder": "例如 30000",
       "nameTh": "姓名（泰文）",
       "nameThPlaceholder": "与身份证一致（不含称谓）",
       "nameEn": "姓名（英文）",
@@ -1298,6 +1304,7 @@
       "weight": "体重（公斤）",
       "height": "身高（厘米）",
       "address": "联系地址",
+      "addressHint": "每项必填 — 地址中没有的项（如 村、巷、路）请填写 -",
       "houseNo": "门牌号",
       "moo": "村（Moo）",
       "soi": "巷（Soi）",
@@ -1399,7 +1406,11 @@
         "MRS": "Mrs. / นาง",
         "MISS": "Miss / นางสาว"
       },
-      "phonePlaceholder": "例如 081 234 5678"
+      "phonePlaceholder": "例如 081 234 5678",
+      "resume": "简历 / CV（可选）",
+      "resumeDrop": "将文件拖放到此处，或",
+      "resumeBrowse": "选择文件",
+      "resumeHint": "支持 PDF、DOC 或 DOCX 文件，不超过 5 MB。"
     },
     "backToReview": "返回核对页面"
   }

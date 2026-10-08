@@ -195,6 +195,7 @@
         "PLAIN": "未指定"
       },
       "pdf": "PDF",
+      "resume": "简历",
       "deleteFor": "删除 {name} 的申请表",
       "deleteTitle": "删除 {name} 的申请表？",
       "deleteBody": "它将从列表中消失（仍保留在系统中，不会彻底删除）。",

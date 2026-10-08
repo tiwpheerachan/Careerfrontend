@@ -86,25 +86,19 @@ const YearMonth = z
 
 // --- 3. Address --------------------------------------------------------------------------
 
+/** Every line required — "-" where an address has none (no หมู่, ซอย or ถนน). */
 export const FormAddress = z.object({
-  houseNo: text(30),
-  moo: text(10),
-  soi: text(100),
-  road: text(100),
-  subdistrict: text(100),
-  district: text(100),
-  province: text(100),
+  houseNo: required(30),
+  moo: required(10),
+  soi: required(100),
+  road: required(100),
+  subdistrict: required(100),
+  district: required(100),
+  province: required(100),
   postalCode: z
-    .union([
-      z
-        .string()
-        .trim()
-        .regex(/^\d{5}$/, 'must be 5 digits'),
-      z.literal(''),
-    ])
-    .nullable()
-    .optional()
-    .transform((value) => value || null),
+    .string()
+    .trim()
+    .regex(/^\d{5}$/, 'must be 5 digits'),
 });
 
 // --- 4. Sensitive (PDPA s.26) ---------------------------------------------------------------
@@ -190,9 +184,9 @@ export const FormJob = z.object({
 });
 
 export const FormEmergency = z.object({
-  name: text(150),
-  relationship: text(50),
-  phone: optionalPhone,
+  name: required(150),
+  relationship: required(50),
+  phone,
 });
 
 export const ApplicationFormInput = z
@@ -211,7 +205,9 @@ export const ApplicationFormInput = z
       .transform((value) => value?.toUpperCase() || null)
       .meta({ description: 'A published job (its code), or nothing and positionOther.' }),
     positionOther: text(150).meta({ description: 'The position, when it is not one of the published jobs.' }),
-    expectedSalary: text(50),
+    /** Baht a month, a range: either end may be left out. */
+    expectedSalaryMin: count(10_000_000),
+    expectedSalaryMax: count(10_000_000),
 
     // 2. Name — the title apart, so it prints in each language (นาย … / Mr. …)
     nameTitle: choice(NAME_TITLES),
@@ -252,6 +248,13 @@ export const ApplicationFormInput = z
     turnstileToken: z.string().max(2048).optional(),
   })
   .superRefine((form, ctx) => {
+    if (
+      form.expectedSalaryMin !== null &&
+      form.expectedSalaryMax !== null &&
+      form.expectedSalaryMax < form.expectedSalaryMin
+    ) {
+      ctx.addIssue({ code: 'custom', path: ['expectedSalaryMax'], message: 'must not be below the minimum' });
+    }
     if (!form.jobCode && !form.positionOther) {
       ctx.addIssue({ code: 'custom', path: ['positionOther'], message: 'choose a job or write the position' });
     }
