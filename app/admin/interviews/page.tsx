@@ -11,7 +11,7 @@ import { formatDate } from '@/lib/admin/format';
 import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 import { EVALUATOR_ROLES } from '@/lib/constants';
 import type { AdminLocale } from '@/lib/i18n/admin';
-import { candidateResult, formatAverage } from '@/lib/interview/summary';
+import { candidateResult } from '@/lib/interview/summary';
 import { store } from '@/lib/store';
 
 /** Rows per page on offer; the first is the default. */
@@ -113,24 +113,20 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
             <ul className="divide-y divide-gray-100 xl:hidden">
               {rows.map((row) => (
                 <li key={row.href} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link href={row.href} className="font-semibold text-blue-700 hover:underline">
-                        {row.candidate.name}
-                      </Link>
-                      <div className="truncate text-xs text-gray-400">
-                        {[row.candidate.position, row.candidate.department].filter(Boolean).join(' · ') || '—'}
-                      </div>
-                    </div>
+                  {/* The result under the name, the card wide: beside it, Thai wrapped a word per line. */}
+                  <Link href={row.href} className="font-semibold text-blue-700 hover:underline">
+                    {row.candidate.name}
+                  </Link>
+                  <div className="truncate text-xs text-gray-400">
+                    {[row.candidate.position, row.candidate.department].filter(Boolean).join(' · ') || '—'}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-start gap-x-6 gap-y-2">
+                    <ResultScore result={row.result} />
                     <ResultVerdict result={row.result} />
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3 text-xs text-gray-500">
                     <span className="min-w-0 truncate">
-                      {row.evaluators} ·{' '}
-                      <span className="font-semibold text-gray-800">
-                        {formatAverage(row.result.score)}/{row.result.max}
-                      </span>{' '}
-                      · {formatDate(row.date, locale)}
+                      {row.evaluators} · {formatDate(row.date, locale)}
                     </span>
                     <Link
                       href={row.href}

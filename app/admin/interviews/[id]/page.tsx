@@ -4,6 +4,7 @@ import { EditLink } from '@/components/admin/interviews/edit-link';
 import { EvaluationForm } from '@/components/admin/interviews/evaluation-form';
 import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
 import { candidateKey } from '@/lib/interview/candidate-key';
+import { withCurrentCandidate } from '@/lib/interview/current-candidate';
 import { NotFoundError } from '@/lib/errors';
 import { store } from '@/lib/store';
 
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: Props) {
  */
 export default async function EvaluationPage({ params, searchParams }: Props) {
   const actor = await requireAdminPage({ resource: 'applications', level: 'view' });
-  const evaluation = await load((await params).id);
+  const evaluation = await withCurrentCandidate(await load((await params).id));
   const can = abilitiesOf(actor).applications;
   const who = evaluation.evaluator.name || evaluation.evaluator.email;
   // ?from=candidate: opened from the candidate's page, so back goes there (a flag, never a url).

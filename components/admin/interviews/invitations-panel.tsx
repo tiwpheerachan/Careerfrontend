@@ -248,7 +248,8 @@ export function InvitationsPanel({
   return (
     <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        {/* flex-1: a long hint wraps beside the button instead of pushing it onto its own line. */}
+        <div className="min-w-0 flex-1 basis-64">
           <h2 className="text-sm font-bold text-gray-900">{t('title')}</h2>
           <p className="mt-0.5 text-xs text-gray-500">{t('hint')}</p>
         </div>

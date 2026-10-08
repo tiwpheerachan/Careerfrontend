@@ -428,7 +428,18 @@ export function EvaluationForm({
           >
             <ArrowLeft className="h-4 w-4" /> {backHref === '/admin/interviews' ? t('back') : t('backToCandidate')}
           </GuardedLink>
-          <PageHeader title={evaluation ? t('titleEdit') : t('titleNew')} subtitle={t('subtitle')} />
+          <PageHeader
+            title={evaluation ? t('titleEdit') : t('titleNew')}
+            subtitle={
+              evaluation && readOnly
+                ? t('subtitleView', {
+                    who: evaluation.evaluator.name || evaluation.evaluator.email,
+                    round: t(`rounds.${evaluation.round}`),
+                    role: t(`roles.${evaluation.evaluatorRole}`),
+                  })
+                : t('subtitle')
+            }
+          />
         </>
       )}
 
@@ -516,7 +527,7 @@ export function EvaluationForm({
                 </div>
               )}
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Labeled label={t('candidateName')} htmlFor="ev-name" error={errors.candidateName} required>
+                <Labeled label={t('candidateName')} htmlFor="ev-name" error={errors.candidateName} required={!readOnly}>
                   <Input
                     id="ev-name"
                     value={form.candidateName}
@@ -530,7 +541,7 @@ export function EvaluationForm({
                     className={cn(FIELD, form.link && 'bg-gray-50 text-gray-600')}
                   />
                 </Labeled>
-                <Labeled label={t('interviewDate')} htmlFor="ev-date" error={errors.interviewDate} required>
+                <Labeled label={t('interviewDate')} htmlFor="ev-date" error={errors.interviewDate} required={!readOnly}>
                   <Input
                     id="ev-date"
                     type="date"

@@ -7,6 +7,7 @@ import { LanguagePicker } from '@/components/admin/shell/language-picker';
 import { SsoShell, ssoButton } from '@/components/auth/sso-shell';
 import { checkInviteePage, type InviteeRefusal } from '@/lib/auth/invitee';
 import { NotFoundError } from '@/lib/errors';
+import { withCurrentCandidate } from '@/lib/interview/current-candidate';
 import { intlLocale, type AdminLocale } from '@/lib/i18n/admin';
 import { store } from '@/lib/store';
 
@@ -33,7 +34,13 @@ export default async function EvaluatePage({ params }: Props) {
   const t = await getTranslations('invitee');
   const check = await checkInviteePage(token);
 
-  if (!check.ok) return <Refused reason={check.reason} email={check.email} />;
+  if (!check.ok) {
+    // An edit link is its evaluation's owner's: say whose, not "someone HR chose".
+    const owner = check.invitation?.editOf ? check.invitation.invitees[0] : undefined;
+    return (
+      <Refused reason={check.reason} email={check.email} editFor={owner ? owner.name || owner.email : undefined} />
+    );
+  }
 
   const { invitation, identity } = check.access;
   await store().interviewInvitations.markOpened(token, identity.email);
@@ -44,6 +51,7 @@ export default async function EvaluatePage({ params }: Props) {
   const editing = fresh.editOf
     ? await store()
         .interviewEvaluations.get(fresh.editOf)
+        .then(withCurrentCandidate)
         .catch((error: unknown) => {
           if (error instanceof NotFoundError) return null;
           throw error;
@@ -98,7 +106,7 @@ export default async function EvaluatePage({ params }: Props) {
 }
 
 /** Why this person cannot use the link, and what to do about it. */
-async function Refused({ reason, email }: { reason: InviteeRefusal; email?: string }) {
+async function Refused({ reason, email, editFor }: { reason: InviteeRefusal; email?: string; editFor?: string }) {
   const t = await getTranslations('invitee.refused');
   const brand = await getTranslations('invitee');
   const signOut = (
@@ -111,7 +119,7 @@ async function Refused({ reason, email }: { reason: InviteeRefusal; email?: stri
   return (
     <SsoShell
       consoleLabel={brand('brand')}
-      title={t(`${reason}.title`)}
+      title={editFor && reason === 'notInvited' ? t('notInvitedEdit.title') : t(`${reason}.title`)}
       detail={email ? t('signedInAs', { email }) : undefined}
       action={
         reason === 'signIn' ? (
@@ -129,7 +137,7 @@ async function Refused({ reason, email }: { reason: InviteeRefusal; email?: stri
         ) : null
       }
     >
-      {t(`${reason}.body`)}
+      {editFor && reason === 'notInvited' ? t('notInvitedEdit.body', { who: editFor }) : t(`${reason}.body`)}
     </SsoShell>
   );
 }

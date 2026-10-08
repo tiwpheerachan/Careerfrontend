@@ -487,6 +487,7 @@
       "titleNew": "Evaluate an interview",
       "titleEdit": "Interview evaluation",
       "subtitle": "Score each item 0–5; the totals and the pass mark are worked out for you",
+      "subtitleView": "{who}’s · {round} · {role}",
       "readOnly": "This evaluation is read only — to change it, make an edit link for {who} (only {who}’s account can open it)",
       "readOnlyNoRight": "This evaluation is read only — to change it, ask someone with edit rights to make an edit link for {who}",
       "back": "Back to evaluations",
@@ -679,8 +680,8 @@
       }
     },
     "invite": {
-      "title": "Invite evaluators",
-      "hint": "Send a link to people without access to evaluate this candidate — only the invited accounts can open it, signed in with SSO",
+      "title": "Invitation and edit links",
+      "hint": "Invitation links: for people without access to evaluate this candidate · Edit links: for an evaluator to change their own evaluation (made on the evaluation) — both need an SSO sign-in as someone on the link",
       "invite": "Invite evaluators",
       "none": "No invitation links yet",
       "states": {
@@ -774,6 +775,10 @@
       "notInvited": {
         "title": "This account was not invited",
         "body": "This link is for the evaluators HR chose. If another account of yours was invited, sign out and sign in with that one."
+      },
+      "notInvitedEdit": {
+        "title": "This link is not for this account",
+        "body": "This edit link is for {who}, whose evaluation it is, alone. If you are {who}, sign out and sign in with that account."
       },
       "expired": {
         "title": "This link has expired",
