@@ -495,6 +495,10 @@
       "candidateSection": "应聘者信息",
       "search": "在系统中查找应聘者",
       "searchPlaceholder": "输入姓名、邮箱或电话…",
+      "pickCandidate": "请从搜索结果中选择应聘者",
+      "typeCandidate": "系统中找不到？手动填写应聘者",
+      "evaluatedBefore": "该应聘者已被评估 {count} 次",
+      "asRole": "以{role}身份",
       "searching": "搜索中…",
       "noMatch": "系统中未找到 — 可在下方自行填写",
       "linkedTo": "已关联",
@@ -681,8 +685,8 @@
       }
     },
     "invite": {
-      "title": "邀请链接与修改链接",
-      "hint": "邀请链接：让没有系统权限的人评估该应聘者 · 修改链接：让评估人修改自己的评估（在评估页面生成）— 均需以链接中的账号通过 SSO 登录",
+      "title": "评估人邀请链接",
+      "hint": "让没有系统权限的人评估该应聘者 — 须以链接中的账号通过 SSO 登录 · 修改链接在\"个人评估结果\"中生成，也会列在这里",
       "invite": "邀请评估人",
       "none": "暂无邀请链接",
       "states": {

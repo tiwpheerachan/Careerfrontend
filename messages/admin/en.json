@@ -495,6 +495,10 @@
       "candidateSection": "Candidate",
       "search": "Find the candidate",
       "searchPlaceholder": "Type a name, email or phone…",
+      "pickCandidate": "Pick the candidate from the search",
+      "typeCandidate": "Not in the system? Type the candidate in",
+      "evaluatedBefore": "Already evaluated {count, plural, one {once} other {# times}}",
+      "asRole": "as {role}",
       "searching": "Searching…",
       "noMatch": "Not found — fill in the details below",
       "linkedTo": "Linked to",
@@ -681,8 +685,8 @@
       }
     },
     "invite": {
-      "title": "Invitation and edit links",
-      "hint": "Invitation links: for people without access to evaluate this candidate · Edit links: for an evaluator to change their own evaluation (made on the evaluation) — both need an SSO sign-in as someone on the link",
+      "title": "Evaluator invitation links",
+      "hint": "For people without access to evaluate this candidate — they must sign in with SSO as someone on the link · Edit links are made from \"Evaluations by person\" and also listed here",
       "invite": "Invite evaluators",
       "none": "No invitation links yet",
       "states": {

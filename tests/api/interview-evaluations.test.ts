@@ -79,6 +79,20 @@ describe('picking the candidate', () => {
     const byPhone = await call(candidates.GET, { query: { q: '081-111 1111' } });
     expect(byPhone.body.candidates).toEqual([expect.objectContaining({ kind: 'form', id: form.id })]);
   });
+
+  it('each match carries their evaluations so far: round, side, who and when', async () => {
+    const application = await anApplication();
+    const found = async () => (await call(candidates.GET, { query: { q: 'somchai' } })).body.candidates[0].evaluated;
+    expect(await found()).toEqual([]);
+    await post(evaluation({ applicationId: application.id }));
+    await post(evaluation({ applicationId: application.id, evaluatorRole: 'DEPARTMENT' }));
+    await post(evaluation({ applicationId: application.id, round: 2, interviewDate: '2026-10-09' }));
+    expect(await found()).toEqual([
+      { round: 1, evaluatorRole: 'HR', evaluator: 'Admin (dev)', interviewDate: '2026-10-07' },
+      { round: 1, evaluatorRole: 'DEPARTMENT', evaluator: 'Admin (dev)', interviewDate: '2026-10-07' },
+      { round: 2, evaluatorRole: 'HR', evaluator: 'Admin (dev)', interviewDate: '2026-10-09' },
+    ]);
+  });
 });
 
 describe('evaluating', () => {

@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { adminFetch } from '@/lib/admin/client';
 import { cn } from '@/lib/utils';
+import type { PastEvaluation } from '@/lib/repositories/interview-evaluations';
 import { FIELD } from './fields';
 
 export interface PickedCandidate {
@@ -15,6 +16,8 @@ export interface PickedCandidate {
   position: string | null;
   department: string | null;
   email: string;
+  /** Their evaluations so far (shown once picked; they suggest the round). */
+  evaluated: PastEvaluation[];
 }
 
 /**
@@ -22,9 +25,19 @@ export interface PickedCandidate {
  * applicants and application forms that match (GET /admin/interview-candidates).
  * A combobox — arrows move, Enter picks, Escape closes.
  */
-export function CandidatePicker({ onPick }: { onPick: (candidate: PickedCandidate) => void }) {
+export function CandidatePicker({
+  onPick,
+  inputId,
+  error,
+}: {
+  onPick: (candidate: PickedCandidate) => void;
+  inputId?: string;
+  /** Shown under the box (no candidate yet, with the details hidden). */
+  error?: string;
+}) {
   const t = useTranslations('interviews.form');
   const listId = useId();
+  const id = inputId ?? `${listId}-input`;
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PickedCandidate[]>([]);
   const [open, setOpen] = useState(false);
@@ -83,13 +96,13 @@ export function CandidatePicker({ onPick }: { onPick: (candidate: PickedCandidat
 
   return (
     <div className="relative">
-      <label htmlFor={`${listId}-input`} className="mb-1.5 block text-sm font-semibold text-gray-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-gray-700">
         {t('search')}
       </label>
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <Input
-          id={`${listId}-input`}
+          id={id}
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -105,12 +118,14 @@ export function CandidatePicker({ onPick }: { onPick: (candidate: PickedCandidat
           onFocus={() => results.length && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={onKeyDown}
+          aria-invalid={!!error || undefined}
           className={cn(FIELD, 'pl-9')}
         />
         {loading && (
           <Loader2 className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />
         )}
       </div>
+      {error && <p className="mt-1 text-xs font-medium text-red-600">{error}</p>}
       {showList && (
         <ul
           id={listId}

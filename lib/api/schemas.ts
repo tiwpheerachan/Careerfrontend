@@ -540,6 +540,16 @@ export const CandidatesList = z.object({
       department: z.string().nullable(),
       email: z.string(),
       createdAt: DateTime,
+      evaluated: z
+        .array(
+          z.object({
+            round: z.union([z.literal(1), z.literal(2)]),
+            evaluatorRole: z.enum(EVALUATOR_ROLES),
+            evaluator: z.string(),
+            interviewDate: z.string(),
+          }),
+        )
+        .meta({ description: 'Their evaluations so far: round, side, who and when — round 1 first.' }),
     }),
   ),
 });

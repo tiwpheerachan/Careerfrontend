@@ -107,3 +107,12 @@ export function outcomeOf(scores: Scores): Outcome {
     meetsPassMark: seniorTotal > SENIOR_ITEMS_OVER && total >= SENIOR_TOTAL_PASS,
   };
 }
+
+/**
+ * The round a new evaluation most likely is: 2 once round 1 was held on an
+ * earlier day (or round 2 has begun); 1 otherwise — the first, or another
+ * evaluator on the same day's panel. A suggestion: the form can change it.
+ */
+export function suggestRound(rounds: { round: 1 | 2; interviewDate: string }[], today: string): 1 | 2 {
+  return rounds.some((r) => r.round === 2 || r.interviewDate < today) ? 2 : 1;
+}

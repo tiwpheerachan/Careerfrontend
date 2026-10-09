@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { outcomeOf } from './scoring';
+import { outcomeOf, suggestRound } from './scoring';
 
 const ten = (n: number) => Array(10).fill(n) as number[];
 const five = (n: number) => Array(5).fill(n) as number[];
@@ -27,5 +27,17 @@ describe('the interview pass mark', () => {
 
   it('Senior does not need 40 on the general items on its own', () => {
     expect(outcomeOf({ general: ten(4).map((n, i) => (i < 9 ? n : 2)), senior: five(5) }).meetsPassMark).toBe(true); // 38 + 25 = 63
+  });
+});
+
+describe('the suggested round', () => {
+  const today = '2026-10-09';
+  it('1 for a first evaluation, or another on the same day as round 1', () => {
+    expect(suggestRound([], today)).toBe(1);
+    expect(suggestRound([{ round: 1, interviewDate: today }], today)).toBe(1);
+  });
+  it('2 once round 1 was on an earlier day, or round 2 has begun', () => {
+    expect(suggestRound([{ round: 1, interviewDate: '2026-10-01' }], today)).toBe(2);
+    expect(suggestRound([{ round: 2, interviewDate: today }], today)).toBe(2);
   });
 });

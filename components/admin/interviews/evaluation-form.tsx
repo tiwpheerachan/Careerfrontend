@@ -34,9 +34,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { AdminApiError, adminFetch } from '@/lib/admin/client';
 import { discardUnsavedChanges, useGuardedNavigation, useUnsavedChanges } from '@/lib/admin/unsaved';
 import { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
-import { GENERAL_ITEMS, outcomeOf, SCORE_LEVELS, SENIOR_ITEMS } from '@/lib/interview/scoring';
+import { GENERAL_ITEMS, outcomeOf, SCORE_LEVELS, SENIOR_ITEMS, suggestRound } from '@/lib/interview/scoring';
 import type { InterviewEvaluation } from '@/lib/repositories/interview-evaluations';
 import { cn } from '@/lib/utils';
+import type { PastEvaluation } from '@/lib/repositories/interview-evaluations';
 import { CandidatePicker, type PickedCandidate } from './candidate-picker';
 import { FIELD, Labeled, onRadioKeyDown, radioTabIndex, Segmented } from './fields';
 
@@ -66,6 +67,8 @@ export interface Prefill {
   name: string;
   position: string | null;
   department: string | null;
+  /** Their evaluations so far: shown, and they suggest the round. */
+  evaluated?: PastEvaluation[];
 }
 
 function initialState(evaluation: InterviewEvaluation | null, today: string, prefill?: Prefill): FormState {
@@ -76,7 +79,7 @@ function initialState(evaluation: InterviewEvaluation | null, today: string, pre
       position: prefill?.position ?? '',
       department: prefill?.department ?? '',
       interviewDate: today,
-      round: 1,
+      round: suggestRound(prefill?.evaluated ?? [], today),
       evaluatorRole: 'HR',
       senior: false,
       general: GENERAL_ITEMS.map(() => null),
@@ -163,6 +166,12 @@ export function EvaluationForm({
   const [showMissing, setShowMissing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [form, setForm] = useState(initial);
+  // A new evaluation shows only the search until a candidate is picked (then
+  // their details, past evaluations, round and side) — or "not in the system"
+  // is chosen and the name is typed in.
+  const [typing, setTyping] = useState(false);
+  const [history, setHistory] = useState<PastEvaluation[]>(prefill?.evaluated ?? []);
+  const details = !!evaluation || !!guest || typing || !!form.link || !!form.candidateName;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -187,14 +196,18 @@ export function EvaluationForm({
     form.general.filter((s) => s === null).length +
     (form.senior ? form.seniorScores.filter((s) => s === null).length : 0);
 
-  const pickCandidate = (c: PickedCandidate) =>
+  const pickCandidate = (c: PickedCandidate) => {
     setForm((f) => ({
       ...f,
       link: { kind: c.kind, id: c.id },
       candidateName: c.name,
       position: c.position ?? '',
       department: c.department ?? '',
+      round: suggestRound(c.evaluated, today),
     }));
+    setHistory(c.evaluated);
+    setErrors(({ candidateName: _, ...rest }) => rest);
+  };
 
   const save = async () => {
     const found: Record<string, string> = {};
@@ -292,7 +305,9 @@ export function EvaluationForm({
       return `ev-score-seniorScores-${form.seniorScores.findIndex((x) => x === null)}`;
     };
     const id = found.candidateName
-      ? 'ev-name'
+      ? details
+        ? 'ev-name'
+        : 'ev-search'
       : found.interviewDate
         ? 'ev-date'
         : found.scores
@@ -508,7 +523,22 @@ export function EvaluationForm({
           ) : (
             <section className="card p-6">
               <h2 className="mb-4 text-sm font-bold text-gray-900">{t('candidateSection')}</h2>
-              {!readOnly && !form.link && <CandidatePicker onPick={pickCandidate} />}
+              {!readOnly && !form.link && (
+                <CandidatePicker
+                  onPick={pickCandidate}
+                  inputId="ev-search"
+                  error={details ? undefined : errors.candidateName && t('pickCandidate')}
+                />
+              )}
+              {!details && (
+                <button
+                  type="button"
+                  onClick={() => setTyping(true)}
+                  className="mt-2 text-xs font-semibold text-blue-700 hover:underline"
+                >
+                  {t('typeCandidate')}
+                </button>
+              )}
               {form.link && (
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
                   <span className="inline-flex items-center gap-1.5">
@@ -526,65 +556,80 @@ export function EvaluationForm({
                   )}
                 </div>
               )}
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Labeled label={t('candidateName')} htmlFor="ev-name" error={errors.candidateName} required={!readOnly}>
-                  <Input
-                    id="ev-name"
-                    value={form.candidateName}
-                    maxLength={150}
-                    aria-invalid={!!errors.candidateName || undefined}
-                    // A linked candidate's name is their record's: the PDF and the
-                    // candidate page print that one. Unlink to type another.
-                    readOnly={!!form.link}
-                    title={form.link ? t('nameFromRecord') : undefined}
-                    onChange={(e) => set('candidateName', e.target.value)}
-                    className={cn(FIELD, form.link && 'bg-gray-50 text-gray-600')}
-                  />
-                </Labeled>
-                <Labeled label={t('interviewDate')} htmlFor="ev-date" error={errors.interviewDate} required={!readOnly}>
-                  <Input
-                    id="ev-date"
-                    type="date"
-                    value={form.interviewDate}
-                    aria-invalid={!!errors.interviewDate || undefined}
-                    onChange={(e) => set('interviewDate', e.target.value)}
-                    className={FIELD}
-                  />
-                </Labeled>
-                <Labeled label={t('position')} htmlFor="ev-position">
-                  <Input
-                    id="ev-position"
-                    value={form.position}
-                    maxLength={150}
-                    onChange={(e) => set('position', e.target.value)}
-                    className={FIELD}
-                  />
-                </Labeled>
-                <Labeled label={t('department')} htmlFor="ev-department">
-                  <Input
-                    id="ev-department"
-                    value={form.department}
-                    maxLength={150}
-                    onChange={(e) => set('department', e.target.value)}
-                    className={FIELD}
-                  />
-                </Labeled>
-                <Segmented
-                  label={t('round')}
-                  value={form.round}
-                  options={[1, 2].map((r) => ({ value: r as 1 | 2, label: t(`rounds.${r}`) }))}
-                  onChange={(r) => set('round', r)}
-                  disabled={readOnly}
-                />
-                <Segmented
-                  label={t('evaluatorRole')}
-                  value={form.evaluatorRole}
-                  options={EVALUATOR_ROLES.map((r) => ({ value: r, label: t(`roles.${r}`) }))}
-                  onChange={(r) => set('evaluatorRole', r)}
-                  disabled={readOnly}
-                />
-              </div>
-              <p className="mt-3 text-xs text-gray-500">{t('evaluatedBy', { who: evaluator })}</p>
+              {form.link && history.length > 0 && <PastEvaluations items={history} />}
+              {details && (
+                <>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <Labeled
+                      label={t('candidateName')}
+                      htmlFor="ev-name"
+                      error={errors.candidateName}
+                      required={!readOnly}
+                    >
+                      <Input
+                        id="ev-name"
+                        value={form.candidateName}
+                        maxLength={150}
+                        aria-invalid={!!errors.candidateName || undefined}
+                        // A linked candidate's name is their record's: the PDF and the
+                        // candidate page print that one. Unlink to type another.
+                        readOnly={!!form.link}
+                        title={form.link ? t('nameFromRecord') : undefined}
+                        onChange={(e) => set('candidateName', e.target.value)}
+                        className={cn(FIELD, form.link && 'bg-gray-50 text-gray-600')}
+                      />
+                    </Labeled>
+                    <Labeled
+                      label={t('interviewDate')}
+                      htmlFor="ev-date"
+                      error={errors.interviewDate}
+                      required={!readOnly}
+                    >
+                      <Input
+                        id="ev-date"
+                        type="date"
+                        value={form.interviewDate}
+                        aria-invalid={!!errors.interviewDate || undefined}
+                        onChange={(e) => set('interviewDate', e.target.value)}
+                        className={FIELD}
+                      />
+                    </Labeled>
+                    <Labeled label={t('position')} htmlFor="ev-position">
+                      <Input
+                        id="ev-position"
+                        value={form.position}
+                        maxLength={150}
+                        onChange={(e) => set('position', e.target.value)}
+                        className={FIELD}
+                      />
+                    </Labeled>
+                    <Labeled label={t('department')} htmlFor="ev-department">
+                      <Input
+                        id="ev-department"
+                        value={form.department}
+                        maxLength={150}
+                        onChange={(e) => set('department', e.target.value)}
+                        className={FIELD}
+                      />
+                    </Labeled>
+                    <Segmented
+                      label={t('round')}
+                      value={form.round}
+                      options={[1, 2].map((r) => ({ value: r as 1 | 2, label: t(`rounds.${r}`) }))}
+                      onChange={(r) => set('round', r)}
+                      disabled={readOnly}
+                    />
+                    <Segmented
+                      label={t('evaluatorRole')}
+                      value={form.evaluatorRole}
+                      options={EVALUATOR_ROLES.map((r) => ({ value: r, label: t(`roles.${r}`) }))}
+                      onChange={(r) => set('evaluatorRole', r)}
+                      disabled={readOnly}
+                    />
+                  </div>
+                  <p className="mt-3 text-xs text-gray-500">{t('evaluatedBy', { who: evaluator })}</p>
+                </>
+              )}
             </section>
           )}
 
@@ -865,6 +910,28 @@ export function EvaluationForm({
           </AlertDialogContent>
         </AlertDialog>
       )}
+    </div>
+  );
+}
+
+/** A picked candidate's evaluations so far: round, side, who and when. */
+function PastEvaluations({ items }: { items: PastEvaluation[] }) {
+  const t = useTranslations('interviews.form');
+  const format = useFormatter();
+  return (
+    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm">
+      <p className="font-semibold text-amber-900">{t('evaluatedBefore', { count: items.length })}</p>
+      <ul className="mt-1.5 space-y-1 text-amber-900/90">
+        {items.map((e, i) => (
+          <li key={i} className="flex flex-wrap gap-x-1.5">
+            <span className="font-semibold">{t(`rounds.${e.round}`)}</span>·
+            <span>{t('asRole', { role: t(`roles.${e.evaluatorRole}`) })}</span>·<span>{e.evaluator}</span>·
+            <span className="text-amber-800/80">
+              {format.dateTime(new Date(`${e.interviewDate}T00:00:00`), { dateStyle: 'medium' })}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

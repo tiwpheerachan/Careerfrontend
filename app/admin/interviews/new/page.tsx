@@ -25,6 +25,7 @@ async function prefillFrom(key: string | undefined): Promise<Prefill | undefined
         name: found.name,
         position: found.position,
         department: found.department,
+        evaluated: found.evaluated,
       }
     : undefined;
 }
