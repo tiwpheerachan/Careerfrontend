@@ -25,8 +25,13 @@ const PublicId = z
 export const InterviewEvaluationInput = z
   .object({
     applicationId: PublicId.meta({ description: 'The application being evaluated, if it is one.' }),
-    applicationFormId: PublicId.meta({ description: 'Or the application form. Neither = typed in by hand.' }),
-    candidateName: z.string().trim().min(1).max(150),
+    applicationFormId: PublicId.meta({ description: 'Or the application form — one of the two is required.' }),
+    candidateName: z
+      .string()
+      .trim()
+      .min(1)
+      .max(150)
+      .meta({ description: 'Ignored: the linked record’s name is stored.' }),
     position: text(150),
     department: text(150),
     interviewDate: z.iso.date(),
@@ -51,6 +56,14 @@ export const InterviewEvaluationInput = z
   .superRefine((form, ctx) => {
     if (form.applicationId && form.applicationFormId) {
       ctx.addIssue({ code: 'custom', path: ['applicationFormId'], message: 'link an application or a form, not both' });
+    }
+    // Picked from the system, never typed in: so all of one person's evaluations count together.
+    if (!form.applicationId && !form.applicationFormId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['applicationId'],
+        message: 'pick the candidate: an application or a form',
+      });
     }
     if (form.senior && !form.seniorScores) {
       ctx.addIssue({ code: 'custom', path: ['seniorScores'], message: 'score items 11–15 for a Senior position' });

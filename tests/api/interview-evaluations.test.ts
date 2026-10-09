@@ -4,6 +4,7 @@ import * as one from '@/app/api/v1/admin/interview-evaluations/[id]/route';
 import * as pdf from '@/app/api/v1/admin/interview-evaluations/pdf/route';
 import * as evaluations from '@/app/api/v1/admin/interview-evaluations/route';
 import { ApplicationFormInput } from '@/lib/application-form/schema';
+import type { InterviewEvaluationInput } from '@/lib/interview/schema';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
 import { seal, SESSION_COOKIE } from '@/lib/auth/session';
 import { resetServerEnv } from '@/lib/env';
@@ -27,12 +28,37 @@ const evaluation = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const post = (body: unknown, headers?: Record<string, string>) => call(evaluations.POST, { json: body, headers });
-
 async function anApplication() {
   const { pk } = await openJob();
   return repos.applications.create(pk, applicationInput());
 }
+
+/** The applicant a test evaluates unless it links another (one per test: the database is emptied between). */
+let somchai: ReturnType<typeof anApplication> | undefined;
+beforeEach(() => {
+  somchai = undefined;
+});
+
+const post = async (body: Record<string, unknown>, headers?: Record<string, string>) => {
+  const linked =
+    'applicationId' in body || 'applicationFormId' in body
+      ? body
+      : { ...body, applicationId: (await (somchai ??= anApplication())).id };
+  return call(evaluations.POST, { json: linked, headers });
+};
+
+/** A candidate typed in by hand, as the old form allowed (the API no longer does): straight into the repository. */
+const typedIn = (overrides: Record<string, unknown> = {}) =>
+  repos.interviewEvaluations.create(
+    {
+      applicationId: null,
+      applicationFormId: null,
+      seniorScores: null,
+      failReason: null,
+      ...evaluation(overrides),
+    } as InterviewEvaluationInput,
+    { email: 'dev@localhost', name: 'Admin (dev)' },
+  );
 
 describe('picking the candidate', () => {
   it('finds applicants and application forms by name, newest first', async () => {
@@ -118,7 +144,7 @@ describe('evaluating', () => {
   it('a Senior position scores 15 items; exactly 20 on items 11–15 does not meet the mark', async () => {
     const res = await post(evaluation({ senior: true, generalScores: scores(5), seniorScores: scores(4, 5) }));
     expect(res.body.evaluation).toMatchObject({
-      candidate: { kind: 'manual', id: null },
+      candidate: { kind: 'application' },
       generalTotal: 50,
       seniorTotal: 20,
       total: 70,
@@ -134,8 +160,9 @@ describe('evaluating', () => {
     expect(fail.body.evaluation.failReason).toBe('ประสบการณ์ไม่ตรง');
   });
 
-  it('400: wrong number of scores, a score out of 0–5, Senior without items 11–15, two links', async () => {
+  it('400: wrong number of scores, a score out of 0–5, Senior without items 11–15, no link or two', async () => {
     const cases = [
+      [evaluation({ applicationId: null }), 'applicationId'],
       [evaluation({ generalScores: scores(4, 9) }), 'generalScores'],
       [evaluation({ generalScores: [...scores(4, 9), 6] }), 'generalScores.9'],
       [evaluation({ senior: true }), 'seniorScores'],
@@ -157,9 +184,8 @@ describe('evaluating', () => {
   });
 
   it('list (newest interview first), search, get, delete — and no changing it here', async () => {
-    await post(evaluation({ candidateName: 'Earlier', interviewDate: '2026-10-01' }));
-    const { body } = await post(evaluation({ candidateName: 'Later', interviewDate: '2026-10-05', round: 2 }));
-    const id = body.evaluation.id;
+    await typedIn({ candidateName: 'Earlier', interviewDate: '2026-10-01' });
+    const { id } = await typedIn({ candidateName: 'Later', interviewDate: '2026-10-05', round: 2 });
 
     const list = await call(evaluations.GET);
     expect(list.body.evaluations.map((e: { candidate: { name: string } }) => e.candidate.name)).toEqual([
@@ -178,28 +204,26 @@ describe('evaluating', () => {
 });
 
 describe('one candidate, and the paper form', () => {
-  it('groups a typed-in candidate by name, whatever its case and spaces', async () => {
-    await post(evaluation({ candidateName: 'Somsri Dee', round: 1 }));
-    await post(evaluation({ candidateName: '  somsri dee ', round: 2 }));
-    await post(evaluation({ candidateName: 'Someone Else' }));
+  it('groups an older typed-in candidate by name, whatever its case and spaces', async () => {
+    await typedIn({ candidateName: 'Somsri Dee', round: 1 });
+    await typedIn({ candidateName: '  somsri dee ', round: 2 });
+    await typedIn({ candidateName: 'Someone Else' });
     const mine = await repos.interviewEvaluations.forCandidate({ kind: 'manual', name: 'SOMSRI DEE' });
     expect(mine.map((e) => e.round)).toEqual([1, 2]);
   });
 
   it('the admin list: one row per candidate, newest interview first, searched and paged by candidate', async () => {
-    await post(evaluation({ candidateName: 'Somsri Dee', round: 1, interviewDate: '2026-10-01' }));
-    await post(evaluation({ candidateName: '  somsri dee ', round: 2, interviewDate: '2026-10-03' }));
-    await post(
-      evaluation({
-        candidateName: 'Somsri Dee',
-        department: 'Sales',
-        interviewDate: '2026-10-02',
-        evaluatorRole: 'DEPARTMENT',
-        result: 'FAIL',
-        failReason: 'x',
-      }),
-    );
-    await post(evaluation({ candidateName: 'Someone Else', interviewDate: '2026-10-05' }));
+    await typedIn({ candidateName: 'Somsri Dee', round: 1, interviewDate: '2026-10-01' });
+    await typedIn({ candidateName: '  somsri dee ', round: 2, interviewDate: '2026-10-03' });
+    await typedIn({
+      candidateName: 'Somsri Dee',
+      department: 'Sales',
+      interviewDate: '2026-10-02',
+      evaluatorRole: 'DEPARTMENT',
+      result: 'FAIL',
+      failReason: 'x',
+    });
+    await typedIn({ candidateName: 'Someone Else', interviewDate: '2026-10-05' });
 
     const all = await repos.interviewEvaluations.byCandidate({ page: 1, pageSize: 10 });
     expect(all.total).toBe(2);

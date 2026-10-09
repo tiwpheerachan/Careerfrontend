@@ -166,12 +166,11 @@ export function EvaluationForm({
   const [showMissing, setShowMissing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [form, setForm] = useState(initial);
-  // A new evaluation shows only the search until a candidate is picked (then
-  // their details, past evaluations, round and side) — or "not in the system"
-  // is chosen and the name is typed in.
-  const [typing, setTyping] = useState(false);
+  // A new evaluation shows only the search until a candidate is picked: then
+  // their details, past evaluations, round and side. The candidate always comes
+  // from the system (never typed in), so every evaluation of theirs counts together.
   const [history, setHistory] = useState<PastEvaluation[]>(prefill?.evaluated ?? []);
-  const details = !!evaluation || !!guest || typing || !!form.link || !!form.candidateName;
+  const details = !!evaluation || !!guest || !!form.link;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -211,7 +210,7 @@ export function EvaluationForm({
 
   const save = async () => {
     const found: Record<string, string> = {};
-    if (!form.candidateName.trim()) found.candidateName = t('errors.candidateName');
+    if (!form.link && !evaluation && !guest) found.candidateName = t('pickCandidate');
     if (!form.interviewDate) found.interviewDate = t('errors.interviewDate');
     if (missing) found.scores = t('errors.scores');
     if (!form.result) found.result = t('errors.result');
@@ -305,9 +304,7 @@ export function EvaluationForm({
       return `ev-score-seniorScores-${form.seniorScores.findIndex((x) => x === null)}`;
     };
     const id = found.candidateName
-      ? details
-        ? 'ev-name'
-        : 'ev-search'
+      ? 'ev-search'
       : found.interviewDate
         ? 'ev-date'
         : found.scores
@@ -524,20 +521,7 @@ export function EvaluationForm({
             <section className="card p-6">
               <h2 className="mb-4 text-sm font-bold text-gray-900">{t('candidateSection')}</h2>
               {!readOnly && !form.link && (
-                <CandidatePicker
-                  onPick={pickCandidate}
-                  inputId="ev-search"
-                  error={details ? undefined : errors.candidateName && t('pickCandidate')}
-                />
-              )}
-              {!details && (
-                <button
-                  type="button"
-                  onClick={() => setTyping(true)}
-                  className="mt-2 text-xs font-semibold text-blue-700 hover:underline"
-                >
-                  {t('typeCandidate')}
-                </button>
+                <CandidatePicker onPick={pickCandidate} inputId="ev-search" error={errors.candidateName} />
               )}
               {form.link && (
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
@@ -545,13 +529,17 @@ export function EvaluationForm({
                     <Link2 className="h-4 w-4" />
                     {t('linkedTo')} {t(`kinds.${form.link.kind}`)}
                   </span>
-                  {!readOnly && (
+                  {!readOnly && !evaluation && (
                     <button
                       type="button"
-                      onClick={() => set('link', null)}
+                      // Back to the search, to pick someone else.
+                      onClick={() => {
+                        setForm((f) => ({ ...f, link: null, candidateName: '', position: '', department: '' }));
+                        setHistory([]);
+                      }}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline"
                     >
-                      <X className="h-3.5 w-3.5" /> {t('unlink')}
+                      <X className="h-3.5 w-3.5" /> {t('changeCandidate')}
                     </button>
                   )}
                 </div>
@@ -560,23 +548,15 @@ export function EvaluationForm({
               {details && (
                 <>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <Labeled
-                      label={t('candidateName')}
-                      htmlFor="ev-name"
-                      error={errors.candidateName}
-                      required={!readOnly}
-                    >
+                    <Labeled label={t('candidateName')} htmlFor="ev-name" required={!readOnly}>
                       <Input
                         id="ev-name"
                         value={form.candidateName}
                         maxLength={150}
-                        aria-invalid={!!errors.candidateName || undefined}
-                        // A linked candidate's name is their record's: the PDF and the
-                        // candidate page print that one. Unlink to type another.
-                        readOnly={!!form.link}
-                        title={form.link ? t('nameFromRecord') : undefined}
-                        onChange={(e) => set('candidateName', e.target.value)}
-                        className={cn(FIELD, form.link && 'bg-gray-50 text-gray-600')}
+                        // The candidate's record's name (the PDF and the candidate page print that one).
+                        readOnly
+                        title={t('nameFromRecord')}
+                        className={cn(FIELD, 'bg-gray-50 text-gray-600')}
                       />
                     </Labeled>
                     <Labeled

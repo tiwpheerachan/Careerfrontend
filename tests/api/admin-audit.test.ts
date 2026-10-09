@@ -6,6 +6,7 @@ import * as evaluations from '@/app/api/v1/admin/interview-evaluations/route';
 import { adminAuditLogs } from '@/lib/db/schema';
 import { call } from '@/tests/support/api';
 import { testDb } from '@/tests/support/db';
+import { applicationInput, openJob, repos } from '@/tests/support/fixtures';
 
 const BASE = '/api/v1/admin/interview-evaluations';
 const evaluation = {
@@ -21,12 +22,20 @@ const evaluation = {
 
 describe('the admin audit trail', () => {
   it('keeps who created, deleted and downloaded what — not plain reads', async () => {
-    const created = await call(evaluations.POST, { path: BASE, json: evaluation });
+    const { pk } = await openJob();
+    const application = await repos.applications.create(pk, applicationInput());
+    const created = await call(evaluations.POST, {
+      path: BASE,
+      json: { ...evaluation, applicationId: application.id },
+    });
     expect(created.status).toBe(201);
     const id = created.body.evaluation.id as string;
 
     await call(evaluations.GET, { path: BASE });
-    await call(pdf.GET, { path: `${BASE}/pdf`, query: { candidate: 'name:Somchai Audit', role: 'HR', lang: 'th' } });
+    await call(pdf.GET, {
+      path: `${BASE}/pdf`,
+      query: { candidate: `application:${application.id}`, role: 'HR', lang: 'th' },
+    });
     await call(one.DELETE, { method: 'DELETE', path: `${BASE}/${id}`, params: { id } });
     await call(one.DELETE, { method: 'DELETE', path: `${BASE}/${id}`, params: { id } }); // already gone: 404, kept too
 
