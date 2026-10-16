@@ -1,10 +1,11 @@
 import 'server-only';
 import { clientIp } from '@/lib/api/client-ip';
+import { PDFDocument } from 'pdf-lib';
 import { parseBody, parseValue } from '@/lib/api/http';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import { submitApplicationForm as contract } from '@/lib/api/contracts';
-import { BadRequestError, TooManyRequestsError } from '@/lib/errors';
-import { CONTENT_TYPES, FILE_RULES, cleanFileName, sniff } from '@/lib/files';
+import { BadRequestError, NotFoundError, TooManyRequestsError } from '@/lib/errors';
+import { CONTENT_TYPES, FILE_RULES, cleanFileName, sniff, type FileType } from '@/lib/files';
 import type { Logger } from '@/lib/log';
 import { objectPath, objectStore } from '@/lib/storage';
 import { store } from '@/lib/store';
@@ -12,17 +13,20 @@ import { store } from '@/lib/store';
 /** 5 forms per 10 minutes per IP — the same allowance as applications. */
 const FORM_LIMIT = { windowMs: 10 * 60 * 1000, limit: 5 };
 
-/** The form's fields and an optional résumé/CV: the largest request a form can be. */
-const MAX_FORM_BYTES = FILE_RULES.RESUME.maxBytes + 1024 * 1024;
+/** The applicant's photo, for the form's photo box. The wizard sends a 640×800 JPEG it has already made. */
+const PHOTO_RULE = { types: ['jpg', 'png'] as FileType[], maxBytes: 5 * 1024 * 1024 };
+
+/** The form's fields, an optional résumé/CV and a photo: the largest request a form can be. */
+const MAX_FORM_BYTES = FILE_RULES.RESUME.maxBytes + PHOTO_RULE.maxBytes + 1024 * 1024;
 
 /**
- * The body: JSON, or multipart/form-data with `data` (the same JSON) and an
- * optional `resume` file. The file is checked as an application's résumé is:
- * its size, then its type read from its bytes.
+ * The body: JSON, or multipart/form-data with `data` (the same JSON), an
+ * optional `resume` file and an optional `photo`. Each file is checked as an
+ * application's are: its size, then its type read from its bytes.
  */
 async function bodyOf(request: Request) {
   if (!request.headers.get('content-type')?.includes('multipart/form-data')) {
-    return { form: await parseBody(request, contract.body.schema), resume: null };
+    return { form: await parseBody(request, contract.body.schema), resume: null, photo: null };
   }
   if (Number(request.headers.get('content-length') ?? 0) > MAX_FORM_BYTES) {
     throw new BadRequestError('The résumé is too large.', [{ path: 'resume', message: 'larger than 5 MB' }]);
@@ -36,8 +40,11 @@ async function bodyOf(request: Request) {
     throw new BadRequestError('Send the form as JSON, or multipart/form-data with the JSON in `data`.');
   }
   const form = parseValue(request, contract.body.schema, raw);
-  const file = parts.get('resume');
-  if (!(file instanceof File) || file.size === 0) return { form, resume: null };
+  return { form, resume: await resumeOf(parts.get('resume')), photo: await photoOf(parts.get('photo')) };
+}
+
+async function resumeOf(file: FormDataEntryValue | null) {
+  if (!(file instanceof File) || file.size === 0) return null;
   if (file.size > FILE_RULES.RESUME.maxBytes) {
     throw new BadRequestError('The résumé is too large.', [{ path: 'resume', message: 'larger than 5 MB' }]);
   }
@@ -48,13 +55,51 @@ async function bodyOf(request: Request) {
       { path: 'resume', message: 'must be PDF, DOC or DOCX' },
     ]);
   }
-  return { form, resume: { name: cleanFileName(file.name), bytes, type } };
+  return { name: cleanFileName(file.name), bytes, type };
+}
+
+async function photoOf(file: FormDataEntryValue | null) {
+  if (!(file instanceof File) || file.size === 0) return null;
+  if (file.size > PHOTO_RULE.maxBytes) {
+    throw new BadRequestError('The photo is too large.', [{ path: 'photo', message: 'larger than 5 MB' }]);
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const type = sniff(bytes);
+  // Opened as the PDF will open it: a file that only starts like an image would break every print of the form.
+  const opens = async () => {
+    const doc = await PDFDocument.create();
+    return (type === 'png' ? doc.embedPng(bytes) : doc.embedJpg(bytes)).then(
+      () => true,
+      () => false,
+    );
+  };
+  if (!type || !PHOTO_RULE.types.includes(type) || !(await opens())) {
+    throw new BadRequestError('The photo must be a JPG or PNG image.', [
+      { path: 'photo', message: 'must be JPG or PNG' },
+    ]);
+  }
+  return { bytes, type };
+}
+
+/**
+ * The form's photo for its PDF, or null: none sent, or its object gone from
+ * storage — the form still prints, with the box empty.
+ */
+export async function photoOfForm(form: { photoPath: string | null; photoType: string | null }) {
+  if (!form.photoPath || !form.photoType) return null;
+  const bytes = await objectStore()
+    .read(form.photoPath)
+    .catch((error: unknown) => {
+      if (error instanceof NotFoundError) return null;
+      throw error;
+    });
+  return bytes && { bytes, png: form.photoType === CONTENT_TYPES.png };
 }
 
 /**
  * POST /application-forms, start to finish: rate limit, the form (and its
- * résumé, if one came), Turnstile, the job (when one was chosen), the résumé
- * into storage, then one insert — the résumé removed again if that fails.
+ * résumé and photo, if they came), Turnstile, the job (when one was chosen),
+ * the files into storage, then one insert — the files removed again if that fails.
  *
  * The sensitive part (PDPA s.26) is dropped unless its own consent box was
  * ticked — whatever the browser sent.
@@ -70,7 +115,7 @@ export async function submitApplicationForm(request: Request, log: Logger): Prom
     log.warn('application form: no client IP (TRUST_PROXY_HEADER unset?) — rate limit skipped');
   }
 
-  const { form, resume } = await bodyOf(request);
+  const { form, resume, photo } = await bodyOf(request);
   await verifyTurnstile(form.turnstileToken, ip);
 
   let jobsPk: number | null = null;
@@ -99,14 +144,20 @@ export async function submitApplicationForm(request: Request, log: Logger): Prom
     ...answers
   } = form;
   const objects = objectStore();
+  // One random folder for the form's files.
+  const folder = `forms/${crypto.randomUUID()}`;
   const stored = resume && {
-    path: objectPath(`forms/${crypto.randomUUID()}`, 'RESUME', 0, resume.type),
+    path: objectPath(folder, 'RESUME', 0, resume.type),
     name: resume.name,
     type: CONTENT_TYPES[resume.type],
   };
-  if (resume && stored) await objects.put(stored.path, resume.bytes, stored.type);
-  const saved = await repos.applicationForms
-    .create({
+  const storedPhoto = photo && { path: objectPath(folder, 'PHOTO', 0, photo.type), type: CONTENT_TYPES[photo.type] };
+  const written = [stored?.path, storedPhoto?.path].filter((p): p is string => Boolean(p));
+  // The files, then one insert — the files removed again if anything fails.
+  const saved = await (async () => {
+    if (resume && stored) await objects.put(stored.path, resume.bytes, stored.type);
+    if (photo && storedPhoto) await objects.put(storedPhoto.path, photo.bytes, storedPhoto.type);
+    return repos.applicationForms.create({
       locale,
       letterhead,
       jobsPk,
@@ -118,13 +169,20 @@ export async function submitApplicationForm(request: Request, log: Logger): Prom
       answers,
       sensitive: sensitiveConsent && sensitive && Object.values(sensitive).some((v) => v !== null) ? sensitive : null,
       resume: stored,
-    })
-    .catch(async (error: unknown) => {
-      if (stored) await objects.remove([stored.path]).catch(() => {});
-      throw error;
+      photo: storedPhoto,
     });
+  })().catch(async (error: unknown) => {
+    if (written.length) await objects.remove(written).catch(() => {});
+    throw error;
+  });
   log.info(
-    { applicationFormId: saved.id, letterhead, job: form.jobCode, resume: Boolean(stored) },
+    {
+      applicationFormId: saved.id,
+      letterhead,
+      job: form.jobCode,
+      resume: Boolean(stored),
+      photo: Boolean(storedPhoto),
+    },
     'application form received',
   );
   return saved;

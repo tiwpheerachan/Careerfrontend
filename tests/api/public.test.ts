@@ -5,6 +5,7 @@ import * as jobs from '@/app/api/v1/jobs/route';
 import * as adminApplication from '@/app/api/v1/admin/applications/[id]/route';
 import * as download from '@/app/api/v1/admin/applications/[id]/files/[fileId]/route';
 import { FILES, applicationForm, call } from '@/tests/support/api';
+import { testClient } from '@/tests/support/db';
 import { jobInput, repos } from '@/tests/support/fixtures';
 
 const apply = (code: string, form: FormData) =>
@@ -59,6 +60,11 @@ describe('POST /jobs/{code}/applications', () => {
     expect(app.skills).toEqual(['Excel', 'Customer Service']); // de-duplicated
     expect(app.files.map((f: { kind: string }) => f.kind).sort()).toEqual(['ATTACHMENT', 'RESUME', 'TRANSCRIPT']);
     expect(JSON.stringify(app)).not.toContain('storagePath');
+    // Stored under jobs/<one folder>/, apart from the application forms' forms/.
+    const paths = (await testClient`select storage_path from application_files`).map((r) => r.storage_path as string);
+    expect(paths).toHaveLength(3);
+    expect(new Set(paths.map((p) => p.split('/').slice(0, 2).join('/'))).size).toBe(1);
+    for (const p of paths) expect(p).toMatch(/^jobs\/[0-9a-f-]{36}\/(resume|transcript|attachment)-0\.(pdf|png)$/);
 
     const resume = app.files.find((f: { kind: string }) => f.kind === 'RESUME');
     expect(resume).toMatchObject({ fileName: 'ประวัติ resume.pdf', contentType: 'application/pdf' });

@@ -39,6 +39,9 @@ export const applicationForms = pgTable(
     resumePath: text('resume_path'),
     resumeName: text('resume_name'),
     resumeType: text('resume_type'),
+    /** The applicant's photo (migration 0012), for the form's photo box: object path and type — both or neither. */
+    photoPath: text('photo_path'),
+    photoType: text('photo_type'),
     ...timestamps(),
   },
   (table) => [

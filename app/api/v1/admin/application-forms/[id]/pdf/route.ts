@@ -1,3 +1,4 @@
+import { photoOfForm } from '@/lib/api/application-form';
 import { renderApplicationFormPdf } from '@/lib/application-form/pdf';
 import { adminApplicationFormPdf } from '@/lib/api/contracts';
 import { handler, parseParams, type RouteParams } from '@/lib/api/http';
@@ -23,6 +24,7 @@ export const GET = handler<RouteParams<'id'>>(async (request, { log }, { params 
     answers: form.answers,
     sensitive: withSensitive ? form.sensitive : null,
     submittedAt: form.createdAt,
+    photo: await photoOfForm(form),
   });
   log.info({ applicationFormId: id, withSensitive }, 'application form PDF');
 

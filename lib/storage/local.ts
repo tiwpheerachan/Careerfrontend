@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, rm, rmdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NotFoundError } from '@/lib/errors';
 import type { ObjectStore } from './index';
@@ -17,6 +17,13 @@ export function createLocalStore(directory: string): ObjectStore {
     return file;
   }
 
+  async function read(objectPath: string): Promise<Uint8Array> {
+    const bytes = await readFile(fileOf(objectPath)).catch((error: NodeJS.ErrnoException) => {
+      throw error.code === 'ENOENT' ? new NotFoundError('file', objectPath) : error;
+    });
+    return new Uint8Array(bytes);
+  }
+
   return {
     async put(objectPath, bytes) {
       const file = fileOf(objectPath);
@@ -29,10 +36,29 @@ export function createLocalStore(directory: string): ObjectStore {
     },
 
     async open(objectPath) {
-      const bytes = await readFile(fileOf(objectPath)).catch((error: NodeJS.ErrnoException) => {
-        throw error.code === 'ENOENT' ? new NotFoundError('file', objectPath) : error;
+      return { bytes: await read(objectPath), contentType: 'application/octet-stream' };
+    },
+
+    read,
+
+    async move(from, to) {
+      const source = fileOf(from);
+      const target = fileOf(to);
+      await access(source).catch(() => {
+        throw new NotFoundError('file', from);
       });
-      return { bytes: new Uint8Array(bytes), contentType: 'application/octet-stream' };
+      // Never over an existing object, as put() never overwrites.
+      if (
+        await access(target).then(
+          () => true,
+          () => false,
+        )
+      )
+        throw new Error(`Refusing to move over ${to}`);
+      await mkdir(path.dirname(target), { recursive: true });
+      await rename(source, target);
+      // The folder it left, if that was its last file (rmdir refuses one that is not empty).
+      await rmdir(path.dirname(source)).catch(() => {});
     },
   };
 }

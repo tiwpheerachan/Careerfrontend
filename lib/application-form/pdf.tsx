@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Document, Font, Page, Path, Svg, Text, renderToBuffer } from '@react-pdf/renderer';
 import * as fontkit from 'fontkit';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, clip, endPath, popGraphicsState, pushGraphicsState, rectangle, type PDFPage } from 'pdf-lib';
 import type { APPLICATION_FORM_LETTERHEADS } from '@/lib/constants';
 import { splitSaraAm } from '@/lib/pdf/thai';
-import { LAYOUT, TEMPLATES, type Box, type Line } from './layout';
+import { LAYOUT, TEMPLATES, type Box, type Line, type Rect } from './layout';
 import type { ApplicationFormAnswers, ApplicationFormSensitive } from './schema';
 
 /**
@@ -20,8 +20,8 @@ import type { ApplicationFormAnswers, ApplicationFormSensitive } from './schema'
  * (its tone marks and upper vowels come out missing or stacked wrong), and
  * react-pdf cannot open an existing PDF.
  *
- * The photo box and the signature are left blank — the form is signed, and the
- * photo attached, on paper at the interview.
+ * The applicant's photo goes into the photo box, when one was sent; the
+ * signature is left blank — the form is signed on paper at the interview.
  */
 
 type Letterhead = (typeof APPLICATION_FORM_LETTERHEADS)[number];
@@ -40,6 +40,8 @@ export interface PrintableForm {
    * the applicant can do stays; how to reach them, and their family, does not.
    */
   redact?: boolean;
+  /** The applicant's photo (JPEG, or PNG), for the photo box; none leaves it empty. */
+  photo?: { bytes: Uint8Array; png: boolean } | null;
 }
 
 const ASSETS = path.join(process.cwd(), 'assets');
@@ -51,6 +53,8 @@ const SIZE = 10;
 const MIN_SIZE = 6.5;
 /** How far above the dotted line the text sits. */
 const LIFT = 1.5;
+/** A gap between the form's label and the answer, so "อายุ28" reads "อายุ 28". */
+const INSET = 4;
 
 Font.register({ family: FAMILY, src: FONT_FILE });
 // Thai has no spaces between words; never let react-pdf hyphenate inside one.
@@ -68,6 +72,25 @@ const TITLE_EN = { MR: 'Mr.', MRS: 'Mrs.', MISS: 'Miss' } as const;
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const SKILL = { FAIR: 'พอใช้', GOOD: 'ดี', EXCELLENT: 'ดีมาก' } as const;
+const LANGUAGE_TH = { EN: 'อังกฤษ', ZH: 'จีน' } as const;
+
+type Level = keyof typeof SKILL | null;
+type Skills = ApplicationFormAnswers['skills'];
+/** A form sent before `languages`: one language, typed, with its levels beside it. */
+type LegacySkills = { language?: string | null; speak?: Level; read?: Level; write?: Level };
+
+/** The languages as printed, by name: from `languages`, or a form's one typed language from before. */
+export function languagesOf(s: Skills & LegacySkills) {
+  if (s.languages?.length) {
+    return s.languages.map((row) => ({
+      name: row.language === 'OTHER' ? (row.other ?? '') : LANGUAGE_TH[row.language],
+      speak: row.speak,
+      read: row.read,
+      write: row.write,
+    }));
+  }
+  return s.language ? [{ name: s.language, speak: s.speak ?? null, read: s.read ?? null, write: s.write ?? null }] : [];
+}
 
 /** 2026-03 → "มี.ค. 2569". */
 function monthTh(value: string | null): string | null {
@@ -108,7 +131,8 @@ export function placements(form: PrintableForm): Placed[] {
   // The title before each name; an English name only gets one when there is an English name.
   put(L.nameTh, a.nameTitle ? `${TITLE_TH[a.nameTitle]}${a.nameTh}` : a.nameTh);
   put(L.nameEn, a.nameEn && a.nameTitle ? `${TITLE_EN[a.nameTitle]} ${a.nameEn}` : a.nameEn);
-  put(L.nickname, a.nickname);
+  // Both nicknames on the one line: "ปุ้ย (Pui)"; a form sent before nicknameEn has only the Thai.
+  put(L.nickname, a.nickname && a.nicknameEn ? `${a.nickname} (${a.nicknameEn})` : (a.nickname ?? a.nicknameEn));
   if (a.gender) tick(L.gender[a.gender]);
 
   const hide = Boolean(form.redact);
@@ -164,10 +188,15 @@ export function placements(form: PrintableForm): Placed[] {
   }
 
   const s = a.skills;
-  put(L.language, s.language);
-  put(L.speak, s.speak && SKILL[s.speak]);
-  put(L.read, s.read && SKILL[s.read]);
-  put(L.write, s.write && SKILL[s.write]);
+  // The paper has one row for languages: several share it, in the same order on each line
+  // ("อังกฤษ / จีน", "ดี / พอใช้"), with "-" for a level left out.
+  const languages = languagesOf(s);
+  put(L.language, languages.map((l) => l.name).join(' / '));
+  for (const skill of ['speak', 'read', 'write'] as const) {
+    if (languages.some((l) => l[skill])) {
+      put(L[skill], languages.map((l) => (l[skill] ? SKILL[l[skill]] : '-')).join(' / '));
+    }
+  }
   put(L.typingTh, s.typingThWpm);
   put(L.typingEn, s.typingEnWpm);
   put(L.computer, s.computer);
@@ -241,13 +270,13 @@ async function answersLayer(form: PrintableForm): Promise<Buffer> {
     }
     const { line } = item;
     const y = line.y + (signatureYs.has(line.y) ? shift.signature : shift.body);
-    const { text, size } = fit(f, splitSaraAm(item.text), line.to - line.x);
+    const { text, size } = fit(f, splitSaraAm(item.text), line.to - line.x - INSET);
     return (
       <Text
         key={i}
         style={{
           position: 'absolute',
-          left: line.x,
+          left: line.x + INSET,
           top: y - LIFT - ascent * size,
           fontFamily: FAMILY,
           fontSize: size,
@@ -275,10 +304,34 @@ export async function renderApplicationFormPdf(form: PrintableForm): Promise<Uin
   ]);
   const doc = await PDFDocument.load(template);
   const [answers] = await doc.embedPdf(layer);
-  doc.getPage(0).drawPage(answers!, { x: 0, y: 0 });
+  const page = doc.getPage(0);
+  page.drawPage(answers!, { x: 0, y: 0 });
+  if (form.photo) {
+    const image = form.photo.png ? await doc.embedPng(form.photo.bytes) : await doc.embedJpg(form.photo.bytes);
+    drawCovering(page, image, TEMPLATES[form.letterhead].photo);
+  }
   doc.setTitle(`ใบสมัครงาน — ${form.answers.nameTh}`);
   doc.setProducer('SHD Careers');
   return doc.save();
+}
+
+/**
+ * An image filling a box, as CSS object-fit: cover — scaled to cover it,
+ * centred, and clipped to it, so a photo that is not 4:5 is cropped, not stretched.
+ */
+function drawCovering(page: PDFPage, image: Parameters<PDFPage['drawImage']>[0], box: Rect) {
+  const scale = Math.max(box.width / image.width, box.height / image.height);
+  const width = image.width * scale;
+  const height = image.height * scale;
+  const y = page.getHeight() - box.top - box.height;
+  page.pushOperators(pushGraphicsState(), rectangle(box.x, y, box.width, box.height), clip(), endPath());
+  page.drawImage(image, {
+    x: box.x - (width - box.width) / 2,
+    y: y - (height - box.height) / 2,
+    width,
+    height,
+  });
+  page.pushOperators(popGraphicsState());
 }
 
 /**

@@ -12,6 +12,12 @@ import { ApplicationFormInput } from './schema';
  * The filled-in form comes out as one A4 page on each company's template.
  * PREVIEW_DIR=<folder> also writes the four PDFs there, to look at.
  */
+/** A 1×1 PNG: enough to show the photo is embedded into its box on every template. */
+const PHOTO = Uint8Array.from(
+  atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=='),
+  (c) => c.charCodeAt(0),
+);
+
 describe('the application form PDF', () => {
   const data = ApplicationFormInput.parse(applicationFormInput());
   const {
@@ -34,6 +40,7 @@ describe('the application form PDF', () => {
         answers,
         sensitive: sensitive ?? null,
         submittedAt: new Date('2026-10-07T10:00:00+07:00'),
+        photo: { bytes: PHOTO, png: true },
       });
       const doc = await PDFDocument.load(bytes);
       expect(doc.getPageCount()).toBe(1);
@@ -79,6 +86,33 @@ describe('the application form PDF', () => {
     if (answers.nameEn) expect(titled).toContain(`Miss ${answers.nameEn}`);
     expect(redacted).toContain(positionOther);
     expect(redacted.length).toBeGreaterThan(10);
+  });
+
+  it('languages share the one row in order; a form from before `languages` still prints; both nicknames', () => {
+    const form = {
+      letterhead: APPLICATION_FORM_LETTERHEADS[0],
+      position: positionOther!,
+      answers,
+      sensitive: null,
+      submittedAt: new Date('2026-10-07T10:00:00+07:00'),
+    };
+    const texts = (a: typeof answers) =>
+      placements({ ...form, answers: a }).flatMap((p) => (p.kind === 'text' ? [p.text] : []));
+    const now = texts(answers);
+    expect(now).toEqual(expect.arrayContaining(['อังกฤษ / จีน', 'ดี / พอใช้', 'ดีมาก / -', 'ปุ้ย (Pui)']));
+
+    const other = texts({
+      ...answers,
+      skills: {
+        ...answers.skills,
+        languages: [{ language: 'OTHER', other: 'ญี่ปุ่น', speak: 'FAIR', read: null, write: null }],
+      },
+    });
+    expect(other).toEqual(expect.arrayContaining(['ญี่ปุ่น', 'พอใช้']));
+
+    const legacy = { ...answers, skills: { ...answers.skills, languages: [], language: 'ฝรั่งเศส', speak: 'GOOD' } };
+    expect(texts(legacy as typeof answers)).toEqual(expect.arrayContaining(['ฝรั่งเศส', 'ดี']));
+    expect(texts({ ...answers, nicknameEn: null })).toContain('ปุ้ย');
   });
 });
 

@@ -23,6 +23,10 @@ export interface ObjectStore {
    * open page (the old admin's 1-hour links did).
    */
   open(path: string, downloadName: string): Promise<{ redirect: string } | { bytes: Uint8Array; contentType: string }>;
+  /** The object's bytes, for the server's own use (a photo drawn into a PDF). NotFoundError when it is gone. */
+  read(path: string): Promise<Uint8Array>;
+  /** Moves an object to a new path, in storage (no download). NotFoundError when `from` is not there. */
+  move(from: string, to: string): Promise<void>;
 }
 
 let cached: ObjectStore | undefined;

@@ -11,6 +11,7 @@ export function applicationFormInput(overrides: Partial<ApplicationFormInput> = 
     nameTh: 'นางสาวสุภาวดี ศรีสุข',
     nameEn: 'Supawadee Srisuk',
     nickname: 'ปุ้ย',
+    nicknameEn: 'Pui',
     gender: 'FEMALE',
     address: {
       houseNo: '99/123',
@@ -58,10 +59,10 @@ export function applicationFormInput(overrides: Partial<ApplicationFormInput> = 
       },
     ],
     skills: {
-      language: 'อังกฤษ',
-      speak: 'GOOD',
-      read: 'EXCELLENT',
-      write: 'GOOD',
+      languages: [
+        { language: 'EN', speak: 'GOOD', read: 'EXCELLENT', write: 'GOOD' },
+        { language: 'ZH', speak: 'FAIR', read: null, write: null },
+      ],
       typingThWpm: 45,
       typingEnWpm: 40,
       computer: 'Microsoft Excel (Pivot, VLOOKUP), Word, PowerPoint, SAP B1, Express',

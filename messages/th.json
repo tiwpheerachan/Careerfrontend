@@ -1366,7 +1366,9 @@
       "year": "กรอกปีเป็นตัวเลข 4 หลัก เช่น 2565 หรือ 2022",
       "birthOrder": "ลำดับต้องไม่เกินจำนวนพี่น้องทั้งหมด",
       "resumeSize": "ไฟล์มีขนาดเกิน 5 MB",
-      "resumeType": "รองรับเฉพาะไฟล์ PDF, DOC หรือ DOCX"
+      "resumeType": "รองรับเฉพาะไฟล์ PDF, DOC หรือ DOCX",
+      "photoRequired": "กรุณาแนบรูปถ่าย",
+      "photoType": "อ่านไฟล์รูปนี้ไม่ได้ กรุณาเลือกไฟล์ JPG หรือ PNG"
     },
     "success": {
       "title": "ส่งใบสมัครเรียบร้อย",
@@ -1401,7 +1403,14 @@
       "nameTh": "ชื่อ-นามสกุล (ภาษาไทย)",
       "nameThPlaceholder": "เช่น สุภาวดี ศรีสุข",
       "nameEn": "ชื่อ-นามสกุล (ภาษาอังกฤษ)",
-      "nickname": "ชื่อเล่น",
+      "nickname": "ชื่อเล่น (ภาษาไทย)",
+      "nicknameEn": "ชื่อเล่น (ภาษาอังกฤษ)",
+      "nicknameEnPlaceholder": "เช่น Pui",
+      "photo": "รูปถ่ายหน้าตรง",
+      "photoHint": "รูปหน้าตรง ไม่สวมแว่นดำหรือหมวก เห็นใบหน้าชัดเจน ระบบจะครอปให้พอดีกรอบรูป 1 นิ้วบนใบสมัครอัตโนมัติ",
+      "photoPick": "เลือกรูป",
+      "photoChange": "เปลี่ยนรูป",
+      "photoAttached": "แนบแล้ว",
       "gender": "เพศ",
       "genders": {
         "MALE": "ชาย",
@@ -1471,7 +1480,14 @@
       "graduationYearPlaceholder": "เช่น 2565",
       "skills": "ความสามารถพิเศษ",
       "language": "ภาษาต่างประเทศ",
-      "languagePlaceholder": "เช่น อังกฤษ",
+      "languageHint": "เลือกได้มากกว่าหนึ่งภาษา แล้วระบุระดับของแต่ละภาษา",
+      "languages": {
+        "EN": "อังกฤษ",
+        "ZH": "จีน",
+        "OTHER": "อื่นๆ (ระบุ)"
+      },
+      "languageOther": "ภาษาอื่น",
+      "languageOtherPlaceholder": "เช่น ญี่ปุ่น",
       "speak": "พูด",
       "read": "อ่าน",
       "write": "เขียน",

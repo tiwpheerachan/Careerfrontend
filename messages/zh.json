@@ -1252,7 +1252,9 @@
       "year": "请填写 4 位年份，例如 2022",
       "birthOrder": "排行不能大于兄弟姐妹总数",
       "resumeSize": "文件超过 5 MB。",
-      "resumeType": "仅支持 PDF、DOC 或 DOCX 文件。"
+      "resumeType": "仅支持 PDF、DOC 或 DOCX 文件。",
+      "photoRequired": "请上传照片",
+      "photoType": "无法读取该图片，请选择 JPG 或 PNG 文件。"
     },
     "success": {
       "title": "申请已提交",
@@ -1287,7 +1289,14 @@
       "nameTh": "姓名（泰文）",
       "nameThPlaceholder": "与身份证一致（不含称谓）",
       "nameEn": "姓名（英文）",
-      "nickname": "昵称",
+      "nickname": "昵称（泰文）",
+      "nicknameEn": "昵称（英文）",
+      "nicknameEnPlaceholder": "例如 Pui",
+      "photo": "正面照片",
+      "photoHint": "请上传清晰的正面免冠照片（勿戴墨镜或帽子），系统会自动裁剪为表格上的1寸照片框。",
+      "photoPick": "选择照片",
+      "photoChange": "更换照片",
+      "photoAttached": "已上传",
       "gender": "性别",
       "genders": {
         "MALE": "男",
@@ -1357,7 +1366,14 @@
       "graduationYearPlaceholder": "例如 2022",
       "skills": "特长",
       "language": "外语",
-      "languagePlaceholder": "例如 英语",
+      "languageHint": "可多选，并填写每种语言的水平。",
+      "languages": {
+        "EN": "英语",
+        "ZH": "中文",
+        "OTHER": "其他（请注明）"
+      },
+      "languageOther": "其他语言",
+      "languageOtherPlaceholder": "例如 日语",
       "speak": "说",
       "read": "读",
       "write": "写",

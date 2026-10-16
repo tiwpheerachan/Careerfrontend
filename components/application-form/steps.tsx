@@ -1,6 +1,8 @@
 'use client';
 
+import { ImageUp, Trash2, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRef, useState, type DragEvent } from 'react';
 import { ApplySelect } from '@/components/apply/apply-select';
 import { Field, FieldError } from '@/components/apply/field';
 import { MonthYearPicker } from '@/components/apply/month-year-picker';
@@ -8,12 +10,14 @@ import {
   APPLICATION_FORM_LETTERHEADS,
   BLOOD_TYPES,
   FORM_EDUCATION_LEVELS,
+  FORM_LANGUAGES,
   GENDERS,
   MARITAL_STATUSES,
   MILITARY_STATUSES,
   NAME_TITLES,
   SKILL_LEVELS,
 } from '@/lib/constants';
+import { cx } from '@/lib/cx';
 import { Choices, Group, NumberField, TextField, Tick, read, useForm } from './controls';
 import { fieldId, OTHER_JOB } from './draft';
 
@@ -115,6 +119,7 @@ export function PersonalStep() {
   const { draft } = useForm();
   return (
     <div className="space-y-6">
+      <PhotoField />
       <Group title={t('personalInfo')}>
         <Choices
           path="nameTitle"
@@ -130,8 +135,9 @@ export function PersonalStep() {
           autoComplete="name"
           className="sm:col-span-2"
         />
-        <TextField path="nameEn" label={t('nameEn')} autoComplete="name" />
+        <TextField path="nameEn" label={t('nameEn')} autoComplete="name" className="sm:col-span-2" />
         <TextField path="nickname" label={t('nickname')} maxLength={50} autoComplete="nickname" />
+        <TextField path="nicknameEn" label={t('nicknameEn')} placeholder={t('nicknameEnPlaceholder')} maxLength={50} />
         <TextField path="birthDate" label={t('birthDate')} type="date" required autoComplete="bday" />
         <TextField path="nationality" label={t('nationality')} maxLength={50} />
         <Choices
@@ -163,6 +169,136 @@ export function PersonalStep() {
         ) : null}
       </section>
     </div>
+  );
+}
+
+/** The photo box's shape (4:5) at twice its printed size: sharp in print, ~100 KB. */
+const PHOTO_SIZE = { width: 640, height: 800 };
+
+/**
+ * The picked image as the form prints it: cropped from the centre to 4:5,
+ * 640×800, on white, as a JPEG data URL. Redrawing it also stands a phone
+ * photo upright (createImageBitmap applies its EXIF orientation) and leaves its
+ * EXIF — the GPS position included — behind. Throws when the browser cannot read it.
+ */
+async function toFormPhoto(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = PHOTO_SIZE.width;
+  canvas.height = PHOTO_SIZE.height;
+  const ctx = canvas.getContext('2d')!;
+  const scale = Math.max(canvas.width / bitmap.width, canvas.height / bitmap.height);
+  const width = bitmap.width * scale;
+  const height = bitmap.height * scale;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+  bitmap.close();
+  return canvas.toDataURL('image/jpeg', 0.85);
+}
+
+/** The photo for the form's photo box: picked or dropped, shown as it will print. */
+function PhotoField() {
+  const t = useT();
+  const te = useTranslations('applicationForm.errors');
+  const tr = useTranslations('apply');
+  const tc = useTranslations('common');
+  const { draft, set, errors } = useForm();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [problem, setProblem] = useState(false);
+  const id = fieldId('photo');
+  const error = problem ? te('photoType') : errors.photo ? te(errors.photo) : undefined;
+
+  const pick = async (file: File | undefined) => {
+    if (inputRef.current) inputRef.current.value = '';
+    if (!file) return;
+    try {
+      set('photo', await toFormPhoto(file));
+      setProblem(false);
+    } catch {
+      setProblem(true);
+    }
+  };
+
+  const drop = (e: DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setDragging(false);
+    void pick(e.dataTransfer.files[0]);
+  };
+
+  return (
+    <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/75 p-4 sm:flex-row sm:items-center sm:p-5">
+      <label
+        htmlFor={id}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={drop}
+        className={cx(
+          'grid aspect-[4/5] w-28 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 transition',
+          'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:focus-visible]:ring-offset-2',
+          draft.photo ? 'border-slate-200' : 'border-dashed',
+          dragging
+            ? 'border-blue-500 bg-blue-50'
+            : error
+              ? 'border-rose-300 bg-rose-50/40'
+              : 'border-slate-300 bg-slate-50/60 hover:border-blue-400',
+        )}
+      >
+        {draft.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a data URL made in the browser; nothing to optimise
+          <img src={draft.photo} alt={t('photo')} className="h-full w-full object-cover" />
+        ) : (
+          <UserRound className="h-10 w-10 text-slate-400" aria-hidden="true" />
+        )}
+        <input
+          id={id}
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          aria-labelledby={`${id}-label`}
+          aria-describedby={error ? `${id}-hint ${id}-error` : `${id}-hint`}
+          aria-invalid={error ? true : undefined}
+          aria-required
+          onChange={(e) => void pick(e.target.files?.[0])}
+        />
+      </label>
+      <div className="min-w-0 space-y-2">
+        <h3 id={`${id}-label`} className="text-sm font-black text-slate-900">
+          {t('photo')}{' '}
+          <span className="text-rose-600">
+            <span aria-hidden="true">*</span>
+            <span className="sr-only">({tr('required')})</span>
+          </span>
+        </h3>
+        <p id={`${id}-hint`} className="text-xs text-slate-500">
+          {t('photoHint')}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-ghost inline-flex items-center gap-2"
+            onClick={() => inputRef.current?.click()}
+          >
+            <ImageUp className="h-4 w-4" aria-hidden="true" /> {draft.photo ? t('photoChange') : t('photoPick')}
+          </button>
+          {draft.photo ? (
+            <button
+              type="button"
+              className="btn btn-ghost inline-flex items-center gap-2"
+              onClick={() => set('photo', '')}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" /> {tc('remove')}
+            </button>
+          ) : null}
+        </div>
+        {error ? <FieldError id={id} error={error} /> : null}
+      </div>
+    </section>
   );
 }
 
@@ -258,7 +394,6 @@ export function EducationStep() {
     { value: 'yes', label: t('have') },
     { value: 'no', label: t('haveNot') },
   ];
-  const levels = SKILL_LEVELS.map((value) => ({ value, label: t(`skillLevels.${value}`) }));
   return (
     <div className="space-y-6">
       <p className="text-xs text-slate-500">{t('educationHint')}</p>
@@ -286,17 +421,7 @@ export function EducationStep() {
       ))}
 
       <Group title={t('skills')}>
-        <TextField
-          path="skills.language"
-          label={t('language')}
-          placeholder={t('languagePlaceholder')}
-          maxLength={50}
-          className="sm:col-span-2"
-        />
-        <Choices path="skills.speak" label={t('speak')} options={levels} />
-        <Choices path="skills.read" label={t('read')} options={levels} />
-        <Choices path="skills.write" label={t('write')} options={levels} />
-        <div className="hidden sm:block" />
+        <Languages />
         <NumberField path="skills.typingThWpm" label={t('typingTh')} />
         <NumberField path="skills.typingEnWpm" label={t('typingEn')} />
         <TextField
@@ -309,6 +434,63 @@ export function EducationStep() {
         <Choices path="skills.motorcycleLicense" label={t('motorcycleLicense')} options={yesNo} />
         <Choices path="skills.carLicense" label={t('carLicense')} options={yesNo} />
       </Group>
+    </div>
+  );
+}
+
+/** 9.1 Foreign languages: English, Chinese and/or another (named), each ticked one with its own levels. */
+function Languages() {
+  const t = useT();
+  const { draft, set } = useForm();
+  const levels = SKILL_LEVELS.map((value) => ({ value, label: t(`skillLevels.${value}`) }));
+  const chosen = FORM_LANGUAGES.filter((code) => draft.skills.languages[code].on);
+  return (
+    <div className="space-y-3 sm:col-span-2">
+      <fieldset className="space-y-2">
+        <legend className="text-xs font-semibold text-slate-600">{t('language')}</legend>
+        <p className="text-[11px] text-slate-500">{t('languageHint')}</p>
+        <div className="flex flex-wrap gap-2">
+          {FORM_LANGUAGES.map((code) => {
+            const on = draft.skills.languages[code].on;
+            return (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={on}
+                onClick={() => set(`skills.languages.${code}.on`, !on)}
+                className={cx(
+                  'rounded-2xl border px-4 py-2 text-sm font-semibold transition',
+                  'focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none',
+                  on
+                    ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                    : 'border-slate-300 bg-white/85 text-slate-700 hover:border-blue-400 hover:bg-blue-50',
+                )}
+              >
+                {t(`languages.${code}`)}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+      {chosen.map((code) => (
+        <div key={code} className="grid gap-4 rounded-2xl border border-slate-200 bg-white/60 p-4 sm:grid-cols-3">
+          {code === 'OTHER' ? (
+            <TextField
+              path="skills.languages.OTHER.other"
+              label={t('languageOther')}
+              placeholder={t('languageOtherPlaceholder')}
+              maxLength={50}
+              required
+              className="sm:col-span-3"
+            />
+          ) : (
+            <h4 className="text-sm font-bold text-slate-900 sm:col-span-3">{t(`languages.${code}`)}</h4>
+          )}
+          <Choices path={`skills.languages.${code}.speak`} label={t('speak')} options={levels} />
+          <Choices path={`skills.languages.${code}.read`} label={t('read')} options={levels} />
+          <Choices path={`skills.languages.${code}.write`} label={t('write')} options={levels} />
+        </div>
+      ))}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   APPLICATION_FORM_LETTERHEADS,
   BLOOD_TYPES,
   FORM_EDUCATION_LEVELS,
+  FORM_LANGUAGES,
   GENDERS,
   MARITAL_STATUSES,
   MILITARY_STATUSES,
@@ -20,6 +21,7 @@ import {
  */
 export type Letterhead = (typeof APPLICATION_FORM_LETTERHEADS)[number];
 export type EducationLevel = (typeof FORM_EDUCATION_LEVELS)[number];
+export type Language = (typeof FORM_LANGUAGES)[number];
 type Choice<T extends readonly string[]> = T[number] | '';
 type YesNo = '' | 'yes' | 'no';
 
@@ -44,6 +46,16 @@ export interface EducationDraft {
   graduationYear: string;
 }
 
+export interface LanguageDraft {
+  /** Ticked: the language is sent, with its levels. */
+  on: boolean;
+  /** The language's name, for OTHER. */
+  other: string;
+  speak: Choice<typeof SKILL_LEVELS>;
+  read: Choice<typeof SKILL_LEVELS>;
+  write: Choice<typeof SKILL_LEVELS>;
+}
+
 export interface Draft {
   letterhead: Letterhead | '';
   /** A published job's code, OTHER_JOB, or '' (nothing chosen yet). */
@@ -56,6 +68,9 @@ export interface Draft {
   nameTh: string;
   nameEn: string;
   nickname: string;
+  nicknameEn: string;
+  /** The photo for the form's photo box, already cropped and shrunk (a JPEG data URL, ~100 KB); '' for none. */
+  photo: string;
   gender: Choice<typeof GENDERS>;
   birthDate: string;
   nationality: string;
@@ -98,10 +113,7 @@ export interface Draft {
   military: Choice<typeof MILITARY_STATUSES>;
   education: Record<EducationLevel, EducationDraft>;
   skills: {
-    language: string;
-    speak: Choice<typeof SKILL_LEVELS>;
-    read: Choice<typeof SKILL_LEVELS>;
-    write: Choice<typeof SKILL_LEVELS>;
+    languages: Record<Language, LanguageDraft>;
     typingThWpm: string;
     typingEnWpm: string;
     computer: string;
@@ -134,6 +146,13 @@ const emptyJob = (): JobDraft => ({
 
 const emptyEducation = (): EducationDraft => ({ institute: '', country: '', gpa: '', major: '', graduationYear: '' });
 
+const emptyLanguage = (): LanguageDraft => ({ on: false, other: '', speak: '', read: '', write: '' });
+export const emptyLanguages = (): Record<Language, LanguageDraft> => ({
+  EN: emptyLanguage(),
+  ZH: emptyLanguage(),
+  OTHER: emptyLanguage(),
+});
+
 export function emptyDraft(): Draft {
   return {
     letterhead: '',
@@ -145,6 +164,8 @@ export function emptyDraft(): Draft {
     nameTitle: '',
     nameEn: '',
     nickname: '',
+    nicknameEn: '',
+    photo: '',
     gender: '',
     birthDate: '',
     nationality: '',
@@ -166,10 +187,7 @@ export function emptyDraft(): Draft {
     military: '',
     education: { SECONDARY: emptyEducation(), DIPLOMA: emptyEducation(), DEGREE: emptyEducation() },
     skills: {
-      language: '',
-      speak: '',
-      read: '',
-      write: '',
+      languages: emptyLanguages(),
       typingThWpm: '',
       typingEnWpm: '',
       computer: '',
@@ -191,9 +209,9 @@ const choice = <T extends string>(value: T | '') => (value === '' ? null : value
 const yesNo = (value: YesNo) => (value === '' ? null : value === 'yes');
 
 /**
- * The draft as the API takes it. `educationLevels` says which level each
- * entry of `education` is, so an error on `education.1.gpa` can be put on the
- * right row.
+ * The draft as the API takes it. `educationLevels` (and `languageCodes`) say
+ * which level each entry of `education` (`skills.languages`) is, so an error on
+ * `education.1.gpa` can be put on the right row.
  */
 /** A typed amount as a number; nothing typed is null. */
 const amount = (value: string) => (value.trim() ? Number(value) : null);
@@ -202,6 +220,8 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
   const educationLevels = FORM_EDUCATION_LEVELS.filter((level) =>
     Object.values(draft.education[level]).some((v) => v.trim() !== ''),
   );
+  const languageCodes = FORM_LANGUAGES.filter((code) => draft.skills.languages[code].on);
+  const { languages, ...skills } = draft.skills;
   const input = {
     locale,
     letterhead: draft.letterhead || undefined,
@@ -213,6 +233,7 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
     nameTh: draft.nameTh,
     nameEn: draft.nameEn,
     nickname: draft.nickname,
+    nicknameEn: draft.nicknameEn,
     gender: choice(draft.gender),
     address: draft.address,
     homePhone: draft.homePhone,
@@ -236,10 +257,14 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
     military: draft.gender === 'FEMALE' ? null : choice(draft.military),
     education: educationLevels.map((level) => ({ level, ...draft.education[level] })),
     skills: {
-      ...draft.skills,
-      speak: choice(draft.skills.speak),
-      read: choice(draft.skills.read),
-      write: choice(draft.skills.write),
+      ...skills,
+      languages: languageCodes.map((language) => ({
+        language,
+        other: language === 'OTHER' ? languages.OTHER.other : '',
+        speak: choice(languages[language].speak),
+        read: choice(languages[language].read),
+        write: choice(languages[language].write),
+      })),
       typingThWpm: num(draft.skills.typingThWpm),
       typingEnWpm: num(draft.skills.typingEnWpm),
       motorcycleLicense: yesNo(draft.skills.motorcycleLicense),
@@ -251,7 +276,7 @@ export function toInput(draft: Draft, locale: string, turnstileToken?: string) {
     certified: draft.certified,
     turnstileToken,
   };
-  return { input, educationLevels };
+  return { input, educationLevels, languageCodes };
 }
 
 export const STEPS = ['position', 'personal', 'contact', 'family', 'education', 'work', 'review'] as const;
@@ -265,6 +290,8 @@ const STEP_FIELDS: Record<Step, string[]> = {
     'nameTh',
     'nameEn',
     'nickname',
+    'nicknameEn',
+    'photo',
     'gender',
     'birthDate',
     'nationality',
@@ -299,6 +326,8 @@ export type ErrorKey =
   | 'salaryRange'
   | 'resumeSize'
   | 'resumeType'
+  | 'photoRequired'
+  | 'photoType'
   | 'salary'
   | 'gpa'
   | 'year'
@@ -352,6 +381,8 @@ const isYear = (v: string) => /^\d{4}$/.test(v) && ((+v >= 1950 && +v <= 2100) |
 
 function extraChecks(draft: Draft): Errors {
   const errors: Errors = {};
+  // Required here, not by the API: the PDF needs it for its photo box, but a form sent without one still prints.
+  if (!draft.photo) errors.photo = 'photoRequired';
   const money = (path: string, value: string) => {
     if (/\d/.test(value) && !MONEY.test(value.trim())) errors[path] = 'salary';
   };
@@ -391,7 +422,7 @@ function valueAt(draft: Draft, path: string): unknown {
  * fields — so "Next" on step 1 does not complain about step 5.
  */
 export function validate(draft: Draft, locale: string, only?: Step): Errors {
-  const { input, educationLevels } = toInput(draft, locale);
+  const { input, educationLevels, languageCodes } = toInput(draft, locale);
   const parsed = ApplicationFormInput.safeParse(input);
   const errors: Errors = {};
   if (!parsed.success) {
@@ -400,6 +431,10 @@ export function validate(draft: Draft, locale: string, only?: Step): Errors {
       // education.<index>.<field> → education.<LEVEL>.<field>
       if (parts[0] === 'education' && parts[1] !== undefined && educationLevels[Number(parts[1])]) {
         parts[1] = educationLevels[Number(parts[1])]!;
+      }
+      // skills.languages.<index>.<field> → skills.languages.<CODE>.<field>
+      if (parts[1] === 'languages' && parts[2] !== undefined && languageCodes[Number(parts[2])]) {
+        parts[2] = languageCodes[Number(parts[2])]!;
       }
       // A wrong sensitive or job field is reported where the draft keeps it.
       const path = parts.join('.');

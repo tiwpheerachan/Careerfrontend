@@ -22,6 +22,8 @@ export interface ApplicationFormCreate {
   sensitive: ApplicationFormSensitive | null;
   /** The résumé/CV sent with it, already in storage; null for none. */
   resume?: { path: string; name: string; type: string } | null;
+  /** The applicant's photo, already in storage; null for none. */
+  photo?: { path: string; type: string } | null;
 }
 
 export interface ApplicationFormListItem {
@@ -43,7 +45,7 @@ export function createApplicationFormRepository(db: Database) {
   const live = ne(applicationForms.status, 'DELETED');
 
   return {
-    async create({ resume, ...input }: ApplicationFormCreate): Promise<{ id: string }> {
+    async create({ resume, photo, ...input }: ApplicationFormCreate): Promise<{ id: string }> {
       const now = new Date();
       const [row] = await db
         .insert(applicationForms)
@@ -52,6 +54,8 @@ export function createApplicationFormRepository(db: Database) {
           resumePath: resume?.path ?? null,
           resumeName: resume?.name ?? null,
           resumeType: resume?.type ?? null,
+          photoPath: photo?.path ?? null,
+          photoType: photo?.type ?? null,
           sensitiveConsentAt: input.sensitive ? now : null,
           certifiedAt: now,
         })

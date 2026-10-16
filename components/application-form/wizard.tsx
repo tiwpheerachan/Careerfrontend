@@ -19,12 +19,13 @@ import s from '@/components/apply/apply.module.css';
 import { FieldError } from '@/components/apply/field';
 import { acceptOf, checkFile } from '@/components/apply/files';
 import { Turnstile } from '@/components/apply/turnstile';
-import { FORM_EDUCATION_LEVELS } from '@/lib/constants';
+import { FORM_EDUCATION_LEVELS, FORM_LANGUAGES } from '@/lib/constants';
 import { cx } from '@/lib/cx';
 import { Link } from '@/lib/i18n/navigation';
 import { FormProvider, read, Tick, useForm, write } from './controls';
 import {
   emptyDraft,
+  emptyLanguages,
   fieldId,
   OTHER_JOB,
   STEPS,
@@ -96,9 +97,18 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
       if (raw) {
         const saved = JSON.parse(raw) as Saved;
         const fresh = emptyDraft();
-        // Merged over a fresh draft, so a field added since the draft was saved still has its default.
+        // Merged over a fresh draft, so a field added since the draft was saved still has its default —
+        // skills too, one level down: a draft saved before `languages` has none (it typed one `language`).
         // eslint-disable-next-line react-hooks/set-state-in-effect -- reading browser storage, once
-        setDraft({ ...fresh, ...saved.draft });
+        setDraft({
+          ...fresh,
+          ...saved.draft,
+          skills: {
+            ...fresh.skills,
+            ...saved.draft.skills,
+            languages: { ...emptyLanguages(), ...saved.draft.skills?.languages },
+          },
+        });
         const savedStep = Math.min(Math.max(0, saved.step), STEPS.length - 1);
         setStep(savedStep);
         setFurthest(Math.min(Math.max(savedStep, saved.furthest ?? 0), STEPS.length - 1));
@@ -215,18 +225,21 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
 
     setSending(true);
     setOutcome(null);
-    const { input, educationLevels } = toInput(draft, locale, turnstileToken || undefined);
+    const { input, educationLevels, languageCodes } = toInput(draft, locale, turnstileToken || undefined);
     try {
-      // With a résumé the form goes as multipart (the browser sets its boundary): the JSON in `data`, the file in `resume`.
+      // With files the form goes as multipart (the browser sets its boundary): the JSON in `data`,
+      // the files in `resume` and `photo` (the draft's data URL, back to a file).
+      const multipart = Boolean(resume || draft.photo);
       let payload: BodyInit = JSON.stringify(input);
-      if (resume) {
+      if (multipart) {
         payload = new FormData();
         payload.append('data', JSON.stringify(input));
-        payload.append('resume', resume);
+        if (resume) payload.append('resume', resume);
+        if (draft.photo) payload.append('photo', await (await fetch(draft.photo)).blob(), 'photo.jpg');
       }
       const response = await fetch(`/api/v1/application-forms?locale=${locale}`, {
         method: 'POST',
-        headers: resume
+        headers: multipart
           ? { accept: 'application/json' }
           : { 'content-type': 'application/json', accept: 'application/json' },
         body: payload,
@@ -256,6 +269,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
           const parts = issue.path.split('.');
           if (parts[0] === 'education' && educationLevels[Number(parts[1])])
             parts[1] = educationLevels[Number(parts[1])]!;
+          if (parts[1] === 'languages' && languageCodes[Number(parts[2])]) parts[2] = languageCodes[Number(parts[2])]!;
           if (parts[0] === 'jobCode') parts[0] = 'positionOther';
           fromServer[parts.join('.')] ??= 'invalid' as ErrorKey;
         }
@@ -536,6 +550,8 @@ function Review({
         [f('nameTh'), draft.nameTh],
         [f('nameEn'), draft.nameEn],
         [f('nickname'), draft.nickname],
+        [f('nicknameEn'), draft.nicknameEn],
+        [f('photo'), draft.photo ? f('photoAttached') : ''],
         [f('gender'), draft.gender ? f(`genders.${draft.gender}`) : ''],
         [
           f('birthDate'),
@@ -590,7 +606,20 @@ function Review({
             join(draft.education[level].institute, draft.education[level].major),
           ],
         ),
-        [f('language'), draft.skills.language],
+        [
+          f('language'),
+          FORM_LANGUAGES.filter((code) => draft.skills.languages[code].on)
+            .map((code) => {
+              const row = draft.skills.languages[code];
+              const levels = (['speak', 'read', 'write'] as const)
+                .filter((skill) => row[skill])
+                .map((skill) => `${f(skill)} ${f(`skillLevels.${row[skill]}`)}`)
+                .join(', ');
+              const name = code === 'OTHER' ? row.other : f(`languages.${code}`);
+              return levels ? `${name} (${levels})` : name;
+            })
+            .join(' · '),
+        ],
         [f('computer'), draft.skills.computer],
       ],
     },

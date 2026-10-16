@@ -104,6 +104,39 @@ describe('a résumé/CV with the form', () => {
   });
 });
 
+describe('a photo with the form', () => {
+  const sendWith = (photo: File) => {
+    const form = new FormData();
+    form.append('data', JSON.stringify(applicationFormInput()));
+    form.append('photo', photo);
+    return call(submit.POST, { path: '/api/v1/application-forms', query: { locale: 'th' }, form });
+  };
+
+  it('stored, and drawn into the PDF', async () => {
+    const res = await sendWith(FILES.photo());
+    expect(res.status).toBe(201);
+    const row = await repos.applicationForms.get(res.body.id);
+    expect(row).toMatchObject({ photoType: 'image/png' });
+    expect(row.photoPath).toMatch(/^forms\/.+\/photo-0\.png$/);
+
+    const withPhoto = await call(formPdf.GET, { params: { id: res.body.id } });
+    const without = await call(formPdf.GET, { params: { id: (await send()).body.id } });
+    expect(withPhoto.status).toBe(200);
+    // One image more than the same form without it (the letterhead's logo is an image too).
+    const images = (pdf: unknown) => String(pdf).match(/\/Subtype\s*\/Image/g)?.length ?? 0;
+    expect(images(withPhoto.body)).toBe(images(without.body) + 1);
+  });
+
+  it('400 for a file that is not a JPG/PNG, or only starts like one; nothing is stored', async () => {
+    for (const file of [FILES.pdf(), FILES.png()]) {
+      const res = await sendWith(file);
+      expect(res.status).toBe(400);
+      expect(res.body.error.issues[0].path).toBe('photo');
+    }
+    expect((await call(formList.GET)).body.total).toBe(0);
+  });
+});
+
 describe('the admin side', () => {
   it('PDF: one page, inline, named after the applicant', async () => {
     const { body } = await send();

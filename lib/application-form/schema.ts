@@ -3,6 +3,7 @@ import {
   APPLICATION_FORM_LETTERHEADS,
   BLOOD_TYPES,
   FORM_EDUCATION_LEVELS,
+  FORM_LANGUAGES,
   GENDERS,
   LOCALES,
   NAME_TITLES,
@@ -155,11 +156,27 @@ export const FormEducation = z.object({
 
 // --- 9. Skills ---------------------------------------------------------------------------------
 
+/** One foreign language and how well: English, Chinese, or another named in `other`. */
+export const FormLanguage = z
+  .object({
+    language: z.enum(FORM_LANGUAGES),
+    other: text(50),
+    speak: choice(SKILL_LEVELS),
+    read: choice(SKILL_LEVELS),
+    write: choice(SKILL_LEVELS),
+  })
+  .refine((row) => row.language !== 'OTHER' || row.other, { path: ['other'], message: 'name the language' });
+
 export const FormSkills = z.object({
-  language: text(50),
-  speak: choice(SKILL_LEVELS),
-  read: choice(SKILL_LEVELS),
-  write: choice(SKILL_LEVELS),
+  /**
+   * Up to one row each (English, Chinese, another). A form sent before this
+   * kept one language as `language`/`speak`/`read`/`write` — see languagesOf() in pdf.tsx.
+   */
+  languages: z
+    .array(FormLanguage)
+    .max(FORM_LANGUAGES.length)
+    .default([])
+    .refine((rows) => new Set(rows.map((r) => r.language)).size === rows.length, 'one row per language'),
   typingThWpm: count(300),
   typingEnWpm: count(300),
   computer: text(300),
@@ -214,6 +231,8 @@ export const ApplicationFormInput = z
     nameTh: required(150),
     nameEn: text(150),
     nickname: text(50),
+    /** The nickname in Latin letters ("Pui"), printed beside the Thai one. */
+    nicknameEn: text(50).refine((value) => !value || /^[A-Za-z][A-Za-z .'-]*$/.test(value), 'English letters only'),
     gender: choice(GENDERS),
 
     // 3. Address and contact

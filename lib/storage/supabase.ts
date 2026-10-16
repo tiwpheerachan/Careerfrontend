@@ -68,5 +68,26 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
       url.searchParams.set('download', downloadName);
       return { redirect: url.toString() };
     },
+
+    async move(from, to) {
+      const response = await call('object/move', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ bucketId: options.bucket, sourceKey: from, destinationKey: to }),
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        if (response.status === 404 || (response.status === 400 && /not.?found/i.test(body)))
+          throw new NotFoundError('file', from);
+        throw new Error(`Storage move failed (${response.status}): ${body}`);
+      }
+    },
+
+    async read(objectPath) {
+      const response = await call(`object/authenticated/${options.bucket}/${encode(objectPath)}`, { method: 'GET' });
+      if (response.status === 404 || response.status === 400) throw new NotFoundError('file', objectPath);
+      if (!response.ok) throw new Error(`Storage read failed (${response.status}): ${await response.text()}`);
+      return new Uint8Array(await response.arrayBuffer());
+    },
   };
 }

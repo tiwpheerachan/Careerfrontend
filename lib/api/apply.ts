@@ -124,9 +124,9 @@ export async function submitApplication(request: Request, code: string, log: Log
 
   await verifyTurnstile(fields.turnstileToken, ip);
 
-  // Upload, then save. Every path is new, under one random folder.
+  // Upload, then save. Every path is new, under one random folder in jobs/ (forms/ has the application forms').
   const objects = objectStore();
-  const folder = crypto.randomUUID();
+  const folder = `jobs/${crypto.randomUUID()}`;
   const counters: Record<ApplicationFileKind, number> = { RESUME: 0, TRANSCRIPT: 0, ATTACHMENT: 0 };
   const files: ApplicationFileInput[] = [];
   try {

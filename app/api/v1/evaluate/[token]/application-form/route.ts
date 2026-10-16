@@ -1,5 +1,6 @@
 import { inviteeApplicationForm } from '@/lib/api/contracts';
 import { handler, parseParams, type RouteParams } from '@/lib/api/http';
+import { photoOfForm } from '@/lib/api/application-form';
 import { renderApplicationFormPdf } from '@/lib/application-form/pdf';
 import { requireInvitee } from '@/lib/auth/invitee';
 import { NotFoundError } from '@/lib/errors';
@@ -26,6 +27,7 @@ export const GET = handler<RouteParams<'token'>>(async (request, _context, { par
     sensitive: null,
     redact: true,
     submittedAt: form.createdAt,
+    photo: await photoOfForm(form),
   });
   return new Response(new Uint8Array(pdf), {
     headers: {

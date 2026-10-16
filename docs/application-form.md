@@ -11,6 +11,7 @@ Not tied to an application for a job (`applications`) — it is its own table, `
 | API                                | `POST /api/v1/application-forms`, `/api/v1/admin/application-forms` (list, `{id}/pdf`, delete) |
 | PDF                                | `lib/application-form/pdf.tsx`, positions in `layout.ts`                                       |
 | Blank forms                        | `assets/application-form/{shd,rabbit,topone,plain}.pdf`                                        |
+| Photo                              | `application_forms.photo_path` (migration 0012), box per template in `TEMPLATES[…].photo`      |
 | Font                               | `assets/fonts/Sarabun-Regular.ttf` (SIL OFL, `OFL.txt`)                                        |
 
 **Letterhead** — the applicant chooses the company (SHD, Rabbit, TOP ONE, or not set = the form without a logo).
@@ -29,7 +30,15 @@ laid over it with `pdf-lib`. pdf-lib alone cannot shape Thai (tone marks go miss
 PDF. `ำ` is split into `ํ` + `า` before drawing (`splitSaraAm`) — react-pdf otherwise drops one character from the end
 of the line per `ำ`.
 
-The photo box and signature are left blank: the applicant signs and attaches a photo on the printed form.
+**The photo** is required by the wizard (not by the API, so a form without one still prints with the box empty). The
+browser crops it to the box's 4:5 and redraws it as a 640×800 JPEG before it is sent — upright (EXIF orientation applied),
+~100 KB, and without its EXIF (GPS). It stays in the draft as a data URL, so a refresh keeps it. The PDF draws it into
+`TEMPLATES[letterhead].photo` cropped to cover the box; it is printed on the redacted copy too (an interviewer needs to
+know who they are meeting). The signature is left blank: the applicant signs on the printed form.
+
+**Languages** (9.1) are up to three rows — English, Chinese, another named — printed on the form's one line in the same
+order on each part ("อังกฤษ / จีน", "ดี / พอใช้"). A form sent before kept one typed `skills.language`; `languagesOf()`
+prints either.
 
 ## Replacing a blank form
 

@@ -340,8 +340,9 @@ export const submitApplicationForm = endpoint({
   description:
     'The company’s one-page form (ใบสมัครงาน), from /application-form. Not tied to an application for a job. ' +
     'Rate limited per IP; Turnstile when it is on. `sensitive` is stored only with `sensitiveConsent: true`. ' +
-    'Validation messages follow `?locale=`. With a résumé/CV: multipart/form-data, this JSON in `data` and the ' +
-    'file in `resume` (PDF, DOC or DOCX, ≤ 5 MB, checked from its contents).',
+    'Validation messages follow `?locale=`. With files: multipart/form-data, this JSON in `data`, a résumé/CV in ' +
+    '`resume` (PDF, DOC or DOCX, ≤ 5 MB) and the applicant’s photo in `photo` (JPG or PNG, ≤ 5 MB), each optional ' +
+    'and checked from its contents. The photo is printed into the PDF’s photo box.',
   auth: 'public',
   query: S.LocaleQuery,
   body: { schema: S.ApplicationFormInput, type: 'application/json' },

@@ -1296,7 +1296,9 @@
       "year": "Enter a 4-digit year, e.g. 2022",
       "birthOrder": "Can't be more than the number of siblings",
       "resumeSize": "The file is larger than 5 MB.",
-      "resumeType": "Only PDF, DOC or DOCX files are accepted."
+      "resumeType": "Only PDF, DOC or DOCX files are accepted.",
+      "photoRequired": "Please add a photo",
+      "photoType": "This image could not be read. Choose a JPG or PNG file."
     },
     "success": {
       "title": "Application sent",
@@ -1331,7 +1333,14 @@
       "nameTh": "Full name (Thai)",
       "nameThPlaceholder": "As on your ID card, without the title",
       "nameEn": "Full name (English)",
-      "nickname": "Nickname",
+      "nickname": "Nickname (Thai)",
+      "nicknameEn": "Nickname (English)",
+      "nicknameEnPlaceholder": "e.g. Pui",
+      "photo": "Photo",
+      "photoHint": "A clear, front-facing photo of your face, without sunglasses or a hat. It is cropped to fit the 1-inch photo box on the form.",
+      "photoPick": "Choose a photo",
+      "photoChange": "Change photo",
+      "photoAttached": "Attached",
       "gender": "Sex",
       "genders": {
         "MALE": "Male",
@@ -1401,7 +1410,14 @@
       "graduationYearPlaceholder": "e.g. 2022",
       "skills": "Skills",
       "language": "Foreign language",
-      "languagePlaceholder": "e.g. English",
+      "languageHint": "Choose one or more, then give your level in each.",
+      "languages": {
+        "EN": "English",
+        "ZH": "Chinese",
+        "OTHER": "Other (specify)"
+      },
+      "languageOther": "Other language",
+      "languageOtherPlaceholder": "e.g. Japanese",
       "speak": "Speaking",
       "read": "Reading",
       "write": "Writing",

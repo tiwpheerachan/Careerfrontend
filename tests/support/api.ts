@@ -38,6 +38,18 @@ export async function call(
 export const FILES = {
   pdf: () => new File(['%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n'], 'ประวัติ resume.pdf', { type: 'application/pdf' }),
   png: () => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0])], 'photo.png'),
+  /** A real (1×1) PNG, for where the image is opened — the photo on the application form. */
+  photo: () =>
+    new File(
+      [
+        Uint8Array.from(
+          atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=='),
+          (c) => c.charCodeAt(0),
+        ),
+      ],
+      'photo.png',
+      { type: 'image/png' },
+    ),
   /** An HTML page wearing a .pdf name and content type. */
   fakePdf: () => new File(['<html><script>alert(1)</script></html>'], 'cv.pdf', { type: 'application/pdf' }),
 };

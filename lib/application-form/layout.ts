@@ -30,12 +30,41 @@ export interface Box {
 
 type Letterhead = (typeof APPLICATION_FORM_LETTERHEADS)[number];
 
-export const TEMPLATES: Record<Letterhead, { file: string; shift: { body: number; signature: number } }> = {
-  SHD: { file: 'shd.pdf', shift: { body: 0, signature: 0 } },
-  RABBIT: { file: 'rabbit.pdf', shift: { body: -28.2, signature: -28.2 } },
-  TOPONE: { file: 'topone.pdf', shift: { body: -11.4, signature: -11.4 } },
-  PLAIN: { file: 'plain.pdf', shift: { body: -41.7, signature: -59.3 } },
-};
+/** A rectangle: its left, its top from the TOP of the page, and its size. */
+export interface Rect {
+  x: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Each template's photo box (top right), measured on its own — it does not move
+ * with the body, and Rabbit's sits lower and further right. Just inside its frame.
+ */
+export const TEMPLATES: Record<Letterhead, { file: string; shift: { body: number; signature: number }; photo: Rect }> =
+  {
+    SHD: {
+      file: 'shd.pdf',
+      shift: { body: 0, signature: 0 },
+      photo: { x: 500.8, top: 20.5, width: 73.1, height: 90.6 },
+    },
+    RABBIT: {
+      file: 'rabbit.pdf',
+      shift: { body: -28.2, signature: -28.2 },
+      photo: { x: 505.2, top: 34.3, width: 73.1, height: 90.6 },
+    },
+    TOPONE: {
+      file: 'topone.pdf',
+      shift: { body: -11.4, signature: -11.4 },
+      photo: { x: 505.2, top: 20.8, width: 73.1, height: 90.4 },
+    },
+    PLAIN: {
+      file: 'plain.pdf',
+      shift: { body: -41.7, signature: -59.3 },
+      photo: { x: 505.2, top: 20.8, width: 73.1, height: 90.4 },
+    },
+  };
 
 const line = (x: number, to: number, y: number): Line => ({ x, to, y });
 const box = (cx: number, cy: number): Box => ({ cx, cy });

@@ -29,12 +29,13 @@ const TASKS = {
   studio: [DRIZZLE, 'studio'],
   seed: [...TS, 'scripts/seed.ts'],
   'import-legacy': [...TS, 'scripts/import-legacy.ts'],
+  'move-job-files': [...TS, 'scripts/move-job-files.ts'],
 };
 
 /** Where each target's connection comes from, and what it may run. */
 const TARGETS = {
   dev: { file: '.env.development.local', tasks: Object.keys(TASKS) },
-  prod: { file: '.env.local', tasks: ['migrate', 'import-legacy'] },
+  prod: { file: '.env.local', tasks: ['migrate', 'import-legacy', 'move-job-files'] },
   deploy: { file: null, tasks: ['migrate'] },
 };
 
