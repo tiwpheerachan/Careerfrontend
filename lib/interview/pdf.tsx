@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Document, Font, Image, Page, Path, Svg, StyleSheet, Text, View, renderToBuffer } from '@react-pdf/renderer';
 import type { Style } from '@react-pdf/types';
 import * as fontkit from 'fontkit';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
 import en from '@/messages/admin/en.json';
 import th from '@/messages/admin/th.json';
@@ -19,11 +19,13 @@ import { newestPerEvaluator } from './summary';
  * hiring department), with the 1st and 2nd interview side by side — the way the
  * paper form has a column for each.
  *
- *   one evaluator per round   one page, as on paper
+ *   one evaluator per round   two pages: the scores, then the conclusion —
+ *                             the comments first, then the verdicts and
+ *                             signatures (asked for 2026-10-16)
  *   several in a round        a summary page first (each item's average per
- *                             round, and who scored what), then one page per
- *                             evaluator — nobody's scores or signature line
- *                             is left out
+ *                             round, and who scored what), then those two
+ *                             pages per evaluator — nobody's scores, comment
+ *                             or signature line is left out
  *
  * The original is a Word document, so unlike the application form there is no
  * blank PDF to print onto: the layout is rebuilt here after it. The signature
@@ -162,7 +164,9 @@ const s = StyleSheet.create({
   box: { width: 9, height: 9, borderWidth: 0.7, borderColor: INK, marginRight: 4 },
   reason: { color: PEN, marginLeft: 13, fontSize: 8.5 },
   commentRound: { fontSize: 10.5, fontWeight: 'bold', marginTop: 12 },
-  commentFrom: { fontWeight: 'bold', color: PEN, marginTop: 6 },
+  commentFrom: { fontWeight: 'bold', color: PEN, marginTop: 4 },
+  commentText: { color: PEN, marginTop: 3 },
+  blankLine: { height: 18, borderBottomWidth: 0.6, borderBottomColor: LINE },
   edited: { marginTop: 3, fontSize: 7.5, color: MUTED },
   spacer: { flexGrow: 1 },
   signature: { marginTop: 10, flexDirection: 'row', alignItems: 'flex-end' },
@@ -329,6 +333,59 @@ function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRo
     </View>
   );
 
+  return (
+    <Page size="A4" style={s.page}>
+      <Top
+        ctx={ctx}
+        dates={datesOf(
+          ctx,
+          [r1, r2].filter((r): r is PrintedRound => Boolean(r)),
+        )}
+      />
+      <T style={s.formFor}>{p.formFor[input.role]}</T>
+      {sameEvaluator && one ? (
+        <T style={s.evaluatorLine}>{`${p.evaluator}: ${one.evaluator.name || one.evaluator.email}`}</T>
+      ) : null}
+      <T style={s.scale}>{p.scaleIntro}</T>
+      <T style={s.scale}>{scaleLine(m)}</T>
+
+      <View style={s.table}>
+        <View style={[s.tr, s.th, { borderTopWidth: 0 }]}>
+          <T style={s.cellItem}>{p.item}</T>
+          <T style={s.cellScore}>{p.round1}</T>
+          <T style={s.cellScore}>{p.round2}</T>
+        </View>
+        {rows(GENERAL_ITEMS, 'general', 0)}
+        {totalRow(p.generalTotal, (r) => r.generalTotal)}
+      </View>
+
+      <T style={s.note}>{p.seniorNote}</T>
+      <View style={s.table}>
+        {rows(SENIOR_ITEMS, 'senior', GENERAL_ITEMS.length)}
+        {totalRow(p.seniorTotal, (r) => r.seniorTotal)}
+        {senior ? totalRow(`${p.grandTotal} (75)`, (r) => (r.senior ? r.total : null)) : null}
+      </View>
+
+      <Text style={s.rules}>{prepared(p.rules, CONTENT_WIDTH, 8.5)}</Text>
+
+      <Printed ctx={ctx} />
+    </Page>
+  );
+}
+
+/** Lines to write on, where a round has no comment: the box the paper form leaves for it. */
+const BLANK_LINES = 4;
+
+/**
+ * The second page of one evaluator's form (or one per round): สรุปผลการประเมิน —
+ * each round's comment first, then the verdicts and signatures. A long comment
+ * flows on to another page; the verdicts and signatures always stay together.
+ */
+function ConclusionPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRound }) {
+  const { m, p, input } = ctx;
+  const sameEvaluator = r1 && r2 ? r1.evaluator.email === r2.evaluator.email : true;
+  const one = r1 ?? r2;
+
   const roundBlock = (title: string, round: PrintedRound | undefined) => (
     <View style={s.round}>
       <T style={s.roundTitle}>{title}</T>
@@ -366,6 +423,28 @@ function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRo
     </View>
   );
 
+  const comment = (title: string, round: PrintedRound | undefined) => {
+    const lines = round?.comment ? prepared(round.comment, CONTENT_WIDTH, 9).split('\n') : [];
+    return (
+      <View>
+        {/* The heading, who wrote it and the first two lines stay together: a heading
+            never stays behind alone at the foot of a page. */}
+        <View wrap={false}>
+          <T style={s.commentRound}>{title}</T>
+          {round?.comment && !sameEvaluator ? (
+            <T style={s.commentFrom}>{`${p.from.replace('{who}', round.evaluator.name || round.evaluator.email)}:`}</T>
+          ) : null}
+          {lines.length ? (
+            <Text style={s.commentText}>{lines.slice(0, 2).join('\n')}</Text>
+          ) : (
+            Array.from({ length: BLANK_LINES }, (_, i) => <View key={i} style={s.blankLine} />)
+          )}
+        </View>
+        {lines.length > 2 ? <Text style={s.commentText}>{lines.slice(2).join('\n')}</Text> : null}
+      </View>
+    );
+  };
+
   return (
     <Page size="A4" style={s.page}>
       <Top
@@ -379,73 +458,19 @@ function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRo
       {sameEvaluator && one ? (
         <T style={s.evaluatorLine}>{`${p.evaluator}: ${one.evaluator.name || one.evaluator.email}`}</T>
       ) : null}
-      <T style={s.scale}>{p.scaleIntro}</T>
-      <T style={s.scale}>{scaleLine(m)}</T>
 
-      <View style={s.table}>
-        <View style={[s.tr, s.th, { borderTopWidth: 0 }]}>
-          <T style={s.cellItem}>{p.item}</T>
-          <T style={s.cellScore}>{p.round1}</T>
-          <T style={s.cellScore}>{p.round2}</T>
-        </View>
-        {rows(GENERAL_ITEMS, 'general', 0)}
-        {totalRow(p.generalTotal, (r) => r.generalTotal)}
-      </View>
+      <T style={s.sectionTitle}>{p.conclusion}</T>
+      {comment(p.opinion1, r1)}
+      {comment(p.opinion2, r2)}
 
-      <T style={s.note}>{p.seniorNote}</T>
-      <View style={s.table}>
-        {rows(SENIOR_ITEMS, 'senior', GENERAL_ITEMS.length)}
-        {totalRow(p.seniorTotal, (r) => r.seniorTotal)}
-        {senior ? totalRow(`${p.grandTotal} (75)`, (r) => (r.senior ? r.total : null)) : null}
-      </View>
-
-      <Text style={s.rules}>{prepared(p.rules, CONTENT_WIDTH, 8.5)}</Text>
-
-      {/* The verdicts and signatures stay together, on the next page if need be. */}
       <View wrap={false}>
-        <T style={s.sectionTitle}>{p.conclusion}</T>
+        <T style={s.commentRound}>{p.result}</T>
         <View style={s.rounds}>
-          {roundBlock(p.opinion1, r1)}
-          {roundBlock(p.opinion2, r2)}
+          {roundBlock(m.form.rounds['1'], r1)}
+          {roundBlock(m.form.rounds['2'], r2)}
         </View>
       </View>
 
-      <Printed ctx={ctx} />
-    </Page>
-  );
-}
-
-/**
- * Every evaluator's comment, on a page of its own after the form(s): per round,
- * "from" whom. Long ones flow on to further pages. Nothing when nobody commented.
- */
-function CommentsPage({ ctx, byRound }: { ctx: Ctx; byRound: Record<1 | 2, PrintedRound[]> }) {
-  const { p, input } = ctx;
-  const rounds = ([1, 2] as const)
-    .map((n) => ({ n, said: byRound[n].filter((r) => r.comment) }))
-    .filter(({ said }) => said.length > 0);
-  if (!rounds.length) return null;
-  return (
-    <Page size="A4" style={s.page}>
-      <Top ctx={ctx} dates={datesOf(ctx, [...byRound[1], ...byRound[2]])} />
-      <T style={s.formFor}>{p.formFor[input.role]}</T>
-      {rounds.map(({ n, said }) =>
-        said.map((r, i) => {
-          const lines = prepared(r.comment!, CONTENT_WIDTH, 9).split('\n');
-          return (
-            <View key={`${n}-${r.evaluator.email}`}>
-              {/* The round's heading, who wrote it and the first two lines stay together:
-                  a heading never stays behind alone at the foot of a page. */}
-              <View wrap={false}>
-                {i === 0 ? <T style={s.commentRound}>{n === 1 ? p.opinion1 : p.opinion2}</T> : null}
-                <T style={s.commentFrom}>{`${p.from.replace('{who}', r.evaluator.name || r.evaluator.email)}:`}</T>
-                <Text>{lines.slice(0, 2).join('\n')}</Text>
-              </View>
-              {lines.length > 2 ? <Text>{lines.slice(2).join('\n')}</Text> : null}
-            </View>
-          );
-        }),
-      )}
       <Printed ctx={ctx} />
     </Page>
   );
@@ -564,13 +589,18 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
         <>
           <SummaryPage ctx={ctx} byRound={byRound} />
           {people.map((email) => (
-            <FormPage key={email} ctx={ctx} {...pageOf(email)} />
+            <Fragment key={email}>
+              <FormPage ctx={ctx} {...pageOf(email)} />
+              <ConclusionPage ctx={ctx} {...pageOf(email)} />
+            </Fragment>
           ))}
         </>
       ) : (
-        <FormPage ctx={ctx} r1={byRound[1][0]} r2={byRound[2][0]} />
+        <>
+          <FormPage ctx={ctx} r1={byRound[1][0]} r2={byRound[2][0]} />
+          <ConclusionPage ctx={ctx} r1={byRound[1][0]} r2={byRound[2][0]} />
+        </>
       )}
-      <CommentsPage ctx={ctx} byRound={byRound} />
     </Document>
   );
 }

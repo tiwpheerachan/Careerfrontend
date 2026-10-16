@@ -635,6 +635,7 @@
       "conclusion": "Result:",
       "opinion1": "1st round",
       "opinion2": "2nd round",
+      "result": "Outcome",
       "from": "From {who}",
       "signature": "Signature",
       "date": "Date",

@@ -6,8 +6,8 @@ import { renderInterviewPdf, type PrintedRound } from './pdf';
 import { outcomeOf } from './scoring';
 
 /**
- * The form on one A4 page in each language, the comments on a page of their
- * own after it. PREVIEW_DIR=<folder> also writes them there.
+ * The scores on one A4 page in each language, the conclusion (comments, then
+ * verdicts and signatures) on the next. PREVIEW_DIR=<folder> also writes them there.
  */
 const round = (overrides: Partial<PrintedRound> & Pick<PrintedRound, 'generalScores'>): PrintedRound => {
   const seniorScores = overrides.seniorScores ?? null;
@@ -29,7 +29,7 @@ const round = (overrides: Partial<PrintedRound> & Pick<PrintedRound, 'generalSco
 
 describe('the interview evaluation PDF', () => {
   for (const language of ['th', 'en', 'zh'] as const) {
-    it(`${language}: the form on one A4 page, the comment on the next`, async () => {
+    it(`${language}: the scores on one A4 page, the conclusion on the next`, async () => {
       const bytes = await renderInterviewPdf({
         language,
         role: language === 'zh' ? 'DEPARTMENT' : 'HR',
@@ -65,7 +65,7 @@ describe('the interview evaluation PDF', () => {
 
   const pageTexts = async (bytes: Uint8Array) => (await PDFDocument.load(bytes)).getPageCount();
 
-  it('a long comment does not push the form onto a second page; the edit is noted', async () => {
+  it('a long comment stays on the conclusion page, not the scores; the edit is noted', async () => {
     const long = 'ผู้สมัครมีทักษะการสื่อสารที่ดีมากและมีประสบการณ์ตรงกับสายงานบัญชีลูกหนี้มากกว่าห้าปี'.repeat(2);
     const bytes = await renderInterviewPdf({
       language: 'th',
@@ -81,10 +81,10 @@ describe('the interview evaluation PDF', () => {
       printedAt: new Date('2026-10-15T09:30:00+07:00'),
     });
     if (process.env.PREVIEW_DIR) writeFileSync(path.join(process.env.PREVIEW_DIR, 'interview-long.pdf'), bytes);
-    expect(await pageTexts(bytes)).toBe(2); // the form, then the comment
+    expect(await pageTexts(bytes)).toBe(2); // the scores, then the conclusion
   });
 
-  it('comments at the 2000-character limit: the form untouched, the comments after it', async () => {
+  it('comments at the 2000-character limit: the scores untouched, the conclusion after them', async () => {
     // One unbroken run, as someone typed it: wrapped by character, not lost.
     const longest = 'testsgl;dfsgldlgkdfgl;kdf;gkd;'.repeat(67).slice(0, 2000);
     const bytes = await renderInterviewPdf({
@@ -98,7 +98,7 @@ describe('the interview evaluation PDF', () => {
       printedAt: new Date('2026-10-15T09:30:00+07:00'),
     });
     if (process.env.PREVIEW_DIR) writeFileSync(path.join(process.env.PREVIEW_DIR, 'interview-comments.pdf'), bytes);
-    expect(await pageTexts(bytes)).toBe(2); // the form, then both comments
+    expect(await pageTexts(bytes)).toBe(2); // the scores, then both comments and the verdicts
   });
 
   it('more comments than a page holds flow on, each opening with its heading and author', async () => {
@@ -117,11 +117,11 @@ describe('the interview evaluation PDF', () => {
     });
     if (process.env.PREVIEW_DIR)
       writeFileSync(path.join(process.env.PREVIEW_DIR, 'interview-comments-flow.pdf'), bytes);
-    // The summary, a form each, and the comments over two pages.
-    expect(await pageTexts(bytes)).toBe(1 + people.length + 2);
+    // The summary, then the scores and the conclusion of each.
+    expect(await pageTexts(bytes)).toBe(1 + people.length * 2);
   });
 
-  it('several evaluators in a round: a summary page, then one page each', async () => {
+  it('several evaluators in a round: a summary page, then two pages each', async () => {
     const people = [
       { email: 'a@shd-technology.co.th', name: 'คนที่หนึ่ง' },
       { email: 'b@shd-technology.co.th', name: 'คนที่สอง' },
@@ -154,7 +154,7 @@ describe('the interview evaluation PDF', () => {
       printedAt: new Date('2026-10-15T09:30:00+07:00'),
     });
     if (process.env.PREVIEW_DIR) writeFileSync(path.join(process.env.PREVIEW_DIR, 'interview-many.pdf'), bytes);
-    // The summary, a form per evaluator, and one page with every comment ("from" whom).
-    expect(await pageTexts(bytes)).toBe(1 + people.length + 1);
+    // The summary, then each evaluator's scores and conclusion (their own comment with them).
+    expect(await pageTexts(bytes)).toBe(1 + people.length * 2);
   });
 });

@@ -635,6 +635,7 @@
       "conclusion": "评估结论：",
       "opinion1": "初试意见",
       "opinion2": "复试意见",
+      "result": "面试结果",
       "from": "来自 {who}",
       "signature": "签名",
       "date": "日期",
