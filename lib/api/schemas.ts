@@ -480,7 +480,7 @@ export const InterviewEvaluation = z.object({
   id: Id,
   candidate: z.object({
     kind: z
-      .enum(['application', 'form', 'manual'])
+      .enum(['application', 'form', 'pending', 'manual'])
       .meta({ description: 'Linked to an application, a form, or typed in.' }),
     id: Id.nullable(),
     name: z.string(),
@@ -533,12 +533,12 @@ export const CandidatesQuery = z.object({
 export const CandidatesList = z.object({
   candidates: z.array(
     z.object({
-      kind: z.enum(['application', 'form']),
+      kind: z.enum(['application', 'form', 'pending']),
       id: Id,
       name: z.string(),
       position: z.string().nullable(),
       department: z.string().nullable(),
-      email: z.string(),
+      email: z.string().nullable(),
       createdAt: DateTime,
       evaluated: z
         .array(
@@ -566,7 +566,12 @@ export const EvaluationPdfQuery = z.object({
 
 // --- Inviting evaluators -------------------------------------------------------------------------
 
-export { GuestEvaluationInput, InvitationInput } from '@/lib/interview/schema';
+export {
+  GuestEvaluationInput,
+  InterviewCandidateInput,
+  InterviewCandidateLinkInput,
+  InvitationInput,
+} from '@/lib/interview/schema';
 
 export const PeopleQuery = z.object({
   q: z.string().trim().min(2).max(100).meta({ description: 'A name or email, at least 2 characters.' }),

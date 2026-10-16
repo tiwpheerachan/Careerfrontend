@@ -482,7 +482,8 @@
         "actions": "操作"
       },
       "openResult": "查看结果",
-      "noneYet": "暂无"
+      "noneYet": "暂无",
+      "addPending": "添加应聘者（暂无申请表）"
     },
     "form": {
       "titleNew": "面试评估表",
@@ -505,7 +506,8 @@
       "kinds": {
         "application": "通过职位申请",
         "form": "求职申请表",
-        "manual": "手动填写"
+        "manual": "手动填写",
+        "pending": "暂无申请表"
       },
       "candidateName": "姓名",
       "position": "应聘岗位",
@@ -581,7 +583,8 @@
       "deleteBodyInvited": "{who} 通过邀请链接提交的评估（{round}，{role}）将被删除。如需重新评估，请在候选人页面创建新的邀请链接。",
       "deleteKeep": "保留",
       "deleted": "评估已删除",
-      "deleteFailed": "删除失败"
+      "deleteFailed": "删除失败",
+      "addPending": "找不到？添加暂无申请表的应聘者"
     },
     "items": {
       "fieldKnowledge": "专业基础知识",
@@ -752,6 +755,41 @@
       "madeBody": "复制链接发送给 {who} — 仅 {who} 的账号可打开。修改会记录时间。",
       "linkLabel": "修改链接",
       "rules": "未打开时有效 1 天 · 打开后有效 6 小时 · 只能提交一次 · 可在应聘者页面查看和停用"
+    },
+    "pending": {
+      "back": "返回评估列表",
+      "title": "添加暂无申请表的应聘者",
+      "intro": "适用于已面试但尚未填写申请表的应聘者：可立即邀请用人部门评估，待其填写申请表后再关联。",
+      "name": "姓名",
+      "position": "应聘岗位",
+      "department": "部门",
+      "phone": "电话",
+      "phoneHint": "用于区分同名应聘者，并在之后匹配申请表 — 仅 HR 可见，不向评估人显示。",
+      "resume": "简历 / CV（可选）",
+      "resumePick": "选择简历文件",
+      "resumeHint": "支持 PDF、DOC 或 DOCX，不超过 5 MB — 受邀评估人可查看。",
+      "resumeTooLarge": "文件超过 5 MB。",
+      "resumeInvalid": "仅支持 PDF、DOC 或 DOCX 文件。",
+      "remove": "删除",
+      "required": "必填",
+      "phoneInvalid": "请输入 9–15 位电话号码。",
+      "submit": "添加应聘者",
+      "submitting": "正在保存…",
+      "added": "已添加应聘者 — 现在可以邀请评估人。",
+      "failed": "保存失败，请重试。",
+      "bannerTitle": "该应聘者暂无申请表",
+      "bannerBody": "可照常邀请和评估。应聘者填写申请表后，请在此关联：所有评估和邀请链接都会转到该申请表。",
+      "resumeOpen": "查看简历",
+      "suggestions": "可能是同一人的申请表（姓名或电话相同）",
+      "noSuggestions": "暂未找到匹配的申请表。",
+      "searchOther": "搜索其他申请表进行关联",
+      "link": "关联",
+      "linkTitle": "关联到此申请表？",
+      "linkBody": "{name} 的所有评估和邀请链接将转到 {target}。此操作只能进行一次且无法撤销。",
+      "confirm": "确认关联",
+      "cancel": "取消",
+      "linked": "已关联申请表。",
+      "linkFailed": "关联失败，请重试。"
     }
   },
   "invitee": {
@@ -796,7 +834,8 @@
         "FAIR": "一般",
         "GOOD": "良好",
         "EXCELLENT": "优秀"
-      }
+      },
+      "noApplication": "应聘者尚未填写申请表 — 可照常根据面试进行评估。"
     },
     "refused": {
       "signIn": {

@@ -52,6 +52,7 @@ export interface PanelInvitation {
 export interface PanelCandidate {
   applicationId: string | null;
   applicationFormId: string | null;
+  interviewCandidateId: string | null;
   name: string;
   position: string | null;
   department: string | null;
@@ -131,6 +132,7 @@ export function InvitationsPanel({
         json: {
           applicationId: candidate.applicationId,
           applicationFormId: candidate.applicationFormId,
+          interviewCandidateId: candidate.interviewCandidateId,
           candidateName: candidate.name,
           position: candidate.position,
           department: candidate.department,

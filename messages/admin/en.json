@@ -482,7 +482,8 @@
         "actions": "Actions"
       },
       "openResult": "View result",
-      "noneYet": "none yet"
+      "noneYet": "none yet",
+      "addPending": "Add candidate (no application yet)"
     },
     "form": {
       "titleNew": "Evaluate an interview",
@@ -505,7 +506,8 @@
       "kinds": {
         "application": "Applied for a job",
         "form": "Application form",
-        "manual": "Typed in"
+        "manual": "Typed in",
+        "pending": "No application yet"
       },
       "candidateName": "Full name",
       "position": "Position applied for",
@@ -581,7 +583,8 @@
       "deleteBodyInvited": "The evaluation {who} sent through an invitation link ({round}, {role}) will be deleted. To have it done again, make a new invitation link on the candidate page.",
       "deleteKeep": "Keep it",
       "deleted": "Evaluation deleted",
-      "deleteFailed": "Could not delete"
+      "deleteFailed": "Could not delete",
+      "addPending": "Not here? Add a candidate without an application"
     },
     "items": {
       "fieldKnowledge": "General knowledge of the field",
@@ -752,6 +755,41 @@
       "madeBody": "Copy the link and send it to {who} — only {who}’s account can open it. The change is recorded with its time.",
       "linkLabel": "Edit link",
       "rules": "1 day if nobody opens it · 6 hours once opened · sent once · see and switch it off on the candidate’s page"
+    },
+    "pending": {
+      "back": "Back to evaluations",
+      "title": "Add a candidate without an application",
+      "intro": "For someone interviewed before filling in the application form: invite the department to evaluate now, then link the form once it is in.",
+      "name": "Full name",
+      "position": "Position applied for",
+      "department": "Department",
+      "phone": "Phone",
+      "phoneHint": "Tells people with the same name apart and finds their form later — HR only, never shown to evaluators.",
+      "resume": "Résumé / CV (optional)",
+      "resumePick": "Choose a résumé",
+      "resumeHint": "PDF, DOC or DOCX, up to 5 MB — invited evaluators can open it.",
+      "resumeTooLarge": "The file is larger than 5 MB.",
+      "resumeInvalid": "Only PDF, DOC or DOCX files are accepted.",
+      "remove": "Remove",
+      "required": "Required",
+      "phoneInvalid": "Enter a phone number of 9–15 digits.",
+      "submit": "Add candidate",
+      "submitting": "Saving…",
+      "added": "Candidate added — you can invite evaluators now.",
+      "failed": "Could not save. Please try again.",
+      "bannerTitle": "This candidate has no application yet",
+      "bannerBody": "Invite and evaluate as usual. Once they have filled in the form, link it here: every evaluation and invitation moves to it.",
+      "resumeOpen": "Open résumé",
+      "suggestions": "Applications that may be the same person (same name or phone)",
+      "noSuggestions": "No matching application yet.",
+      "searchOther": "Find another application to link",
+      "link": "Link",
+      "linkTitle": "Link to this application?",
+      "linkBody": "Every evaluation and invitation of {name} moves to {target}. This happens once and cannot be undone.",
+      "confirm": "Link",
+      "cancel": "Cancel",
+      "linked": "Linked to the application.",
+      "linkFailed": "Could not link. Please try again."
     }
   },
   "invitee": {
@@ -796,7 +834,8 @@
         "FAIR": "fair",
         "GOOD": "good",
         "EXCELLENT": "excellent"
-      }
+      },
+      "noApplication": "The candidate has not filled in an application yet — evaluate from the interview as usual."
     },
     "refused": {
       "signIn": {

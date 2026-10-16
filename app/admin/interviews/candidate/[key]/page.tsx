@@ -1,10 +1,11 @@
 import { ArrowLeft, ChevronRight, FileDown, Mail, UserRound } from 'lucide-react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ResultScore, ResultVerdict, ScoreFormula } from '@/components/admin/interviews/candidate-result';
 import { InvitationsPanel } from '@/components/admin/interviews/invitations-panel';
+import { PendingCandidatePanel } from '@/components/admin/interviews/pending-candidate-panel';
 import { TablePagination } from '@/components/admin/table-pagination';
 import { PageHeader, RESULT_TONE, ToneBadge } from '@/components/admin/ui';
 import { formatDate } from '@/lib/admin/format';
@@ -12,7 +13,8 @@ import { requestOrigin } from '@/lib/api/origin';
 import { requireAdminPage } from '@/lib/auth/admin';
 import { EVALUATOR_ROLES } from '@/lib/constants';
 import type { AdminLocale } from '@/lib/i18n/admin';
-import { parseCandidateKey } from '@/lib/interview/candidate-key';
+import { candidateKey, parseCandidateKey } from '@/lib/interview/candidate-key';
+import { NotFoundError } from '@/lib/errors';
 import { candidateResult, formatAverage, summarize } from '@/lib/interview/summary';
 import { store } from '@/lib/store';
 
@@ -58,6 +60,18 @@ async function load(rawKey: string) {
   const key = decodeURIComponent(rawKey);
   const ref = parseCandidateKey(key);
   if (!ref) notFound();
+  // A candidate HR added: once linked, their application or form is the page.
+  const pending =
+    ref.kind === 'pending'
+      ? await store()
+          .interviewCandidates.get(ref.id)
+          .catch((error: unknown) => {
+            if (error instanceof NotFoundError) notFound();
+            throw error;
+          })
+      : null;
+  if (pending?.linkedTo)
+    redirect(`/admin/interviews/candidate/${encodeURIComponent(candidateKey({ ...pending.linkedTo, name: '' }))}`);
   const [evaluations, invitations, linked] = await Promise.all([
     store().interviewEvaluations.forCandidate(ref),
     store().interviewInvitations.forCandidate(ref),
@@ -77,7 +91,7 @@ async function load(rawKey: string) {
     latestEvaluation?.candidate ??
     invitations[0]?.candidate;
   if (!who) notFound();
-  return { key, ref, evaluations, invitations, who };
+  return { key, ref, evaluations, invitations, who, pending };
 }
 
 export async function generateMetadata({ params }: Props) {
@@ -90,11 +104,28 @@ export async function generateMetadata({ params }: Props) {
 /**
  * /admin/interviews/candidate/{key} — one candidate: every round from every
  * evaluator, and the paper form per side (HR / the department) as a PDF.
- * `key` is application:<id>, form:<id> or name:<name> (lib/interview/candidate-key.ts).
+ * `key` is application:<id>, form:<id>, pending:<id> or name:<name> (lib/interview/candidate-key.ts).
  */
 export default async function CandidateEvaluationsPage({ params, searchParams }: Props) {
   await requireAdminPage({ resource: 'applications', level: 'view' });
-  const { key, ref, evaluations, invitations, who } = await load((await params).key);
+  const { key, ref, evaluations, invitations, who, pending } = await load((await params).key);
+  // For one HR added: the applications and forms that look like them (same name or phone), to link.
+  const suggestions = pending
+    ? [
+        ...new Map(
+          (
+            await Promise.all(
+              [pending.name, pending.phone]
+                .filter((q): q is string => !!q && q.trim().length >= 2)
+                .map((q) => store().interviewEvaluations.candidates(q, 5)),
+            )
+          )
+            .flat()
+            .filter((c) => c.kind !== 'pending')
+            .map((c) => [`${c.kind}:${c.id}`, c] as const),
+        ).values(),
+      ].slice(0, 5)
+    : [];
   const raw = (await searchParams) as Raw;
   const invPaging = pagingOf(raw, INVITATIONS, invitations.length);
   const evPaging = pagingOf(raw, EVALUATIONS, evaluations.length);
@@ -174,10 +205,18 @@ export default async function CandidateEvaluationsPage({ params, searchParams }:
         </section>
       )}
 
+      {pending && (
+        <PendingCandidatePanel
+          candidate={{ id: pending.id, name: pending.name, phone: pending.phone, resumeName: pending.resumeName }}
+          suggestions={suggestions}
+        />
+      )}
+
       <InvitationsPanel
         candidate={{
           applicationId: ref.kind === 'application' ? ref.id : null,
           applicationFormId: ref.kind === 'form' ? ref.id : null,
+          interviewCandidateId: ref.kind === 'pending' ? ref.id : null,
           name: who.name,
           position: who.position,
           department: who.department,

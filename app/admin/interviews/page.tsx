@@ -1,4 +1,4 @@
-import { ChevronRight, ClipboardCheck, Plus, Search, SearchX } from 'lucide-react';
+import { ChevronRight, ClipboardCheck, Plus, Search, SearchX, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -67,12 +67,21 @@ export default async function InterviewsPage({ searchParams }: PageProps<'/admin
         subtitle={t('total', { count: total })}
         actions={
           abilitiesOf(actor).applications.edit && (
-            <Link
-              href="/admin/interviews/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" /> {t('new')}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              {/* Interviewed before filling in the form: added here, linked to the form later. */}
+              <Link
+                href="/admin/interviews/candidates/new"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:border-blue-300 hover:bg-blue-50"
+              >
+                <UserPlus className="h-4 w-4 text-blue-600" /> {t('addPending')}
+              </Link>
+              <Link
+                href="/admin/interviews/new"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" /> {t('new')}
+              </Link>
+            </div>
           )
         }
       />

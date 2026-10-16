@@ -2,6 +2,7 @@ import { boolean, index, pgTable, smallint, text, timestamp, uniqueIndex, type A
 import { sql } from 'drizzle-orm';
 import { applicationForms } from './application-forms';
 import { applications } from './applications';
+import { interviewCandidates } from './interview-candidates';
 import { timestamps } from './columns';
 import { primaryPk, publicId, refPk } from './ids';
 import { evaluatorRole, interviewEvaluations } from './interview-evaluations';
@@ -19,6 +20,8 @@ export const interviewInvitations = pgTable(
     token: text('token').notNull(),
     applicationsPk: refPk('applications_pk').references(() => applications.pk),
     applicationFormsPk: refPk('application_forms_pk').references(() => applicationForms.pk),
+    /** A candidate HR added before they had an application (migration 0013); kept after it is linked. */
+    interviewCandidatesPk: refPk('interview_candidates_pk').references(() => interviewCandidates.pk),
     candidateName: text('candidate_name').notNull(),
     position: text('position'),
     department: text('department'),
@@ -40,6 +43,7 @@ export const interviewInvitations = pgTable(
     uniqueIndex('interview_invitations_token_idx').on(table.token),
     index('interview_invitations_application_idx').on(table.applicationsPk),
     index('interview_invitations_form_idx').on(table.applicationFormsPk),
+    index('interview_invitations_candidate_idx').on(table.interviewCandidatesPk),
     index('interview_invitations_evaluation_idx').on(table.evaluationsPk),
   ],
 );

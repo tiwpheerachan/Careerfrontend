@@ -2,6 +2,7 @@ import type { Database } from '@/lib/db/client';
 import { createAdminAuditLogRepository } from './admin-audit-logs';
 import { createApplicationFormRepository } from './application-forms';
 import { createApplicationRepository } from './applications';
+import { createInterviewCandidateRepository } from './interview-candidates';
 import { createInterviewEvaluationRepository } from './interview-evaluations';
 import { createInterviewInvitationRepository } from './interview-invitations';
 import { createJobRepository } from './jobs';
@@ -17,6 +18,7 @@ export function createRepositories(db: Database) {
     jobs: createJobRepository(db),
     applications: createApplicationRepository(db),
     applicationForms: createApplicationFormRepository(db),
+    interviewCandidates: createInterviewCandidateRepository(db),
     interviewEvaluations: createInterviewEvaluationRepository(db),
     interviewInvitations: createInterviewInvitationRepository(db),
     siteContent: createSiteContentRepository(db),

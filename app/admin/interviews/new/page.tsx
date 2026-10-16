@@ -13,7 +13,7 @@ export async function generateMetadata() {
 /** Today in Bangkok, YYYY-MM-DD — the interview date the form starts with. */
 const today = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
 
-/** The candidate a new evaluation starts with: ?candidate=application:<id> | form:<id> | name:<name>. */
+/** The candidate a new evaluation starts with: ?candidate=application:<id> | form:<id> | pending:<id> | name:<name>. */
 async function prefillFrom(key: string | undefined): Promise<Prefill | undefined> {
   const ref = key ? parseCandidateKey(key) : undefined;
   if (!ref) return undefined;

@@ -71,6 +71,11 @@ export default async function EvaluatePage({ params }: Props) {
     photo: photo && `data:${formRow.photoType};base64,${Buffer.from(photo.bytes).toString('base64')}`,
     showPdf: fresh.evaluatorRole === 'HR',
   };
+  // A candidate HR added before they had an application: only whether HR attached a résumé (never their phone).
+  const pending =
+    candidate.kind === 'pending' && candidate.id
+      ? { hasResume: (await store().interviewCandidates.get(candidate.id)).resumeName !== null }
+      : null;
   const locale = (await getLocale()) as AdminLocale;
   const until = new Intl.DateTimeFormat(intlLocale(locale), {
     dateStyle: 'medium',
@@ -106,7 +111,7 @@ export default async function EvaluatePage({ params }: Props) {
           department: candidate.department,
         }}
         guest={{ token, round: fresh.round, evaluatorRole: fresh.evaluatorRole, senior: fresh.senior }}
-        materials={<CandidateMaterials token={token} application={application} form={form} />}
+        materials={<CandidateMaterials token={token} application={application} form={form} pending={pending} />}
       />
     </main>
   );

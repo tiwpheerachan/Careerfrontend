@@ -2,6 +2,7 @@ import { boolean, date, index, pgEnum, pgTable, smallint, text, timestamp, uniqu
 import { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
 import { applicationForms } from './application-forms';
 import { applications } from './applications';
+import { interviewCandidates } from './interview-candidates';
 import { lifecycle, timestamps } from './columns';
 import { primaryPk, publicId, refPk } from './ids';
 
@@ -20,6 +21,8 @@ export const interviewEvaluations = pgTable(
     ...lifecycle(),
     applicationsPk: refPk('applications_pk').references(() => applications.pk),
     applicationFormsPk: refPk('application_forms_pk').references(() => applicationForms.pk),
+    /** A candidate HR added before they had an application (migration 0013); kept after it is linked. */
+    interviewCandidatesPk: refPk('interview_candidates_pk').references(() => interviewCandidates.pk),
     candidateName: text('candidate_name').notNull(),
     position: text('position'),
     department: text('department'),
@@ -47,6 +50,7 @@ export const interviewEvaluations = pgTable(
     uniqueIndex('interview_evaluations_id_idx').on(table.id),
     index('interview_evaluations_application_idx').on(table.applicationsPk),
     index('interview_evaluations_form_idx').on(table.applicationFormsPk),
+    index('interview_evaluations_candidate_idx').on(table.interviewCandidatesPk),
     index('interview_evaluations_date_idx').on(table.interviewDate.desc(), table.createdAt.desc()),
   ],
 );

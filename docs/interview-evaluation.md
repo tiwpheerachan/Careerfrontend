@@ -13,9 +13,18 @@ view reads everything and prints, edit evaluates and changes one's own, manage c
 | Admin pages             | `app/admin/interviews/` — list, new, one evaluation, one candidate                     |
 | PDF                     | `lib/interview/pdf.tsx`; logo `assets/interview/shd-logo.png`                          |
 
+**Candidates without an application yet** (migration 0013, `interview_candidates`). Applicants usually fill in the
+form after the interview, so HR (applications.edit) adds them first at **Admin › ประเมินสัมภาษณ์ › เพิ่มผู้สมัคร**: name,
+position, department, phone (HR only — never shown to an invited evaluator) and an optional résumé. Their key is
+`pending:<id>`; they are invited and evaluated like anyone else, and an invitee sees "no application yet" and the résumé.
+Once the form or application exists, the candidate page suggests the likely ones (same name or phone) and HR links it
+(`POST /admin/interview-candidates/{id}/link`): every evaluation and invitation becomes the form's or application's, in
+one transaction, once (409 after, and 409 if one evaluator scored the same round and side of both). The old key then
+redirects to the new one.
+
 **One row = one evaluator × one round.** The candidate is an application, an application form, or typed in by hand;
 evaluations of the same person are grouped by `lib/interview/candidate-key.ts` (`application:<id>`, `form:<id>`,
-`name:<name>` — case- and space-insensitive for typed-in names). The evaluator is the signed-in SSO user, never typed.
+`pending:<id>`, `name:<name>` — case- and space-insensitive for typed-in names). The evaluator is the signed-in SSO user, never typed.
 
 **Scoring.** Items 1–10 (0–5 each, out of 50) for everyone; items 11–15 (out of 25) for Senior positions and above.
 Pass mark: ≥ 40; Senior: items 11–15 **over 20** and all fifteen ≥ 60 (the Thai form's "เกิน 20", chosen over the

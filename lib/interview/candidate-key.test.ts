@@ -4,12 +4,14 @@ import { candidateKey, parseCandidateKey } from './candidate-key';
 const id = '0199b3c4-7d2e-7a10-9c4b-2f6e8d1a5b37';
 
 describe('candidate keys', () => {
-  it('round-trips a linked applicant, a form, and a typed-in name', () => {
+  it('round-trips a linked applicant, a form, a candidate added without one, and a typed-in name', () => {
     expect(parseCandidateKey(candidateKey({ kind: 'application', id, name: 'A' }))).toEqual({
       kind: 'application',
       id,
     });
     expect(parseCandidateKey(candidateKey({ kind: 'form', id, name: 'A' }))).toEqual({ kind: 'form', id });
+    expect(parseCandidateKey(candidateKey({ kind: 'pending', id, name: 'A' }))).toEqual({ kind: 'pending', id });
+    expect(parseCandidateKey('pending:not-a-uuid')).toBeUndefined();
     expect(candidateKey({ kind: 'manual', id: null, name: '  สมชาย ใจดี ' })).toBe('name:สมชาย ใจดี');
     expect(parseCandidateKey('name:สมชาย ใจดี')).toEqual({ kind: 'manual', name: 'สมชาย ใจดี' });
   });

@@ -22,10 +22,32 @@ const PublicId = z
   .optional()
   .transform((value) => value || null);
 
+/** The candidate links: at most one — and, where `required`, exactly one. */
+function linkIssues(
+  form: { applicationId: string | null; applicationFormId: string | null; interviewCandidateId: string | null },
+  required: boolean,
+) {
+  const links = [form.applicationId, form.applicationFormId, form.interviewCandidateId].filter(Boolean).length;
+  if (links > 1)
+    return [{ code: 'custom' as const, path: ['applicationFormId'], message: 'link one candidate, not several' }];
+  if (required && links === 0)
+    return [
+      {
+        code: 'custom' as const,
+        path: ['applicationId'],
+        message: 'pick the candidate: an application, a form, or a candidate added without one',
+      },
+    ];
+  return [];
+}
+
 export const InterviewEvaluationInput = z
   .object({
     applicationId: PublicId.meta({ description: 'The application being evaluated, if it is one.' }),
-    applicationFormId: PublicId.meta({ description: 'Or the application form — one of the two is required.' }),
+    applicationFormId: PublicId.meta({ description: 'Or the application form.' }),
+    interviewCandidateId: PublicId.meta({
+      description: 'Or a candidate HR added before they had an application — exactly one of the three is required.',
+    }),
     candidateName: z
       .string()
       .trim()
@@ -54,17 +76,8 @@ export const InterviewEvaluationInput = z
     comment: text(2000),
   })
   .superRefine((form, ctx) => {
-    if (form.applicationId && form.applicationFormId) {
-      ctx.addIssue({ code: 'custom', path: ['applicationFormId'], message: 'link an application or a form, not both' });
-    }
     // Picked from the system, never typed in: so all of one person's evaluations count together.
-    if (!form.applicationId && !form.applicationFormId) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['applicationId'],
-        message: 'pick the candidate: an application or a form',
-      });
-    }
+    linkIssues(form, true).forEach((issue) => ctx.addIssue(issue));
     if (form.senior && !form.seniorScores) {
       ctx.addIssue({ code: 'custom', path: ['seniorScores'], message: 'score items 11–15 for a Senior position' });
     }
@@ -111,6 +124,7 @@ export const InvitationInput = z
   .object({
     applicationId: PublicId,
     applicationFormId: PublicId,
+    interviewCandidateId: PublicId,
     candidateName: z.string().trim().min(1).max(150),
     position: text(150),
     department: text(150),
@@ -131,10 +145,37 @@ export const InvitationInput = z
       .max(20)
       .refine((list) => new Set(list.map((p) => p.email)).size === list.length, 'each person once'),
   })
-  .superRefine((form, ctx) => {
-    if (form.applicationId && form.applicationFormId) {
-      ctx.addIssue({ code: 'custom', path: ['applicationFormId'], message: 'link an application or a form, not both' });
-    }
-  });
+  .superRefine((form, ctx) => linkIssues(form, false).forEach((issue) => ctx.addIssue(issue)));
 
 export type InvitationInput = z.output<typeof InvitationInput>;
+
+/**
+ * HR adding a candidate who has no application yet (migration 0013): enough to
+ * invite and evaluate them, and to find their form when it comes in.
+ */
+export const InterviewCandidateInput = z.object({
+  name: z.string().trim().min(1).max(150),
+  position: text(150),
+  department: text(150),
+  /** 9–15 digits with + ( ) - and spaces, as on the application form. */
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9()\-\s]{9,40}$/, 'must be a phone number')
+    .refine((value) => {
+      const digits = value.replace(/\D/g, '').length;
+      return digits >= 9 && digits <= 15;
+    }, 'must be a phone number of 9–15 digits'),
+});
+
+export type InterviewCandidateInput = z.output<typeof InterviewCandidateInput>;
+
+/** Linking a candidate HR added to their application or form, once it exists. */
+export const InterviewCandidateLinkInput = z
+  .object({ applicationId: PublicId, applicationFormId: PublicId })
+  .refine((v) => Boolean(v.applicationId) !== Boolean(v.applicationFormId), {
+    path: ['applicationId'],
+    message: 'link to one application or one form',
+  });
+
+export type InterviewCandidateLinkInput = z.output<typeof InterviewCandidateLinkInput>;

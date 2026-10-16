@@ -3,25 +3,27 @@ import type { Database } from '@/lib/db/client';
 import {
   applicationForms,
   applications,
+  interviewCandidates,
   interviewEvaluations,
   jobs,
   type InterviewEvaluationRow,
 } from '@/lib/db/schema';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
-import { candidateKey, type CandidateRef } from '@/lib/interview/candidate-key';
+import { candidateKey, type CandidateKind, type CandidateRef } from '@/lib/interview/candidate-key';
 import type { InterviewEvaluationInput } from '@/lib/interview/schema';
 import { outcomeOf, type Outcome } from '@/lib/interview/scoring';
 import { jobTitle } from './applications';
 import { isUuid, likePattern, offsetOf, type Page } from './support';
 
-/** Someone who can be evaluated: an application, or an application form. */
+/** Someone who can be evaluated: an application, an application form, or a candidate HR added without one. */
 export interface Candidate {
-  kind: 'application' | 'form';
+  kind: CandidateKind;
   id: string;
   name: string;
   position: string | null;
   department: string | null;
-  email: string;
+  /** None for a candidate HR added (their phone is HR's only, and not shown here). */
+  email: string | null;
   createdAt: Date;
   /** Their evaluations so far (by anyone), round 1 first: shown on picking them, and to suggest the round. */
   evaluated: PastEvaluation[];
@@ -37,8 +39,8 @@ export interface PastEvaluation {
 
 /** Who the evaluation is about, as stored: linked, or typed in by hand. */
 export interface EvaluationCandidate {
-  kind: 'application' | 'form' | 'manual';
-  /** The application's or form's public id; null when typed in. */
+  kind: CandidateKind | 'manual';
+  /** The application's, form's or added candidate's public id; null when typed in. */
   id: string | null;
   name: string;
   position: string | null;
@@ -88,14 +90,21 @@ export function createInterviewEvaluationRepository(db: Database) {
     row: interviewEvaluations,
     applicationId: applications.id,
     applicationFormId: applicationForms.id,
+    pendingId: interviewCandidates.id,
   };
 
-  type Joined = { row: InterviewEvaluationRow; applicationId: string | null; applicationFormId: string | null };
+  type Joined = {
+    row: InterviewEvaluationRow;
+    applicationId: string | null;
+    applicationFormId: string | null;
+    pendingId: string | null;
+  };
 
-  function present({ row, applicationId, applicationFormId }: Joined): InterviewEvaluation {
+  function present({ row, applicationId, applicationFormId, pendingId }: Joined): InterviewEvaluation {
+    // Once a candidate HR added is linked, the application or form decides whose it is.
     const candidate: EvaluationCandidate = {
-      kind: applicationId ? 'application' : applicationFormId ? 'form' : 'manual',
-      id: applicationId ?? applicationFormId ?? null,
+      kind: applicationId ? 'application' : applicationFormId ? 'form' : pendingId ? 'pending' : 'manual',
+      id: applicationId ?? applicationFormId ?? pendingId ?? null,
       name: row.candidateName,
       position: row.position,
       department: row.department,
@@ -127,12 +136,14 @@ export function createInterviewEvaluationRepository(db: Database) {
       .select(columns)
       .from(interviewEvaluations)
       .leftJoin(applications, eq(applications.pk, interviewEvaluations.applicationsPk))
-      .leftJoin(applicationForms, eq(applicationForms.pk, interviewEvaluations.applicationFormsPk));
+      .leftJoin(applicationForms, eq(applicationForms.pk, interviewEvaluations.applicationFormsPk))
+      .leftJoin(interviewCandidates, eq(interviewCandidates.pk, interviewEvaluations.interviewCandidatesPk));
 
   /** The links and the stored columns for one input; 400 for an application or form that is not there. */
   async function valuesOf(input: InterviewEvaluationInput) {
     let applicationsPk: number | null = null;
     let applicationFormsPk: number | null = null;
+    let interviewCandidatesPk: number | null = null;
     // A linked candidate's name is the record's, not whatever the form sent:
     // otherwise an edit would quietly rename the applicant in every list.
     let linkedName: string | null = null;
@@ -160,10 +171,21 @@ export function createInterviewEvaluationRepository(db: Database) {
       applicationFormsPk = row.pk;
       linkedName = row.name;
     }
+    if (input.interviewCandidateId) {
+      const row = await pendingRow(input.interviewCandidateId);
+      if (!row)
+        throw new BadRequestError('No such candidate.', [{ path: 'interviewCandidateId', message: 'not found' }]);
+      // Linked since: the evaluation goes with the application or form, as the others now do.
+      applicationsPk = row.linkedApplicationsPk;
+      applicationFormsPk = row.linkedApplicationFormsPk;
+      interviewCandidatesPk = row.pk;
+      linkedName = row.name;
+    }
     const outcome = outcomeOf({ general: input.generalScores, senior: input.senior ? input.seniorScores : null });
     return {
       applicationsPk,
       applicationFormsPk,
+      interviewCandidatesPk,
       candidateName: linkedName ?? input.candidateName,
       position: input.position,
       department: input.department,
@@ -181,6 +203,16 @@ export function createInterviewEvaluationRepository(db: Database) {
     };
   }
 
+  /** A live candidate HR added, by public id. */
+  async function pendingRow(id: string) {
+    const [row] = await db
+      .select()
+      .from(interviewCandidates)
+      .where(and(eq(interviewCandidates.id, id), ne(interviewCandidates.status, 'DELETED')))
+      .limit(1);
+    return row;
+  }
+
   async function get(id: string): Promise<InterviewEvaluation> {
     if (!isUuid(id)) throw new NotFoundError('interview evaluation', id);
     const [row] = await joined()
@@ -193,13 +225,14 @@ export function createInterviewEvaluationRepository(db: Database) {
   /** Each candidate with their evaluations so far: one query for the lot. */
   async function withEvaluated(list: Omit<Candidate, 'evaluated'>[]): Promise<Candidate[]> {
     const ids = (kind: Candidate['kind']) => list.filter((c) => c.kind === kind).map((c) => c.id);
-    const [apps, forms] = [ids('application'), ids('form')];
+    const [apps, forms, pending] = [ids('application'), ids('form'), ids('pending')];
     const rows =
-      apps.length || forms.length
+      apps.length || forms.length || pending.length
         ? await db
             .select({
               applicationId: applications.id,
               applicationFormId: applicationForms.id,
+              pendingId: interviewCandidates.id,
               round: interviewEvaluations.round,
               evaluatorRole: interviewEvaluations.evaluatorRole,
               evaluator: sql<string>`coalesce(${interviewEvaluations.evaluatorName}, ${interviewEvaluations.evaluatorEmail})`,
@@ -208,12 +241,14 @@ export function createInterviewEvaluationRepository(db: Database) {
             .from(interviewEvaluations)
             .leftJoin(applications, eq(applications.pk, interviewEvaluations.applicationsPk))
             .leftJoin(applicationForms, eq(applicationForms.pk, interviewEvaluations.applicationFormsPk))
+            .leftJoin(interviewCandidates, eq(interviewCandidates.pk, interviewEvaluations.interviewCandidatesPk))
             .where(
               and(
                 live,
                 or(
                   apps.length ? inArray(applications.id, apps) : undefined,
                   forms.length ? inArray(applicationForms.id, forms) : undefined,
+                  pending.length ? inArray(interviewCandidates.id, pending) : undefined,
                 ),
               ),
             )
@@ -226,23 +261,32 @@ export function createInterviewEvaluationRepository(db: Database) {
     return list.map((c) => ({
       ...c,
       evaluated: rows
-        .filter((r) => (c.kind === 'application' ? r.applicationId : r.applicationFormId) === c.id)
-        .map(({ applicationId: _, applicationFormId: __, round, ...rest }) => ({ round: round as 1 | 2, ...rest })),
+        .filter(
+          (r) => ({ application: r.applicationId, form: r.applicationFormId, pending: r.pendingId })[c.kind] === c.id,
+        )
+        .map(({ applicationId: _, applicationFormId: __, pendingId: ___, round, ...rest }) => ({
+          round: round as 1 | 2,
+          ...rest,
+        })),
     }));
   }
 
   /** Every evaluation of one candidate (see candidate-key.ts): round 1 then 2, newest first within a round. */
   async function forCandidate(ref: CandidateRef): Promise<InterviewEvaluation[]> {
+    const unlinked = and(isNull(interviewEvaluations.applicationsPk), isNull(interviewEvaluations.applicationFormsPk));
     const who =
-      ref.kind === 'application'
-        ? eq(applications.id, ref.id)
-        : ref.kind === 'form'
-          ? eq(applicationForms.id, ref.id)
-          : and(
-              isNull(interviewEvaluations.applicationsPk),
-              isNull(interviewEvaluations.applicationFormsPk),
-              sql`lower(btrim(${interviewEvaluations.candidateName})) = lower(btrim(${ref.name}))`,
-            );
+      ref.kind === 'manual'
+        ? and(
+            unlinked,
+            isNull(interviewEvaluations.interviewCandidatesPk),
+            sql`lower(btrim(${interviewEvaluations.candidateName})) = lower(btrim(${ref.name}))`,
+          )
+        : {
+            application: eq(applications.id, ref.id),
+            form: eq(applicationForms.id, ref.id),
+            // Until it is linked: then they are the application's or form's.
+            pending: and(unlinked, eq(interviewCandidates.id, ref.id)),
+          }[ref.kind];
     const rows = await joined()
       .where(and(live, who))
       .orderBy(asc(interviewEvaluations.round), desc(interviewEvaluations.updatedAt));
@@ -258,11 +302,13 @@ export function createInterviewEvaluationRepository(db: Database) {
       const pattern = likePattern(q.trim());
       // Phones compared as digits only: "081-234 5678" finds 0812345678 and the reverse.
       const digits = q.replace(/\D/g, '');
-      const phoneLike = (column: typeof applications.phone | typeof applicationForms.mobile) =>
+      const phoneLike = (
+        column: typeof applications.phone | typeof applicationForms.mobile | typeof interviewCandidates.phone,
+      ) =>
         digits.length >= 3
           ? sql`regexp_replace(coalesce(${column}, ''), '\\D', '', 'g') like ${likePattern(digits)}`
           : ilike(column, pattern);
-      const [fromApplications, fromForms] = await Promise.all([
+      const [fromApplications, fromForms, fromPending] = await Promise.all([
         db
           .select({
             id: applications.id,
@@ -310,20 +356,47 @@ export function createInterviewEvaluationRepository(db: Database) {
           )
           .orderBy(desc(applicationForms.createdAt))
           .limit(limit),
+        // Candidates HR added and has not linked yet (a linked one is found as its application or form).
+        db
+          .select({
+            id: interviewCandidates.id,
+            name: interviewCandidates.name,
+            position: interviewCandidates.position,
+            department: interviewCandidates.department,
+            email: sql<string | null>`null`,
+            createdAt: interviewCandidates.createdAt,
+          })
+          .from(interviewCandidates)
+          .where(
+            and(
+              ne(interviewCandidates.status, 'DELETED'),
+              isNull(interviewCandidates.linkedAt),
+              or(ilike(interviewCandidates.name, pattern), phoneLike(interviewCandidates.phone)),
+            ),
+          )
+          .orderBy(desc(interviewCandidates.createdAt))
+          .limit(limit),
       ]);
       return withEvaluated(
         [
           ...fromApplications.map((c) => ({ ...c, kind: 'application' as const })),
           ...fromForms.map((c) => ({ ...c, kind: 'form' as const })),
+          ...fromPending.map((c) => ({ ...c, kind: 'pending' as const })),
         ]
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, limit),
       );
     },
 
-    /** One applicant or application form, to start an evaluation with (prefill); undefined if not found. */
-    async candidate(kind: 'application' | 'form', id: string): Promise<Candidate | undefined> {
+    /** One applicant, application form or added candidate, to start an evaluation with (prefill); undefined if not found. */
+    async candidate(kind: CandidateKind, id: string): Promise<Candidate | undefined> {
       if (!isUuid(id)) return undefined;
+      if (kind === 'pending') {
+        const row = await pendingRow(id);
+        if (!row) return undefined;
+        const { name, position, department, createdAt } = row;
+        return (await withEvaluated([{ kind, id, name, position, department, email: null, createdAt }]))[0];
+      }
       if (kind === 'application') {
         const [row] = await db
           .select({
@@ -365,7 +438,9 @@ export function createInterviewEvaluationRepository(db: Database) {
         ? { kind: 'application', id: input.applicationId }
         : input.applicationFormId
           ? { kind: 'form', id: input.applicationFormId }
-          : { kind: 'manual', name: input.candidateName };
+          : input.interviewCandidateId
+            ? { kind: 'pending', id: input.interviewCandidateId }
+            : { kind: 'manual', name: input.candidateName };
       const twin = (await forCandidate(ref)).find(
         (e) =>
           e.round === input.round &&

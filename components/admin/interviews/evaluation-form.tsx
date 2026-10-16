@@ -38,6 +38,7 @@ import { GENERAL_ITEMS, outcomeOf, SCORE_LEVELS, SENIOR_ITEMS, suggestRound } fr
 import type { InterviewEvaluation } from '@/lib/repositories/interview-evaluations';
 import { cn } from '@/lib/utils';
 import type { PastEvaluation } from '@/lib/repositories/interview-evaluations';
+import type { CandidateKind } from '@/lib/interview/candidate-key';
 import { CandidatePicker, type PickedCandidate } from './candidate-picker';
 import { FIELD, Labeled, onRadioKeyDown, radioTabIndex, Segmented } from './fields';
 
@@ -46,7 +47,7 @@ type Result = (typeof EVALUATION_RESULTS)[number];
 type Role = (typeof EVALUATOR_ROLES)[number];
 
 interface FormState {
-  link: { kind: 'application' | 'form'; id: string } | null;
+  link: { kind: CandidateKind; id: string } | null;
   candidateName: string;
   position: string;
   department: string;
@@ -63,7 +64,7 @@ interface FormState {
 
 /** Who a new evaluation starts with (from ?candidate=), as the candidate picker would fill it. */
 export interface Prefill {
-  link: { kind: 'application' | 'form'; id: string } | null;
+  link: { kind: CandidateKind; id: string } | null;
   name: string;
   position: string | null;
   department: string | null;
@@ -225,6 +226,7 @@ export function EvaluationForm({
     const body = {
       applicationId: form.link?.kind === 'application' ? form.link.id : null,
       applicationFormId: form.link?.kind === 'form' ? form.link.id : null,
+      interviewCandidateId: form.link?.kind === 'pending' ? form.link.id : null,
       candidateName: form.candidateName,
       position: form.position,
       department: form.department,
@@ -521,7 +523,12 @@ export function EvaluationForm({
             <section className="card p-6">
               <h2 className="mb-4 text-sm font-bold text-gray-900">{t('candidateSection')}</h2>
               {!readOnly && !form.link && (
-                <CandidatePicker onPick={pickCandidate} inputId="ev-search" error={errors.candidateName} />
+                <CandidatePicker
+                  onPick={pickCandidate}
+                  inputId="ev-search"
+                  error={errors.candidateName}
+                  addHref="/admin/interviews/candidates/new"
+                />
               )}
               {form.link && (
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">

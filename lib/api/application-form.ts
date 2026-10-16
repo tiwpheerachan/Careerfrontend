@@ -43,7 +43,8 @@ async function bodyOf(request: Request) {
   return { form, resume: await resumeOf(parts.get('resume')), photo: await photoOf(parts.get('photo')) };
 }
 
-async function resumeOf(file: FormDataEntryValue | null) {
+/** A résumé/CV part, checked as an application's is: size, then its type from its bytes. Null for none. */
+export async function resumeOf(file: FormDataEntryValue | null) {
   if (!(file instanceof File) || file.size === 0) return null;
   if (file.size > FILE_RULES.RESUME.maxBytes) {
     throw new BadRequestError('The résumé is too large.', [{ path: 'resume', message: 'larger than 5 MB' }]);

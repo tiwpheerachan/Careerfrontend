@@ -1,21 +1,23 @@
 'use client';
 
 import { Loader2, Search } from 'lucide-react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { adminFetch } from '@/lib/admin/client';
+import type { CandidateKind } from '@/lib/interview/candidate-key';
 import { cn } from '@/lib/utils';
 import type { PastEvaluation } from '@/lib/repositories/interview-evaluations';
 import { FIELD } from './fields';
 
 export interface PickedCandidate {
-  kind: 'application' | 'form';
+  kind: CandidateKind;
   id: string;
   name: string;
   position: string | null;
   department: string | null;
-  email: string;
+  email: string | null;
   /** Their evaluations so far (shown once picked; they suggest the round). */
   evaluated: PastEvaluation[];
 }
@@ -29,17 +31,28 @@ export function CandidatePicker({
   onPick,
   inputId,
   error,
+  exclude = [],
+  addHref,
+  label,
 }: {
   onPick: (candidate: PickedCandidate) => void;
   inputId?: string;
   /** Shown under the box (no candidate yet, with the details hidden). */
   error?: string;
+  /** Kinds not offered (linking a candidate HR added picks only applications and forms). */
+  exclude?: CandidateKind[];
+  /** Where "not here? add a candidate without an application" goes, when it is offered. */
+  addHref?: string;
+  /** The box's label, when not the form's own. */
+  label?: string;
 }) {
   const t = useTranslations('interviews.form');
   const listId = useId();
   const id = inputId ?? `${listId}-input`;
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PickedCandidate[]>([]);
+  const [found, setResults] = useState<PickedCandidate[]>([]);
+  // Kinds not offered here are left out of what the search found.
+  const results = found.filter((c) => !exclude.includes(c.kind));
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
@@ -97,7 +110,7 @@ export function CandidatePicker({
   return (
     <div className="relative">
       <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-gray-700">
-        {t('search')}
+        {label ?? t('search')}
       </label>
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -133,7 +146,18 @@ export function CandidatePicker({
           className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-gray-200 bg-white p-1 shadow-lg"
         >
           {results.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-gray-500">{loading ? t('searching') : t('noMatch')}</li>
+            <li className="px-3 py-2 text-sm text-gray-500">
+              {loading ? t('searching') : t('noMatch')}
+              {!loading && addHref && (
+                <Link
+                  href={addHref}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="mt-1 block font-semibold text-blue-700 hover:underline"
+                >
+                  {t('addPending')}
+                </Link>
+              )}
+            </li>
           ) : (
             results.map((candidate, i) => (
               <li

@@ -3,13 +3,14 @@ import type { Database } from '@/lib/db/client';
 import {
   applicationForms,
   applications,
+  interviewCandidates,
   interviewEvaluations,
   interviewInvitations,
   interviewInvitees,
   type InterviewInvitationRow,
 } from '@/lib/db/schema';
 import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
-import type { CandidateRef } from '@/lib/interview/candidate-key';
+import type { CandidateKind, CandidateRef } from '@/lib/interview/candidate-key';
 import { expiresAt, newToken, stateOf, type InvitationState } from '@/lib/interview/invitations';
 import type { GuestEvaluationInput, InvitationInput } from '@/lib/interview/schema';
 import { outcomeOf } from '@/lib/interview/scoring';
@@ -29,7 +30,7 @@ export interface Invitation {
   id: string;
   token: string;
   candidate: {
-    kind: 'application' | 'form' | 'manual';
+    kind: CandidateKind | 'manual';
     id: string | null;
     name: string;
     position: string | null;
@@ -58,11 +59,13 @@ export function createInterviewInvitationRepository(db: Database) {
         row: interviewInvitations,
         applicationId: applications.id,
         applicationFormId: applicationForms.id,
+        pendingId: interviewCandidates.id,
         evaluationId: interviewEvaluations.id,
       })
       .from(interviewInvitations)
       .leftJoin(applications, eq(applications.pk, interviewInvitations.applicationsPk))
       .leftJoin(applicationForms, eq(applicationForms.pk, interviewInvitations.applicationFormsPk))
+      .leftJoin(interviewCandidates, eq(interviewCandidates.pk, interviewInvitations.interviewCandidatesPk))
       .leftJoin(interviewEvaluations, eq(interviewEvaluations.pk, interviewInvitations.evaluationsPk));
 
   async function withInvitees(
@@ -70,6 +73,7 @@ export function createInterviewInvitationRepository(db: Database) {
       row: InterviewInvitationRow;
       applicationId: string | null;
       applicationFormId: string | null;
+      pendingId: string | null;
       evaluationId: string | null;
     }>,
     now: Date,
@@ -85,7 +89,7 @@ export function createInterviewInvitationRepository(db: Database) {
         ),
       )
       .orderBy(asc(interviewInvitees.pk));
-    return rows.map(({ row, applicationId, applicationFormId, evaluationId }) => {
+    return rows.map(({ row, applicationId, applicationFormId, pendingId, evaluationId }) => {
       const mine = people.filter((p) => p.invitationsPk === row.pk);
       const invitees = mine.map((p) => ({
         id: p.id,
@@ -100,8 +104,9 @@ export function createInterviewInvitationRepository(db: Database) {
         id: row.id,
         token: row.token,
         candidate: {
-          kind: applicationId ? 'application' : applicationFormId ? 'form' : 'manual',
-          id: applicationId ?? applicationFormId ?? null,
+          // Once a candidate HR added is linked, the application or form decides whose it is.
+          kind: applicationId ? 'application' : applicationFormId ? 'form' : pendingId ? 'pending' : 'manual',
+          id: applicationId ?? applicationFormId ?? pendingId ?? null,
           name: row.candidateName,
           position: row.position,
           department: row.department,
@@ -134,6 +139,7 @@ export function createInterviewInvitationRepository(db: Database) {
   async function pkOfLink(input: InvitationInput) {
     let applicationsPk: number | null = null;
     let applicationFormsPk: number | null = null;
+    let interviewCandidatesPk: number | null = null;
     if (input.applicationId) {
       const [row] = await db
         .select({ pk: applications.pk })
@@ -151,7 +157,22 @@ export function createInterviewInvitationRepository(db: Database) {
         throw new BadRequestError('No such application form.', [{ path: 'applicationFormId', message: 'not found' }]);
       applicationFormsPk = row.pk;
     }
-    return { applicationsPk, applicationFormsPk };
+    if (input.interviewCandidateId) {
+      const [row] = await db
+        .select({
+          pk: interviewCandidates.pk,
+          applicationsPk: interviewCandidates.linkedApplicationsPk,
+          applicationFormsPk: interviewCandidates.linkedApplicationFormsPk,
+        })
+        .from(interviewCandidates)
+        .where(and(eq(interviewCandidates.id, input.interviewCandidateId), ne(interviewCandidates.status, 'DELETED')));
+      if (!row)
+        throw new BadRequestError('No such candidate.', [{ path: 'interviewCandidateId', message: 'not found' }]);
+      // Linked since: the invitation goes with the application or form.
+      ({ applicationsPk, applicationFormsPk } = row);
+      interviewCandidatesPk = row.pk;
+    }
+    return { applicationsPk, applicationFormsPk, interviewCandidatesPk };
   }
 
   async function byToken(token: string, now = new Date()): Promise<Invitation | undefined> {
@@ -219,6 +240,7 @@ export function createInterviewInvitationRepository(db: Database) {
             token,
             applicationsPk: evaluation.applicationsPk,
             applicationFormsPk: evaluation.applicationFormsPk,
+            interviewCandidatesPk: evaluation.interviewCandidatesPk,
             candidateName: evaluation.candidateName,
             position: evaluation.position,
             department: evaluation.department,
@@ -242,16 +264,22 @@ export function createInterviewInvitationRepository(db: Database) {
 
     /** Every invitation for one candidate, newest first. */
     async forCandidate(ref: CandidateRef, now = new Date()): Promise<Invitation[]> {
+      const unlinked = and(
+        isNull(interviewInvitations.applicationsPk),
+        isNull(interviewInvitations.applicationFormsPk),
+      );
       const who =
-        ref.kind === 'application'
-          ? eq(applications.id, ref.id)
-          : ref.kind === 'form'
-            ? eq(applicationForms.id, ref.id)
-            : and(
-                isNull(interviewInvitations.applicationsPk),
-                isNull(interviewInvitations.applicationFormsPk),
-                sql`lower(btrim(${interviewInvitations.candidateName})) = lower(btrim(${ref.name}))`,
-              );
+        ref.kind === 'manual'
+          ? and(
+              unlinked,
+              isNull(interviewInvitations.interviewCandidatesPk),
+              sql`lower(btrim(${interviewInvitations.candidateName})) = lower(btrim(${ref.name}))`,
+            )
+          : {
+              application: eq(applications.id, ref.id),
+              form: eq(applicationForms.id, ref.id),
+              pending: and(unlinked, eq(interviewCandidates.id, ref.id)),
+            }[ref.kind];
       const rows = await joined().where(who).orderBy(desc(interviewInvitations.createdAt));
       return withInvitees(rows, now);
     },
@@ -321,6 +349,7 @@ export function createInterviewInvitationRepository(db: Database) {
               .values({
                 applicationsPk: inv.applicationsPk,
                 applicationFormsPk: inv.applicationFormsPk,
+                interviewCandidatesPk: inv.interviewCandidatesPk,
                 candidateName: inv.candidateName,
                 position: inv.position,
                 department: inv.department,

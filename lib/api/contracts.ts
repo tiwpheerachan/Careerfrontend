@@ -477,6 +477,53 @@ export const adminEvaluationPdf = endpoint({
   responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
 });
 
+export const adminCreateInterviewCandidate = endpoint({
+  method: 'post',
+  path: '/admin/interview-candidates',
+  tag: 'Admin · Interviews',
+  summary: 'Add a candidate who has no application yet',
+  description:
+    'Name, position, department and phone (HR only — never shown to an invited evaluator); invite and evaluate ' +
+    'them as anyone else, and link them to their application or form later. With a résumé: multipart/form-data, ' +
+    'this JSON in `data` and the file in `resume` (PDF, DOC or DOCX, ≤ 5 MB, checked from its contents).',
+  auth: 'admin',
+  permission: 'applications.edit',
+  body: { schema: S.InterviewCandidateInput, type: 'application/json' },
+  responses: { 201: { description: 'Added.', schema: z.object({ id: z.uuid() }) } },
+});
+
+export const adminInterviewCandidateResume = endpoint({
+  method: 'get',
+  path: '/admin/interview-candidates/{id}/resume',
+  tag: 'Admin · Interviews',
+  summary: 'The résumé attached to an added candidate',
+  description: 'Signed at the click (a 60-second url in production, the bytes in development). Audited.',
+  auth: 'admin',
+  permission: 'applications.view',
+  params: S.IdParams,
+  responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
+});
+
+export const adminLinkInterviewCandidate = endpoint({
+  method: 'post',
+  path: '/admin/interview-candidates/{id}/link',
+  tag: 'Admin · Interviews',
+  summary: 'Link an added candidate to their application or form',
+  description:
+    'Every evaluation and invitation of the candidate becomes the application’s or form’s. Once only (409 after); ' +
+    '409 also when someone evaluated the same round and side of both — delete one first.',
+  auth: 'admin',
+  permission: 'applications.edit',
+  params: S.IdParams,
+  body: { schema: S.InterviewCandidateLinkInput, type: 'application/json' },
+  responses: {
+    200: {
+      description: 'Linked: what to, and its candidate key.',
+      schema: z.object({ kind: z.enum(['application', 'form']), id: z.uuid(), key: z.string() }),
+    },
+  },
+});
+
 export const adminSearchPeople = endpoint({
   method: 'get',
   path: '/admin/people',
@@ -567,8 +614,10 @@ export const inviteeResume = endpoint({
   method: 'get',
   path: '/evaluate/{token}/resume',
   tag: 'Invited evaluators',
-  summary: 'The résumé/CV sent with the candidate’s application form',
-  description: 'For a link made from an application form, HR or the hiring department; 404 when none was sent.',
+  summary: 'The candidate’s résumé/CV',
+  description:
+    'The one sent with the application form, or attached by HR to a candidate added without one — for HR and the ' +
+    'hiring department alike; 404 when there is none.',
   auth: 'invitee',
   params: S.TokenParams,
   responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
@@ -620,6 +669,9 @@ export const ENDPOINTS = [
   adminDeleteEvaluation,
   adminEvaluationPdf,
   adminSearchCandidates,
+  adminCreateInterviewCandidate,
+  adminInterviewCandidateResume,
+  adminLinkInterviewCandidate,
   adminSearchPeople,
   adminListInvitations,
   adminCreateInvitation,

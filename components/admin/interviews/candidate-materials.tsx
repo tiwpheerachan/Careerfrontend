@@ -28,10 +28,13 @@ export async function CandidateMaterials({
   token,
   application,
   form,
+  pending = null,
 }: {
   token: string;
   application: ApplicationDetail | null;
   form: FormMaterials | null;
+  /** A candidate HR added before they had an application: no application to show, perhaps a résumé. */
+  pending?: { hasResume: boolean } | null;
 }) {
   const t = await getTranslations('invitee.materials');
   const tl = await getTranslations('applications.detail');
@@ -39,12 +42,22 @@ export async function CandidateMaterials({
   const link =
     'inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 transition hover:border-blue-300 hover:bg-blue-50';
 
-  if (!application && !form) return null;
+  if (!application && !form && !pending) return null;
 
   return (
     <section className="card p-6">
       <h2 className="text-sm font-bold text-gray-900">{t('title')}</h2>
       {form && <FormProfile token={token} form={form} link={link} />}
+      {pending && (
+        <div className="mt-3 space-y-3 text-sm">
+          <p className="text-gray-600">{t('noApplication')}</p>
+          {pending.hasResume && (
+            <a href={`/api/v1/evaluate/${token}/resume`} target="_blank" rel="noreferrer" className={link}>
+              <FileDown className="h-4 w-4 text-blue-600" /> {t('resume')}
+            </a>
+          )}
+        </div>
+      )}
       {application && (
         <div className="mt-3 space-y-4 text-sm">
           {application.files.length > 0 && (
