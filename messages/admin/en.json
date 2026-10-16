@@ -765,7 +765,38 @@
     "materials": {
       "title": "The candidate’s application",
       "applicationFormPdf": "Open the application form (PDF)",
-      "present": "present"
+      "present": "present",
+      "resume": "Résumé / CV",
+      "photo": "Candidate photo",
+      "education": "Education",
+      "experience": "Work history",
+      "currentJob": "Current job",
+      "previousJob": "Previous job",
+      "languages": "Foreign languages",
+      "skills": "Skills",
+      "gpa": "GPA {gpa}",
+      "graduated": "graduated {year}",
+      "levels": "speaking {speak} · reading {read} · writing {write}",
+      "typingTh": "Thai typing {wpm} wpm",
+      "typingEn": "English typing {wpm} wpm",
+      "computer": "Computer: {programs}",
+      "licences": "Driving licence: {list}",
+      "motorcycle": "motorcycle",
+      "car": "car",
+      "educationLevels": {
+        "SECONDARY": "Upper secondary / vocational certificate",
+        "DIPLOMA": "Higher vocational / diploma",
+        "DEGREE": "Bachelor's / master's degree"
+      },
+      "languageNames": {
+        "EN": "English",
+        "ZH": "Chinese"
+      },
+      "skillLevels": {
+        "FAIR": "fair",
+        "GOOD": "good",
+        "EXCELLENT": "excellent"
+      }
     },
     "refused": {
       "signIn": {

@@ -555,10 +555,23 @@ export const inviteeApplicationForm = endpoint({
   path: '/evaluate/{token}/application-form',
   tag: 'Invited evaluators',
   summary: 'The candidate’s application form as a PDF',
-  description: 'For a link made from an application form. The sensitive fields are left blank.',
+  description:
+    'For an HR link made from an application form: 403 for the hiring department (salaries and personal ' +
+    'details are HR’s). The sensitive fields, contact details, family and birth date are left blank.',
   auth: 'invitee',
   params: S.TokenParams,
   responses: { 200: { description: 'One A4 page.', contentType: 'application/pdf' } },
+});
+
+export const inviteeResume = endpoint({
+  method: 'get',
+  path: '/evaluate/{token}/resume',
+  tag: 'Invited evaluators',
+  summary: 'The résumé/CV sent with the candidate’s application form',
+  description: 'For a link made from an application form, HR or the hiring department; 404 when none was sent.',
+  auth: 'invitee',
+  params: S.TokenParams,
+  responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
 });
 
 export const adminSearchCandidates = endpoint({
@@ -614,6 +627,7 @@ export const ENDPOINTS = [
   inviteeSubmit,
   inviteeFile,
   inviteeApplicationForm,
+  inviteeResume,
   adminAnalytics,
   adminListContent,
   adminSetContent,

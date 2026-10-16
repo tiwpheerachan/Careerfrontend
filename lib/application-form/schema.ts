@@ -298,3 +298,26 @@ export type ApplicationFormAnswers = Omit<
   | 'turnstileToken'
 >;
 export type ApplicationFormSensitive = z.output<typeof FormSensitive>;
+
+type Level = (typeof SKILL_LEVELS)[number] | null;
+/** A form sent before `languages`: one language, typed, with its levels beside it. */
+type LegacySkills = { language?: string | null; speak?: Level; read?: Level; write?: Level };
+
+/**
+ * The languages as shown, by name: from `languages` (English and Chinese named
+ * by `nameOf`, in the reader's language), or a form's one typed language from before.
+ */
+export function languagesOf(
+  s: ApplicationFormAnswers['skills'] & LegacySkills,
+  nameOf: (code: Exclude<(typeof FORM_LANGUAGES)[number], 'OTHER'>) => string,
+) {
+  if (s.languages?.length) {
+    return s.languages.map((row) => ({
+      name: row.language === 'OTHER' ? (row.other ?? '') : nameOf(row.language),
+      speak: row.speak,
+      read: row.read,
+      write: row.write,
+    }));
+  }
+  return s.language ? [{ name: s.language, speak: s.speak ?? null, read: s.read ?? null, write: s.write ?? null }] : [];
+}

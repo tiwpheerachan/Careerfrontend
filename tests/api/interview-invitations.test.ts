@@ -4,13 +4,16 @@ import * as revokeRoute from '@/app/api/v1/admin/interview-invitations/[id]/rout
 import * as people from '@/app/api/v1/admin/people/route';
 import * as formPdf from '@/app/api/v1/evaluate/[token]/application-form/route';
 import * as files from '@/app/api/v1/evaluate/[token]/files/[fileId]/route';
+import * as formResume from '@/app/api/v1/evaluate/[token]/resume/route';
+import * as submitForm from '@/app/api/v1/application-forms/route';
 import * as evaluate from '@/app/api/v1/evaluate/[token]/route';
 import * as editLinkRoute from '@/app/api/v1/admin/interview-evaluations/[id]/edit-link/route';
 import * as oneEvaluation from '@/app/api/v1/admin/interview-evaluations/[id]/route';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
 import { seal, SESSION_COOKIE } from '@/lib/auth/session';
 import { resetServerEnv } from '@/lib/env';
-import { call } from '@/tests/support/api';
+import { call, FILES } from '@/tests/support/api';
+import { applicationFormInput } from '@/tests/support/application-form';
 import { applicationInput, openJob, repos } from '@/tests/support/fixtures';
 
 const SECRET = 'a-test-session-secret-0123456789abcdef';
@@ -393,6 +396,43 @@ describe('invitation links', () => {
     const headers = await as('head@shd-technology.co.th');
     expect((await call(files.GET, { params: { token, fileId: otherFile.id }, headers })).status).toBe(404);
     expect((await call(formPdf.GET, { params: { token }, headers })).status).toBe(404);
+    expect((await call(formResume.GET, { params: { token }, headers })).status).toBe(404);
+  });
+
+  describe('a link made from an application form', () => {
+    /** A form sent from the public site, with a résumé; a link to it for one side. */
+    async function formLink(evaluatorRole: 'HR' | 'DEPARTMENT') {
+      const body = new FormData();
+      body.append('data', JSON.stringify(applicationFormInput()));
+      body.append('resume', FILES.pdf());
+      const sent = await call(submitForm.POST, { path: '/api/v1/application-forms', form: body });
+      expect(sent.status).toBe(201);
+      const { applicationId: _a, ...rest } = invite('');
+      const res = await call(invitationsRoute.POST, {
+        json: { ...rest, applicationFormId: sent.body.id, evaluatorRole },
+        headers: await as('hr@shd-technology.co.th'),
+      });
+      expect(res.status).toBe(201);
+      return tokenOf(res.body.invitation.link);
+    }
+
+    it('the hiring department: no application form (403), but the résumé', async () => {
+      const token = await formLink('DEPARTMENT');
+      const headers = await as('head@shd-technology.co.th');
+      expect((await call(formPdf.GET, { params: { token }, headers })).status).toBe(403);
+      const resume = await call(formResume.GET, { params: { token }, headers });
+      expect(resume.status).toBe(200);
+      expect(String(resume.body)).toMatch(/^%PDF-/);
+    });
+
+    it('HR: the application form PDF and the résumé', async () => {
+      const token = await formLink('HR');
+      const headers = await as('head@shd-technology.co.th');
+      const pdf = await call(formPdf.GET, { params: { token }, headers });
+      expect(pdf.status).toBe(200);
+      expect(pdf.headers.get('content-type')).toBe('application/pdf');
+      expect((await call(formResume.GET, { params: { token }, headers })).status).toBe(200);
+    });
   });
 
   it('400 without anyone to invite, or the same person twice', async () => {

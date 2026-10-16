@@ -1,10 +1,11 @@
 import { CheckCircle2, Clock } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Brand } from '@/components/admin/ui';
-import { CandidateMaterials } from '@/components/admin/interviews/candidate-materials';
+import { CandidateMaterials, type FormMaterials } from '@/components/admin/interviews/candidate-materials';
 import { EvaluationForm } from '@/components/admin/interviews/evaluation-form';
 import { LanguagePicker } from '@/components/admin/shell/language-picker';
 import { SsoShell, ssoButton } from '@/components/auth/sso-shell';
+import { photoOfForm } from '@/lib/api/application-form';
 import { checkInviteePage, type InviteeRefusal } from '@/lib/auth/invitee';
 import { NotFoundError } from '@/lib/errors';
 import { withCurrentCandidate } from '@/lib/interview/current-candidate';
@@ -62,6 +63,14 @@ export default async function EvaluatePage({ params }: Props) {
   const candidate = fresh.candidate;
   const application =
     candidate.kind === 'application' && candidate.id ? await store().applications.get(candidate.id) : null;
+  const formRow = candidate.kind === 'form' && candidate.id ? await store().applicationForms.get(candidate.id) : null;
+  const photo = formRow && (await photoOfForm(formRow));
+  const form: FormMaterials | null = formRow && {
+    answers: formRow.answers,
+    hasResume: Boolean(formRow.resumePath),
+    photo: photo && `data:${formRow.photoType};base64,${Buffer.from(photo.bytes).toString('base64')}`,
+    showPdf: fresh.evaluatorRole === 'HR',
+  };
   const locale = (await getLocale()) as AdminLocale;
   const until = new Intl.DateTimeFormat(intlLocale(locale), {
     dateStyle: 'medium',
@@ -97,9 +106,7 @@ export default async function EvaluatePage({ params }: Props) {
           department: candidate.department,
         }}
         guest={{ token, round: fresh.round, evaluatorRole: fresh.evaluatorRole, senior: fresh.senior }}
-        materials={
-          <CandidateMaterials token={token} application={application} hasApplicationForm={candidate.kind === 'form'} />
-        }
+        materials={<CandidateMaterials token={token} application={application} form={form} />}
       />
     </main>
   );

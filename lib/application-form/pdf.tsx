@@ -7,7 +7,7 @@ import { PDFDocument, clip, endPath, popGraphicsState, pushGraphicsState, rectan
 import type { APPLICATION_FORM_LETTERHEADS } from '@/lib/constants';
 import { splitSaraAm } from '@/lib/pdf/thai';
 import { LAYOUT, TEMPLATES, type Box, type Line, type Rect } from './layout';
-import type { ApplicationFormAnswers, ApplicationFormSensitive } from './schema';
+import { languagesOf, type ApplicationFormAnswers, type ApplicationFormSensitive } from './schema';
 
 /**
  * The filled-in application form as a PDF: the company's own blank form, with
@@ -73,24 +73,6 @@ const TITLE_EN = { MR: 'Mr.', MRS: 'Mrs.', MISS: 'Miss' } as const;
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const SKILL = { FAIR: 'พอใช้', GOOD: 'ดี', EXCELLENT: 'ดีมาก' } as const;
 const LANGUAGE_TH = { EN: 'อังกฤษ', ZH: 'จีน' } as const;
-
-type Level = keyof typeof SKILL | null;
-type Skills = ApplicationFormAnswers['skills'];
-/** A form sent before `languages`: one language, typed, with its levels beside it. */
-type LegacySkills = { language?: string | null; speak?: Level; read?: Level; write?: Level };
-
-/** The languages as printed, by name: from `languages`, or a form's one typed language from before. */
-export function languagesOf(s: Skills & LegacySkills) {
-  if (s.languages?.length) {
-    return s.languages.map((row) => ({
-      name: row.language === 'OTHER' ? (row.other ?? '') : LANGUAGE_TH[row.language],
-      speak: row.speak,
-      read: row.read,
-      write: row.write,
-    }));
-  }
-  return s.language ? [{ name: s.language, speak: s.speak ?? null, read: s.read ?? null, write: s.write ?? null }] : [];
-}
 
 /** 2026-03 → "มี.ค. 2569". */
 function monthTh(value: string | null): string | null {
@@ -190,7 +172,7 @@ export function placements(form: PrintableForm): Placed[] {
   const s = a.skills;
   // The paper has one row for languages: several share it, in the same order on each line
   // ("อังกฤษ / จีน", "ดี / พอใช้"), with "-" for a level left out.
-  const languages = languagesOf(s);
+  const languages = languagesOf(s, (code) => LANGUAGE_TH[code]);
   put(L.language, languages.map((l) => l.name).join(' / '));
   for (const skill of ['speak', 'read', 'write'] as const) {
     if (languages.some((l) => l[skill])) {

@@ -765,7 +765,38 @@
     "materials": {
       "title": "ใบสมัครของผู้สมัคร",
       "applicationFormPdf": "เปิดใบสมัคร (PDF)",
-      "present": "ปัจจุบัน"
+      "present": "ปัจจุบัน",
+      "resume": "Resume / CV",
+      "photo": "รูปถ่ายผู้สมัคร",
+      "education": "การศึกษา",
+      "experience": "ประวัติการทำงาน",
+      "currentJob": "งานปัจจุบัน",
+      "previousJob": "งานก่อนหน้า",
+      "languages": "ภาษาต่างประเทศ",
+      "skills": "ความสามารถ",
+      "gpa": "เกรดเฉลี่ย {gpa}",
+      "graduated": "จบปี {year}",
+      "levels": "พูด {speak} · อ่าน {read} · เขียน {write}",
+      "typingTh": "พิมพ์ไทย {wpm} คำ/นาที",
+      "typingEn": "พิมพ์อังกฤษ {wpm} คำ/นาที",
+      "computer": "คอมพิวเตอร์: {programs}",
+      "licences": "ใบขับขี่: {list}",
+      "motorcycle": "รถจักรยานยนต์",
+      "car": "รถยนต์",
+      "educationLevels": {
+        "SECONDARY": "มัธยมปลาย / ปวช.",
+        "DIPLOMA": "ปวส. / ปวท. / อนุปริญญา",
+        "DEGREE": "ปริญญาตรี / ปริญญาโท"
+      },
+      "languageNames": {
+        "EN": "อังกฤษ",
+        "ZH": "จีน"
+      },
+      "skillLevels": {
+        "FAIR": "พอใช้",
+        "GOOD": "ดี",
+        "EXCELLENT": "ดีมาก"
+      }
     },
     "refused": {
       "signIn": {
