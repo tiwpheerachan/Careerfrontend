@@ -93,6 +93,7 @@ describe('legacy import mapping', () => {
       'https://yqofedmxrrurpjfaocys.supabase.co/storage/v1/object/public/careers/applications/abc/resume_My%20CV.pdf';
     expect(oldFileOf(url)).toEqual({ url, name: 'My CV.pdf' });
     expect(oldFileOf(url, 'portfolio.pdf')?.name).toBe('portfolio.pdf');
+    expect(oldFileOf(`${url}?`)?.name).toBe('My CV.pdf');
     expect(oldFileOf('storage:applications/abc/x.pdf')).toBeNull();
     expect(oldFileOf(null)).toBeNull();
   });

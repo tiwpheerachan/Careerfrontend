@@ -195,7 +195,8 @@ export function skillsOf(values: Array<string | null>): string[] {
 export function oldFileOf(url: string | null, fallbackName?: string | null): { url: string; name: string } | null {
   const v = text(url);
   if (!v || !/^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\//.test(v)) return null;
-  const base = decodeURIComponent(v.split('/').pop() ?? 'file');
+  // Old urls often end in a bare "?": the name is the path's, not the query's.
+  const base = decodeURIComponent(v.split(/[?#]/)[0]!.split('/').pop() ?? 'file');
   const name = text(fallbackName) ?? base.replace(/^(resume|transcript|att)_/, '');
   return { url: v, name: name || 'file' };
 }
