@@ -2,7 +2,7 @@ import { inviteeResume } from '@/lib/api/contracts';
 import { handler, parseParams, type RouteParams } from '@/lib/api/http';
 import { requireInvitee } from '@/lib/auth/invitee';
 import { NotFoundError } from '@/lib/errors';
-import { objectStore } from '@/lib/storage';
+import { fileResponse } from '@/lib/storage';
 import { store } from '@/lib/store';
 
 /**
@@ -20,16 +20,5 @@ export const GET = handler<RouteParams<'token'>>(async (request, { log }, { para
     kind === 'form' ? await store().applicationForms.resume(id) : await store().interviewCandidates.resume(id);
   log.info({ invitee: identity.email, invitationId: invitation.id }, 'application form résumé opened by an invitee');
 
-  const opened = await objectStore().open(resume.path, resume.name);
-  if ('redirect' in opened) {
-    return new Response(null, { status: 302, headers: { location: opened.redirect, 'cache-control': 'no-store' } });
-  }
-  return new Response(opened.bytes as BodyInit, {
-    headers: {
-      'content-type': resume.type,
-      'content-disposition': `inline; filename*=UTF-8''${encodeURIComponent(resume.name)}`,
-      'cache-control': 'private, no-store',
-      'x-content-type-options': 'nosniff',
-    },
-  });
+  return fileResponse(resume, 'inline');
 });

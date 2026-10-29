@@ -35,10 +35,6 @@ export function createLocalStore(directory: string): ObjectStore {
       await Promise.all(paths.map((p) => rm(fileOf(p), { force: true })));
     },
 
-    async open(objectPath) {
-      return { bytes: await read(objectPath), contentType: 'application/octet-stream' };
-    },
-
     read,
 
     async move(from, to) {

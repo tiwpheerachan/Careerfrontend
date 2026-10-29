@@ -124,7 +124,8 @@ export async function permissionsFor(email: string): Promise<Permissions> {
     }
     return OPEN;
   }
-  if (!email) return OPEN;
+  // authz is asked by email: a session without one cannot be asked about, so it gets nothing — never everything.
+  if (!email) return { hasAccess: false, roles: [], baseLevel: 'none', resources: {}, unmanaged: false };
 
   const cached = cache.get(email);
   if (cached && Date.now() - cached.fetchedAt < TTL_MS) return cached.value;

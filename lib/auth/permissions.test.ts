@@ -113,6 +113,13 @@ describe('permissionsFor', () => {
     await expect(permissionsFor('b@shd.co.th')).rejects.toBeInstanceOf(UnavailableError);
   });
 
+  it('a session without an email gets no access, not everything', async () => {
+    const fetch = answer({});
+    vi.stubGlobal('fetch', fetch);
+    expect(opensAnything(await permissionsFor(''))).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('without CENTRAL_API_KEY everyone who signs in gets everything, and nothing is asked', async () => {
     delete process.env.CENTRAL_API_KEY;
     const fetch = answer({});

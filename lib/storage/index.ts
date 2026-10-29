@@ -17,13 +17,7 @@ export interface ObjectStore {
   put(path: string, bytes: Uint8Array, contentType: string): Promise<void>;
   /** Removes objects; used to clean up after a failed application. Missing ones are ignored. */
   remove(paths: string[]): Promise<void>;
-  /**
-   * How the admin gets the file: a short-lived signed url to send them to, or
-   * the bytes to stream. Asked for at click time, so it never expires on an
-   * open page (the old admin's 1-hour links did).
-   */
-  open(path: string, downloadName: string): Promise<{ redirect: string } | { bytes: Uint8Array; contentType: string }>;
-  /** The object's bytes, for the server's own use (a photo drawn into a PDF). NotFoundError when it is gone. */
+  /** The object's bytes (a download, or a photo drawn into a PDF). NotFoundError when it is gone. */
   read(path: string): Promise<Uint8Array>;
   /** Moves an object to a new path, in storage (no download). NotFoundError when `from` is not there. */
   move(from: string, to: string): Promise<void>;
@@ -43,6 +37,31 @@ export function objectStore(): ObjectStore {
         })
       : createLocalStore(env.LOCAL_STORAGE_DIR);
   return cached;
+}
+
+/**
+ * A stored file as the response itself, streamed through this server after the
+ * caller's own sign-in check. Never a redirect to a signed storage url: that url
+ * works for anyone who copies it (address bar, network tab, a chat) until it expires.
+ */
+export async function fileResponse(
+  file: { path: string; name: string; type: string },
+  disposition: 'inline' | 'attachment',
+): Promise<Response> {
+  const bytes = await objectStore().read(file.path);
+  // The path's extension is the sniffed type; the uploader's name may not end in it ("cv.pdf?"),
+  // and a download without it is a file the OS will not open.
+  const ext = `.${file.path.split('.').pop()}`;
+  const name = file.name.toLowerCase().endsWith(ext) ? file.name : file.name + ext;
+  return new Response(bytes as BodyInit, {
+    headers: {
+      'content-type': file.type,
+      // RFC 5987 so a Thai file name survives.
+      'content-disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(name)}`,
+      'cache-control': 'private, no-store',
+      'x-content-type-options': 'nosniff',
+    },
+  });
 }
 
 /**

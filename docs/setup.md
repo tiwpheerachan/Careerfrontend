@@ -48,7 +48,7 @@ Never run `drizzle-kit push`. A schema change is a hand-written `drizzle/NNNN_na
 | production  | a **private** Supabase Storage bucket `applications` | `STORAGE_DRIVER=supabase` + `SUPABASE_SERVICE_ROLE_KEY` |
 
 The database keeps only the path. The admin downloads through `/api/v1/admin/applications/{id}/files/{fileId}`,
-which signs a 60-second link at the moment of the click.
+which streams the file itself after the sign-in check — no signed storage link is ever made, so there is none to copy.
 
 ## The API
 

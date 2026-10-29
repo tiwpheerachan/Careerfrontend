@@ -3,12 +3,13 @@ import type { ObjectStore } from './index';
 
 /**
  * Supabase Storage over its REST API with fetch — the same approach as
- * shd_onelink (lib/api/storage.ts): three calls, no client library.
+ * shd_onelink (lib/api/storage.ts): a few calls, no client library.
  *
  * The bucket must be PRIVATE. Résumés are personal data: nothing in it is
- * reachable without a signed url, and those are minted per click, for a
- * minute, only by the admin API. (The old site's bucket was public, and its
- * public urls were also copied into a Google Sheet.)
+ * reachable without the service key, which only this server holds, and no
+ * signed url is ever minted — downloads stream through the app (fileResponse).
+ * (The old site's bucket was public, and its public urls were also copied into
+ * a Google Sheet.)
  */
 export function createSupabaseStore(options: { origin: string; key: string; bucket: string }): ObjectStore {
   const base = `${options.origin.replace(/\/+$/, '')}/storage/v1`;
@@ -46,27 +47,6 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
         body: JSON.stringify({ prefixes: paths }),
       });
       if (!response.ok) throw new Error(`Storage delete failed (${response.status}): ${await response.text()}`);
-    },
-
-    async open(objectPath, downloadName) {
-      const response = await call(`object/sign/${options.bucket}/${encode(objectPath)}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ expiresIn: 60 }),
-      });
-      if (!response.ok) {
-        const body = await response.text();
-        // A row whose object is gone (removed by hand, or never uploaded): Storage
-        // answers 400 with a "not_found" body, or 404 — the file, not the server, is missing.
-        if (response.status === 404 || (response.status === 400 && /not.?found/i.test(body)))
-          throw new NotFoundError('file', objectPath);
-        throw new Error(`Storage sign failed (${response.status}): ${body}`);
-      }
-      const { signedURL } = (await response.json()) as { signedURL: string };
-      // `download=` makes the browser save it under its real name.
-      const url = new URL(`${base}${signedURL}`);
-      url.searchParams.set('download', downloadName);
-      return { redirect: url.toString() };
     },
 
     async move(from, to) {

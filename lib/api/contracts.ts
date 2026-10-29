@@ -273,14 +273,11 @@ export const adminDownloadFile = endpoint({
   path: '/admin/applications/{id}/files/{fileId}',
   tag: 'Admin · Applications',
   summary: 'Download a file',
-  description: 'In production: a redirect to a signed link that works for 60 seconds. In development: the file itself.',
+  description: 'The file itself, streamed through the API — never a storage link.',
   auth: 'admin',
   permission: 'applications.view',
   params: S.FileParams,
-  responses: {
-    200: { description: 'The file (development).', contentType: 'application/octet-stream' },
-    302: { description: 'Redirect to a short-lived signed link (production).', headers: { location: 'The link.' } },
-  },
+  responses: { 200: { description: 'The file.', contentType: 'application/octet-stream' } },
 });
 
 export const adminAnalytics = endpoint({
@@ -384,7 +381,7 @@ export const adminApplicationFormResume = endpoint({
   auth: 'admin',
   permission: 'applications.view',
   params: S.IdParams,
-  responses: { 200: { description: 'The file, or a redirect to it.', contentType: 'application/octet-stream' } },
+  responses: { 200: { description: 'The file.', contentType: 'application/octet-stream' } },
 });
 
 export const adminDeleteApplicationForm = endpoint({
@@ -497,11 +494,11 @@ export const adminInterviewCandidateResume = endpoint({
   path: '/admin/interview-candidates/{id}/resume',
   tag: 'Admin · Interviews',
   summary: 'The résumé attached to an added candidate',
-  description: 'Signed at the click (a 60-second url in production, the bytes in development). Audited.',
+  description: 'The file itself, streamed through the API. Audited.',
   auth: 'admin',
   permission: 'applications.view',
   params: S.IdParams,
-  responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
+  responses: { 200: { description: 'The file.', contentType: 'application/octet-stream' } },
 });
 
 export const adminLinkInterviewCandidate = endpoint({
@@ -594,7 +591,7 @@ export const inviteeFile = endpoint({
   description: 'Only files of the applicant the link is for.',
   auth: 'invitee',
   params: S.TokenFileParams,
-  responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
+  responses: { 200: { description: 'The file.', contentType: 'application/octet-stream' } },
 });
 
 export const inviteeApplicationForm = endpoint({
@@ -620,7 +617,7 @@ export const inviteeResume = endpoint({
     'hiring department alike; 404 when there is none.',
   auth: 'invitee',
   params: S.TokenParams,
-  responses: { 200: { description: 'The file (or a redirect to it).', contentType: 'application/octet-stream' } },
+  responses: { 200: { description: 'The file.', contentType: 'application/octet-stream' } },
 });
 
 export const adminSearchCandidates = endpoint({
