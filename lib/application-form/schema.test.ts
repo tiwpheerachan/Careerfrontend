@@ -74,3 +74,29 @@ describe('the application form: weight and height', () => {
     expect(withField(sensitive(65.55)).success).toBe(false);
   });
 });
+
+describe('the application form: names', () => {
+  it.each(['สุภาวดี ศรีสุข', 'อนันต์ ศิริดำรงค์', 'ณัฐพงษ์  ฐิติวัฒนธีระธาดา'])('takes the Thai name %s', (nameTh) => {
+    expect(withField({ nameTh }).success).toBe(true);
+  });
+
+  it.each(['4553645', 'A', 'อนันต์', 'Sutthiphong Wongkaew', 'อนันต์ ศิริิดำรงค์', 'อนันต์ ศิร​ิดำรงค์'])(
+    'refuses %s as the name on the Thai form',
+    (nameTh) => {
+      expect(withField({ nameTh }).success).toBe(false);
+    },
+  );
+
+  it('takes a name in English letters on the en/zh form', () => {
+    expect(withField({ locale: 'en', nameTh: 'Nidhin Kandikkal' }).success).toBe(true);
+    expect(withField({ locale: 'en', nameTh: 'Nidhin' }).success).toBe(false);
+  });
+
+  it('English name: optional, but English letters and a surname when given', () => {
+    expect(withField({ nameEn: '' }).success).toBe(true);
+    expect(withField({ nameEn: "Anant Siri-Damrong O'Neil" }).success).toBe(true);
+    for (const nameEn of ['tth', 'B', 'ศิริดำรงค์', 'สรรสรรเสริญสิริ ทรง', 'Anant 2']) {
+      expect(withField({ nameEn }).success).toBe(false);
+    }
+  });
+});

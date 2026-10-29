@@ -40,6 +40,15 @@ const text = (max: number) =>
 
 const required = (max: number) => z.string().trim().min(1).max(max);
 
+/** A first name and a surname — two words or more — each word in one script. */
+const fullName = (word: string) => new RegExp(`^${word}(?:\\s+${word})+$`);
+/** A word starts with a consonant or a leading vowel (เ แ โ ใ ไ); no digits, no ฿, no stray marks. */
+const THAI_NAME = fullName('[\\u0E01-\\u0E2E\\u0E40-\\u0E44][\\u0E01-\\u0E2E\\u0E30-\\u0E3A\\u0E40-\\u0E45\\u0E47-\\u0E4E]*');
+const LATIN_NAME = fullName("[A-Za-z][A-Za-z.'-]*");
+/** Thai letters, and no vowel typed twice ("ศิริิ"). */
+export const isThaiName = (value: string) => THAI_NAME.test(value) && !/[ัิ-ฺ]{2}/.test(value);
+export const isLatinName = (value: string) => LATIN_NAME.test(value);
+
 /** A phone number: digits with + ( ) - and spaces, 9–15 digits (a Thai landline has 9, E.164 at most 15). */
 const phone = z
   .string()
@@ -228,8 +237,9 @@ export const ApplicationFormInput = z
 
     // 2. Name — the title apart, so it prints in each language (นาย … / Mr. …)
     nameTitle: choice(NAME_TITLES),
-    nameTh: required(150),
-    nameEn: text(150),
+    /** Thai letters on the Thai form (checked below); a foreign applicant on the en/zh form may have none. */
+    nameTh: required(150).refine((v) => isThaiName(v) || isLatinName(v), 'a first name and a surname'),
+    nameEn: text(150).refine((v) => !v || isLatinName(v), 'a first name and a surname, in English letters'),
     nickname: text(50),
     /** The nickname in Latin letters ("Pui"), printed beside the Thai one. */
     nicknameEn: text(50).refine((value) => !value || /^[A-Za-z][A-Za-z .'-]*$/.test(value), 'English letters only'),
@@ -273,6 +283,9 @@ export const ApplicationFormInput = z
       form.expectedSalaryMax < form.expectedSalaryMin
     ) {
       ctx.addIssue({ code: 'custom', path: ['expectedSalaryMax'], message: 'must not be below the minimum' });
+    }
+    if (form.locale === 'th' && !isThaiName(form.nameTh)) {
+      ctx.addIssue({ code: 'custom', path: ['nameTh'], message: 'in Thai letters' });
     }
     if (!form.jobCode && !form.positionOther) {
       ctx.addIssue({ code: 'custom', path: ['positionOther'], message: 'choose a job or write the position' });

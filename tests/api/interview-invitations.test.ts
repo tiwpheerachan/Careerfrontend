@@ -416,10 +416,12 @@ describe('invitation links', () => {
       return tokenOf(res.body.invitation.link);
     }
 
-    it('the hiring department: no application form (403), but the résumé', async () => {
+    it('the hiring department: the application form PDF (no pay on it) and the résumé', async () => {
       const token = await formLink('DEPARTMENT');
       const headers = await as('head@shd-technology.co.th');
-      expect((await call(formPdf.GET, { params: { token }, headers })).status).toBe(403);
+      const pdf = await call(formPdf.GET, { params: { token }, headers });
+      expect(pdf.status).toBe(200);
+      expect(pdf.headers.get('content-type')).toBe('application/pdf');
       const resume = await call(formResume.GET, { params: { token }, headers });
       expect(resume.status).toBe(200);
       expect(String(resume.body)).toMatch(/^%PDF-/);

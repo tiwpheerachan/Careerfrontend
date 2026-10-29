@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { ApplicationFormInput } from '@/lib/application-form/schema';
+import { ApplicationFormInput, isThaiName } from '@/lib/application-form/schema';
 import {
   APPLICATION_FORM_LETTERHEADS,
   BLOOD_TYPES,
@@ -331,7 +331,10 @@ export type ErrorKey =
   | 'salary'
   | 'gpa'
   | 'year'
-  | 'birthOrder';
+  | 'birthOrder'
+  | 'fullName'
+  | 'nameThai'
+  | 'nameEnglish';
 
 /** Field path → which message to show. Paths name draft fields (education by level, not by index). */
 export type Errors = Record<string, ErrorKey>;
@@ -347,6 +350,8 @@ function errorKey(path: string, issue: z.core.$ZodIssue, empty: boolean): ErrorK
   if (PHONE.test(path)) return 'phone';
   if (path === 'email') return 'email';
   if (path === 'birthDate') return 'birthDate';
+  if (path === 'nameTh') return 'fullName';
+  if (path === 'nameEn') return 'nameEnglish';
   if (path.endsWith('postalCode')) return 'postalCode';
   if (issue.code === 'invalid_type' && issue.expected === 'number') return 'number';
   return empty ? 'required' : 'invalid';
@@ -444,6 +449,9 @@ export function validate(draft: Draft, locale: string, only?: Step): Errors {
     }
   }
   if (errors.birthDate === 'birthDate') errors.birthDate = birthDateKey(draft.birthDate);
+  // The Thai form wants the name in Thai — the schema says so only once the rest of the form passes.
+  if (locale === 'th' && (!only || stepOf('nameTh') === only) && draft.nameTh.trim() && !isThaiName(draft.nameTh.trim()))
+    errors.nameTh = 'nameThai';
   for (const [path, key] of Object.entries(extraChecks(draft))) {
     if (!only || stepOf(path) === only) errors[path] ??= key;
   }

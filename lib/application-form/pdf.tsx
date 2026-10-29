@@ -40,6 +40,8 @@ export interface PrintableForm {
    * the applicant can do stays; how to reach them, and their family, does not.
    */
   redact?: boolean;
+  /** For the hiring department: no salaries, other income, benefits or reasons for leaving — HR's alone. */
+  hidePay?: boolean;
   /** The applicant's photo (JPEG, or PNG), for the photo box; none leaves it empty. */
   photo?: { bytes: Uint8Array; png: boolean } | null;
 }
@@ -107,8 +109,11 @@ export function placements(form: PrintableForm): Placed[] {
   };
   const L = LAYOUT;
 
+  // Leaves a line blank on the hiring department's copy.
+  const pay = (line: Line, value: string | number | null | undefined) => put(line, form.hidePay ? null : value);
+
   put(L.position, form.position);
-  put(L.expectedSalary, salaryOf(a));
+  pay(L.expectedSalary, salaryOf(a));
 
   // The title before each name; an English name only gets one when there is an English name.
   put(L.nameTh, a.nameTitle ? `${TITLE_TH[a.nameTitle]}${a.nameTh}` : a.nameTh);
@@ -192,20 +197,20 @@ export function placements(form: PrintableForm): Placed[] {
     put(L.currentDuties, now.duties);
     put(L.currentFrom, monthTh(now.from));
     put(L.currentTo, monthTh(now.to) ?? (now.from ? 'ปัจจุบัน' : null));
-    put(L.currentLastSalary, now.lastSalary);
-    put(L.currentOtherIncome, now.otherIncome);
-    put(L.currentTotalIncome, now.totalIncome);
-    put(L.currentBenefits, now.benefits);
-    put(L.currentReason, now.reasonForLeaving);
+    pay(L.currentLastSalary, now.lastSalary);
+    pay(L.currentOtherIncome, now.otherIncome);
+    pay(L.currentTotalIncome, now.totalIncome);
+    pay(L.currentBenefits, now.benefits);
+    pay(L.currentReason, now.reasonForLeaving);
   }
   const before = a.previousJob;
   if (before) {
     put(L.previousCompany, before.company);
     put(L.previousPosition, before.position);
-    put(L.previousLastSalary, before.lastSalary);
+    pay(L.previousLastSalary, before.lastSalary);
     put(L.previousFrom, monthTh(before.from));
     put(L.previousTo, monthTh(before.to));
-    put(L.previousReason, before.reasonForLeaving);
+    pay(L.previousReason, before.reasonForLeaving);
   }
 
   own(L.emergencyName, a.emergency.name);

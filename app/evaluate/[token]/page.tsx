@@ -69,7 +69,6 @@ export default async function EvaluatePage({ params }: Props) {
     answers: formRow.answers,
     hasResume: Boolean(formRow.resumePath),
     photo: photo && `data:${formRow.photoType};base64,${Buffer.from(photo.bytes).toString('base64')}`,
-    showPdf: fresh.evaluatorRole === 'HR',
   };
   // A candidate HR added before they had an application: only whether HR attached a résumé (never their phone).
   const pending =

@@ -12,8 +12,6 @@ export interface FormMaterials {
   hasResume: boolean;
   /** The photo as a data URL, or null. */
   photo: string | null;
-  /** The whole form as a PDF: HR's links only — it has the salaries and personal details. */
-  showPdf: boolean;
 }
 
 /**
@@ -21,7 +19,7 @@ export interface FormMaterials {
  * education, experience, skills and the files (résumé and the rest) — or, for
  * an application form, the photo, the résumé and the work profile: education,
  * the jobs (no salary, benefits or reason for leaving), languages and skills.
- * The form's PDF only on an HR link. Never the contact details, the hiring
+ * The form's PDF, redacted (no pay on the department's). Never the contact details, the hiring
  * stage or HR's internal notes: those are not the evaluator's.
  */
 export async function CandidateMaterials({
@@ -147,20 +145,16 @@ async function FormProfile({ token, form, link }: { token: string; form: FormMat
         />
       )}
       <div className="min-w-0 flex-1 space-y-4">
-        {(form.hasResume || form.showPdf) && (
-          <div className="flex flex-wrap gap-2">
-            {form.hasResume && (
-              <a href={`/api/v1/evaluate/${token}/resume`} target="_blank" rel="noreferrer" className={link}>
-                <FileDown className="h-4 w-4 text-blue-600" /> {t('resume')}
-              </a>
-            )}
-            {form.showPdf && (
-              <a href={`/api/v1/evaluate/${token}/application-form`} target="_blank" rel="noreferrer" className={link}>
-                <FileText className="h-4 w-4 text-blue-600" /> {t('applicationFormPdf')}
-              </a>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {form.hasResume && (
+            <a href={`/api/v1/evaluate/${token}/resume`} target="_blank" rel="noreferrer" className={link}>
+              <FileDown className="h-4 w-4 text-blue-600" /> {t('resume')}
+            </a>
+          )}
+          <a href={`/api/v1/evaluate/${token}/application-form`} target="_blank" rel="noreferrer" className={link}>
+            <FileText className="h-4 w-4 text-blue-600" /> {t('applicationFormPdf')}
+          </a>
+        </div>
         {a.education.length > 0 && (
           <div>
             <h3 className="font-semibold text-gray-700">{t('education')}</h3>

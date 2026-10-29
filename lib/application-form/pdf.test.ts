@@ -88,6 +88,35 @@ describe('the application form PDF', () => {
     expect(redacted.length).toBeGreaterThan(10);
   });
 
+  it("the hiring department's copy: no salaries, income, benefits or reasons for leaving; the jobs stay", () => {
+    const form = {
+      letterhead: APPLICATION_FORM_LETTERHEADS[0],
+      position: positionOther!,
+      answers,
+      sensitive: null,
+      submittedAt: new Date('2026-10-07T10:00:00+07:00'),
+      redact: true,
+    };
+    const texts = (hidePay: boolean) =>
+      placements({ ...form, hidePay }).flatMap((p) => (p.kind === 'text' ? [p.text] : []));
+    const hr = texts(false);
+    const department = texts(true);
+    const pay = [
+      answers.currentJob!.lastSalary!,
+      answers.currentJob!.benefits!,
+      answers.currentJob!.reasonForLeaving!,
+      answers.previousJob!.lastSalary!,
+      answers.previousJob!.reasonForLeaving!,
+    ];
+    for (const value of pay) {
+      expect(hr).toContain(value);
+      expect(department).not.toContain(value);
+    }
+    expect(hr.some((t) => t.includes('25,000'))).toBe(true);
+    expect(department.some((t) => t.includes('25,000'))).toBe(false);
+    expect(department).toContain(answers.currentJob!.company);
+  });
+
   it('languages share the one row in order; a form from before `languages` still prints; both nicknames', () => {
     const form = {
       letterhead: APPLICATION_FORM_LETTERHEADS[0],
