@@ -14,14 +14,20 @@ export function formatDate(value: Date | string | null | undefined, locale: Admi
   );
 }
 
+/**
+ * The time is built here, not left to Intl: CLDR 49 (Node 26) writes Thai times
+ * as "14:51 น." while browsers on older CLDR write "14:51", so a client component
+ * rendered on the server failed hydration. The date part is the same in every
+ * CLDR, and "HH:mm" is what the admin has always shown.
+ */
 export function formatDateTime(value: Date | string | null | undefined, locale: AdminLocale): string {
   if (!value) return '—';
-  return new Intl.DateTimeFormat(intlLocale(locale), {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
+  const date = new Date(value);
+  const time = new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
     timeZone: TIME_ZONE,
-  }).format(new Date(value));
+  }).format(date);
+  return `${formatDate(date, locale)}${locale === 'en' ? ',' : ''} ${time}`;
 }

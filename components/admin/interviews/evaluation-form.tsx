@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { GuardedLink } from '@/components/admin/shell/unsaved-guard';
@@ -32,8 +32,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AdminApiError, adminFetch } from '@/lib/admin/client';
+import { formatDateTime } from '@/lib/admin/format';
 import { discardUnsavedChanges, useGuardedNavigation, useUnsavedChanges } from '@/lib/admin/unsaved';
 import { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
+import type { AdminLocale } from '@/lib/i18n/admin';
 import { GENERAL_ITEMS, outcomeOf, SCORE_LEVELS, SENIOR_ITEMS, suggestRound } from '@/lib/interview/scoring';
 import type { InterviewEvaluation } from '@/lib/repositories/interview-evaluations';
 import { cn } from '@/lib/utils';
@@ -158,7 +160,7 @@ export function EvaluationForm({
   const scale = useTranslations('interviews.scale');
   const router = useRouter();
   const nav = useGuardedNavigation();
-  const format = useFormatter();
+  const locale = useLocale() as AdminLocale;
   const [initial] = useState(() => {
     const state = initialState(evaluation, today, prefill);
     return guest ? { ...state, round: guest.round, evaluatorRole: guest.evaluatorRole, senior: guest.senior } : state;
@@ -469,11 +471,7 @@ export function EvaluationForm({
               <PencilLine className="h-3.5 w-3.5" />
               {t('editedBy', {
                 who: evaluation.edited.by,
-                date: format.dateTime(new Date(evaluation.edited.at), {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                  timeZone: 'Asia/Bangkok',
-                }),
+                date: formatDateTime(evaluation.edited.at, locale),
               })}
             </span>
           )}

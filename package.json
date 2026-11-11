@@ -39,7 +39,7 @@
     "db:test:down": "docker compose -f tests/support/docker-compose.yml down -v"
   },
   "engines": {
-    "node": ">=24.11.0 <25"
+    "node": ">=26"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",
@@ -77,7 +77,7 @@
   "devDependencies": {
     "@hrefcl/apidoc": "5.1.0",
     "@types/fontkit": "^2.0.9",
-    "@types/node": "^24.19.1",
+    "@types/node": "^26.6.6",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@types/three": "^0.186.0",

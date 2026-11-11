@@ -25,7 +25,7 @@ services:
     envVars:
       # Pinned with .nvmrc and package.json "engines" — the same LTS major everywhere.
       - key: NODE_VERSION
-        value: '24'
+        value: '26'
       # Company standard: OS, app and database on Asia/Bangkok. Required by
       # lib/env.ts; the database's zone comes from migration 0004.
       - key: TZ

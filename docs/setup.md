@@ -6,7 +6,7 @@ It replaced an older Vite + FastAPI app (removed after the port; still in git hi
 
 ## Prerequisites
 
-- Node.js **24 LTS** (`.nvmrc`); npm comes with it
+- Node.js **26 LTS** (`.nvmrc`); npm comes with it
 - Docker (for the local Postgres)
 
 ## First run

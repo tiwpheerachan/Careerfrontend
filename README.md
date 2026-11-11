@@ -9,7 +9,7 @@ behind both. One Next.js app.
 | Admin       | `/admin` — overview, jobs, applicants, site text (Thai / English); sign-in with SHD SSO |
 | API         | `/api/v1` — docs at `/api-docs`, OpenAPI at `/api/v1/openapi.json`                      |
 
-**Stack:** Node 24 · Next.js 16 (App Router) · React 19 · Tailwind CSS 4 · shadcn/ui (Radix) · next-intl ·
+**Stack:** Node 26 · Next.js 16 (App Router) · React 19 · Tailwind CSS 4 · shadcn/ui (Radix) · next-intl ·
 Drizzle ORM · Postgres 17 (Supabase in production, Docker locally) · zod · pino · Vitest · Render + Cloudflare.
 
 ## Start

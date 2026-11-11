@@ -5,6 +5,7 @@ import { Document, Font, Image, Page, Path, Svg, StyleSheet, Text, View, renderT
 import type { Style } from '@react-pdf/types';
 import * as fontkit from 'fontkit';
 import { Fragment, type ReactNode } from 'react';
+import { formatDateTime } from '@/lib/admin/format';
 import type { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
 import en from '@/messages/admin/en.json';
 import th from '@/messages/admin/th.json';
@@ -561,12 +562,7 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
       new Intl.DateTimeFormat(INTL[input.language], { dateStyle: 'medium', timeZone: 'UTC' }).format(
         new Date(`${iso}T00:00:00Z`),
       ),
-    when: (d) =>
-      new Intl.DateTimeFormat(INTL[input.language], {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        timeZone: 'Asia/Bangkok',
-      }).format(d),
+    when: (d) => formatDateTime(d, input.language),
   };
 
   const kept = newestPerEvaluator(input.evaluations);

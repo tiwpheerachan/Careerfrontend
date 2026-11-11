@@ -19,8 +19,9 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAbilities } from '@/components/admin/shell/abilities';
 import { AdminApiError, adminFetch } from '@/lib/admin/client';
+import { formatDateTime } from '@/lib/admin/format';
 import { EVALUATOR_ROLES } from '@/lib/constants';
-import { intlLocale, type AdminLocale } from '@/lib/i18n/admin';
+import type { AdminLocale } from '@/lib/i18n/admin';
 import type { InvitationState } from '@/lib/interview/invitations';
 import { Segmented } from './fields';
 import { PeoplePicker, type PickedPerson } from './people-picker';
@@ -100,12 +101,7 @@ export function InvitationsPanel({
   /** The invitation whose link could not be copied: shown as text to copy by hand. */
   const [copyByHand, setCopyByHand] = useState<string | null>(null);
 
-  const when = (iso: string) =>
-    new Intl.DateTimeFormat(intlLocale(locale), {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'Asia/Bangkok',
-    }).format(new Date(iso));
+  const when = (iso: string) => formatDateTime(iso, locale);
 
   const copy = async (link: string, id: string) => {
     try {

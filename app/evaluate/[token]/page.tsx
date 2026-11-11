@@ -6,10 +6,11 @@ import { EvaluationForm } from '@/components/admin/interviews/evaluation-form';
 import { LanguagePicker } from '@/components/admin/shell/language-picker';
 import { SsoShell, ssoButton } from '@/components/auth/sso-shell';
 import { photoOfForm } from '@/lib/api/application-form';
+import { formatDateTime } from '@/lib/admin/format';
 import { checkInviteePage, type InviteeRefusal } from '@/lib/auth/invitee';
 import { NotFoundError } from '@/lib/errors';
 import { withCurrentCandidate } from '@/lib/interview/current-candidate';
-import { intlLocale, type AdminLocale } from '@/lib/i18n/admin';
+import type { AdminLocale } from '@/lib/i18n/admin';
 import { store } from '@/lib/store';
 
 type Props = { params: Promise<{ token: string }> };
@@ -76,11 +77,7 @@ export default async function EvaluatePage({ params }: Props) {
       ? { hasResume: (await store().interviewCandidates.get(candidate.id)).resumeName !== null }
       : null;
   const locale = (await getLocale()) as AdminLocale;
-  const until = new Intl.DateTimeFormat(intlLocale(locale), {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Bangkok',
-  }).format(fresh.expiresAt);
+  const until = formatDateTime(fresh.expiresAt, locale);
 
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
