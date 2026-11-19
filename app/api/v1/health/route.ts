@@ -24,19 +24,14 @@ export const GET = handler(async (_request, { log }) => {
   const started = performance.now();
   try {
     const rows = (await db().execute(
-      sql`select current_database() as database, version() as version, current_setting('TimeZone') as time_zone,
-             clock_timestamp()::text as db_clock`,
+      sql`select current_setting('TimeZone') as time_zone, clock_timestamp()::text as db_clock`,
     )) as unknown as Array<{
-      database: string;
-      version: string;
       time_zone: string;
       db_clock: string;
     }>;
     return json({
+      // No database name or Postgres version: this is public, and they only help an attacker.
       status: 'ok',
-      database: rows[0]?.database ?? 'unknown',
-      // "PostgreSQL 17.6 on aarch64…" — the first two words are the useful part.
-      version: rows[0]?.version.split(' ').slice(0, 2).join(' ') ?? 'unknown',
       latencyMs: Math.round(performance.now() - started),
       // The company standard's three zones — the 90-day verification reads this.
       timeZones: timeZones(rows[0]?.time_zone ?? null),

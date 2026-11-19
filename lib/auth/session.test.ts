@@ -48,7 +48,7 @@ describe('safeNext', () => {
   });
 
   it('sends anything else to the admin — no open redirect', () => {
-    for (const value of [null, undefined, '', 'admin', 'https://evil.example', '//evil.example', '/\\evil.example']) {
+    for (const value of [null, undefined, '', 'admin', 'https://evil.example', '//evil.example', '/\\evil.example', '/\t/evil.example', '/\n/evil.example', '/\r\n/evil.example']) {
       expect(safeNext(value)).toBe('/admin');
     }
   });

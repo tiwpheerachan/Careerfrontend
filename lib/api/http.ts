@@ -143,11 +143,51 @@ function issuesOf(zodError: z.ZodError): Array<{ path: string; message: string }
   return zodError.issues.map((issue) => ({ path: issue.path.join('.') || '(body)', message: issue.message }));
 }
 
-/** Parses and validates a JSON body against the endpoint's schema. Malformed or invalid → 400. */
+/** The largest JSON body any endpoint takes. The biggest real one (a full application form) is a few KB. */
+export const MAX_JSON_BYTES = 1024 * 1024;
+
+/**
+ * The body's bytes, refused once they pass `max`. Counted as they arrive: a
+ * chunked request has no content-length to check, and request.json() or
+ * request.formData() would buffer whatever is sent — a few 500 MB posts are
+ * enough to take the instance down.
+ */
+export async function readBody(request: Request, max: number, message = 'The request body is too large.') {
+  if (Number(request.headers.get('content-length') ?? 0) > max) throw new BadRequestError(message);
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  const reader = request.body?.getReader();
+  if (!reader) return Buffer.alloc(0);
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return Buffer.concat(chunks);
+    size += value.byteLength;
+    if (size > max) {
+      await reader.cancel();
+      throw new BadRequestError(message);
+    }
+    chunks.push(value);
+  }
+}
+
+/** A multipart body, capped like readBody. Unreadable → 400 with `invalid`. */
+export async function readFormData(request: Request, max: number, tooLarge: string, invalid: string) {
+  const bytes = await readBody(request, max, tooLarge);
+  try {
+    return await new Response(bytes, {
+      headers: { 'content-type': request.headers.get('content-type') ?? '' },
+    }).formData();
+  } catch {
+    throw new BadRequestError(invalid);
+  }
+}
+
+/** Parses and validates a JSON body against the endpoint's schema. Too large, malformed or invalid → 400. */
 export async function parseBody<S extends z.ZodType>(request: Request, schema: S): Promise<z.infer<S>> {
+  const bytes = await readBody(request, MAX_JSON_BYTES);
   let raw: unknown;
   try {
-    raw = await request.json();
+    raw = JSON.parse(bytes.toString('utf8'));
   } catch {
     throw new BadRequestError('Request body must be valid JSON.');
   }

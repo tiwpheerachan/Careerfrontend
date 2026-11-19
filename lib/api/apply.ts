@@ -2,7 +2,7 @@ import 'server-only';
 import { afterResponse } from '@/lib/api/after';
 import { clientIp } from '@/lib/api/client-ip';
 import { pushToApplySheet } from '@/lib/api/apply-sheet';
-import { errorMapFor, validationLanguage } from '@/lib/api/http';
+import { errorMapFor, readFormData, validationLanguage } from '@/lib/api/http';
 import { ApplicationFields } from '@/lib/api/schemas';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import type { ApplicationFileKind } from '@/lib/db/schema';
@@ -97,19 +97,17 @@ export async function submitApplication(request: Request, code: string, log: Log
     log.warn('apply: no client IP (TRUST_PROXY_HEADER unset?) — rate limit skipped');
   }
 
-  const declared = Number(request.headers.get('content-length') ?? 0);
-  if (declared > MAX_APPLICATION_BYTES) throw new BadRequestError('The files are too large altogether.');
+  // Before anything else reads it: refused early by content-length, and by counting when there is none.
+  const form = await readFormData(
+    request,
+    MAX_APPLICATION_BYTES,
+    'The files are too large altogether.',
+    'Send the application as multipart/form-data.',
+  );
 
   const job = await repos.jobs.getPublic(code, 'th');
   const jobsPk = job && (await repos.jobs.openJobPk(code));
   if (!job || !jobsPk) throw new NotFoundError('job', code);
-
-  let form: FormData;
-  try {
-    form = await request.formData();
-  } catch {
-    throw new BadRequestError('Send the application as multipart/form-data.');
-  }
 
   const raw = fieldsOf(form);
   // Field messages in the language the form was filled in.
