@@ -1,7 +1,7 @@
 import 'server-only';
 import { clientIp } from '@/lib/api/client-ip';
 import { PDFDocument } from 'pdf-lib';
-import { parseBody, parseValue } from '@/lib/api/http';
+import { parseBody, parseValue, readFormData } from '@/lib/api/http';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import { submitApplicationForm as contract } from '@/lib/api/contracts';
 import { BadRequestError, NotFoundError, TooManyRequestsError } from '@/lib/errors';
@@ -28,16 +28,13 @@ async function bodyOf(request: Request) {
   if (!request.headers.get('content-type')?.includes('multipart/form-data')) {
     return { form: await parseBody(request, contract.body.schema), resume: null, photo: null };
   }
-  if (Number(request.headers.get('content-length') ?? 0) > MAX_FORM_BYTES) {
-    throw new BadRequestError('The résumé is too large.', [{ path: 'resume', message: 'larger than 5 MB' }]);
-  }
-  let parts: FormData;
+  const invalid = 'Send the form as JSON, or multipart/form-data with the JSON in `data`.';
+  const parts = await readFormData(request, MAX_FORM_BYTES, 'The files are too large altogether.', invalid);
   let raw: unknown;
   try {
-    parts = await request.formData();
     raw = JSON.parse(String(parts.get('data') ?? ''));
   } catch {
-    throw new BadRequestError('Send the form as JSON, or multipart/form-data with the JSON in `data`.');
+    throw new BadRequestError(invalid);
   }
   const form = parseValue(request, contract.body.schema, raw);
   return { form, resume: await resumeOf(parts.get('resume')), photo: await photoOf(parts.get('photo')) };

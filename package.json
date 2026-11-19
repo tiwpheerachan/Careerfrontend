@@ -35,6 +35,7 @@
     "db:migrate:deploy": "node scripts/db.mjs deploy migrate",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
     "db:test:up": "docker compose -f tests/support/docker-compose.yml up -d --wait",
     "db:test:down": "docker compose -f tests/support/docker-compose.yml down -v"
   },
@@ -55,7 +56,7 @@
     "fontkit": "^2.0.4",
     "intl-messageformat": "^11.2.15",
     "lucide-react": "^1.52.0",
-    "next": "16.3.4",
+    "next": "16.4.6",
     "next-intl": "^4.14.9",
     "next-themes": "^0.4.6",
     "pdf-lib": "^1.17.1",
@@ -76,6 +77,7 @@
   },
   "devDependencies": {
     "@hrefcl/apidoc": "5.1.0",
+    "@playwright/test": "1.64.0",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^26.6.6",
     "@types/react": "19.2.18",
@@ -84,7 +86,7 @@
     "@usebruno/cli": "4.2.1",
     "drizzle-kit": "0.31.10",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.4",
+    "eslint-config-next": "^16.4.6",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.1.2",
     "prettier": "^3.9.9",

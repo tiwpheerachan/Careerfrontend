@@ -150,6 +150,8 @@ describe('the admin gate', () => {
     vi.stubEnv('STORAGE_DRIVER', 'supabase');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co');
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'sb_secret_placeholder_for_tests');
+    vi.stubEnv('TURNSTILE_SECRET_KEY', '1x0000000000000000000000000000000AA');
+    vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', '1x00000000000000000000AA');
     resetServerEnv();
 
     for (const route of [jobs.GET, applications.GET, openapi.GET]) {
