@@ -4,7 +4,8 @@ import { BadRequestError, UnavailableError } from '@/lib/errors';
 /**
  * Cloudflare Turnstile: proof a person, not a script, filled in the form.
  * Off (always passes) until TURNSTILE_SECRET_KEY and
- * NEXT_PUBLIC_TURNSTILE_SITE_KEY are both set.
+ * NEXT_PUBLIC_TURNSTILE_SITE_KEY are both set — development only; lib/env.ts
+ * refuses to start production without them.
  *
  * https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
  */

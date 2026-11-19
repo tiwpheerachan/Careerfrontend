@@ -52,7 +52,8 @@ const serverSchema = z.object({
   // Never NEXT_PUBLIC_ — it can read every résumé.
   SUPABASE_SERVICE_ROLE_KEY: optional(z.string().min(20)),
 
-  // Cloudflare Turnstile on the application form. Both empty = off.
+  // Cloudflare Turnstile on the application form. Both empty = off (development only;
+  // required in production).
   TURNSTILE_SECRET_KEY: optional(z.string().min(1)),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: optional(z.string().min(1)),
 
@@ -82,7 +83,7 @@ const serverSchema = z.object({
   SSO_ORIGIN: optional(z.url()),
   // The key for the central permission API (/authz/*) — from the app's
   // Credentials page, NOT the client secret. Empty = everyone who can sign in
-  // gets full access (logged as a warning).
+  // gets full access (logged as a warning) — refused in production once SSO is on.
   CENTRAL_API_KEY: optional(z.string().min(1)),
   // Logs what /sso/verify answered while setting up. `shape` (key names and
   // types only) is safe anywhere; `full` is refused in production (lib/auth/sso-debug.ts).
@@ -110,12 +111,22 @@ const checkedSchema = serverSchema.superRefine((env, ctx) => {
   if (Boolean(env.TURNSTILE_SECRET_KEY) !== Boolean(env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)) {
     problem('TURNSTILE_SECRET_KEY', 'set both TURNSTILE_SECRET_KEY and NEXT_PUBLIC_TURNSTILE_SITE_KEY, or neither');
   }
+  // Fail closed in production. Off, Turnstile lets every request through without a
+  // word, and the public forms are left with only the per-IP limit.
+  if (env.NODE_ENV === 'production' && !env.TURNSTILE_SECRET_KEY) {
+    problem('TURNSTILE_SECRET_KEY', 'is required in production (Cloudflare Turnstile on the public forms)');
+  }
   // SESSION_SECRET alone is fine (render.yaml generates one before SSO is set up).
   if (Boolean(env.SSO_CLIENT_ID) !== Boolean(env.SSO_CLIENT_SECRET)) {
     problem('SSO_CLIENT_ID', 'set both SSO_CLIENT_ID and SSO_CLIENT_SECRET, or neither');
   }
   if (env.SSO_CLIENT_ID && !env.SESSION_SECRET) {
     problem('SESSION_SECRET', 'is required when SSO is set up (openssl rand -base64 48)');
+  }
+  // Without it every SHD account that can sign in gets `manage` on everything
+  // (lib/auth/permissions.ts) — fine on a laptop, a data leak in production.
+  if (env.NODE_ENV === 'production' && env.SSO_CLIENT_ID && !env.CENTRAL_API_KEY) {
+    problem('CENTRAL_API_KEY', 'is required in production once SSO is on — without it every account is a full admin');
   }
   if (env.APPLY_SHEET_WEBHOOK_URL && !env.APPLY_SHEET_API_KEY) {
     problem('APPLY_SHEET_API_KEY', 'is required when APPLY_SHEET_WEBHOOK_URL is set');
