@@ -32,3 +32,7 @@ next-env.d.ts
 
 # built API docs (npm run docs:api)
 /.apidoc
+
+# Playwright (npm run e2e)
+/playwright-report
+/test-results
