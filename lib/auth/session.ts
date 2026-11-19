@@ -119,11 +119,17 @@ export async function unseal(token: string | undefined, secret: string): Promise
  * Only a path on this site is allowed through. The value arrives in a query
  * string, and letting it be a full url would turn the sign-in route into an
  * open redirect — the same class of bug the SSO service refuses unregistered
- * redirect_uri values to avoid. "//evil.example.com" is a url that looks like a
- * path, which is why the second character is checked too.
+ * redirect_uri values to avoid.
+ *
+ * Resolved, not pattern-matched: the URL parser drops tabs and newlines and
+ * reads "\" as "/", so "/\t/evil.example" passes a prefix check and still lands
+ * on evil.example. Whatever the browser would make of it, this decides first.
  */
 export function safeNext(value: string | null | undefined): string {
   // Home for this app is the admin — the public site needs no sign-in.
-  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return '/admin';
-  return value;
+  if (!value?.startsWith('/')) return '/admin';
+  const url = URL.parse(value, SELF);
+  if (url?.origin !== SELF) return '/admin';
+  return url.pathname + url.search + url.hash;
 }
+const SELF = 'https://self.invalid';

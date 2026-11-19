@@ -418,8 +418,6 @@ export const ContentKeyQuery = z.object({ key: ContentKey, locale: Locale });
 
 export const Health = z.object({
   status: z.enum(['ok', 'unreachable']),
-  database: z.string().optional(),
-  version: z.string().optional(),
   latencyMs: z.number().int(),
   timeZones: z
     .object({
