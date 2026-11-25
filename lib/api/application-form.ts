@@ -5,7 +5,7 @@ import { parseBody, parseValue, readFormData } from '@/lib/api/http';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import { submitApplicationForm as contract } from '@/lib/api/contracts';
 import { BadRequestError, NotFoundError, TooManyRequestsError } from '@/lib/errors';
-import { CONTENT_TYPES, FILE_RULES, cleanFileName, sniff, type FileType } from '@/lib/files';
+import { CONTENT_TYPES, FILE_RULES, cleanFileName, pngFits, sniff, type FileType } from '@/lib/files';
 import type { Logger } from '@/lib/log';
 import { objectPath, objectStore } from '@/lib/storage';
 import { store } from '@/lib/store';
@@ -71,6 +71,9 @@ async function photoOf(file: FormDataEntryValue | null) {
       () => false,
     );
   };
+  if (type === 'png' && !pngFits(bytes)) {
+    throw new BadRequestError('The photo is too large.', [{ path: 'photo', message: 'too many pixels' }]);
+  }
   if (!type || !PHOTO_RULE.types.includes(type) || !(await opens())) {
     throw new BadRequestError('The photo must be a JPG or PNG image.', [
       { path: 'photo', message: 'must be JPG or PNG' },
@@ -80,8 +83,8 @@ async function photoOf(file: FormDataEntryValue | null) {
 }
 
 /**
- * The form's photo for its PDF, or null: none sent, or its object gone from
- * storage — the form still prints, with the box empty.
+ * The form's photo for its PDF, or null: none sent, its object gone from
+ * storage, or too large to decode (stored before pngFits) — the form still prints, with the box empty.
  */
 export async function photoOfForm(form: { photoPath: string | null; photoType: string | null }) {
   if (!form.photoPath || !form.photoType) return null;
@@ -91,7 +94,9 @@ export async function photoOfForm(form: { photoPath: string | null; photoType: s
       if (error instanceof NotFoundError) return null;
       throw error;
     });
-  return bytes && { bytes, png: form.photoType === CONTENT_TYPES.png };
+  const png = form.photoType === CONTENT_TYPES.png;
+  if (!bytes || (png && !pngFits(bytes))) return null;
+  return { bytes, png };
 }
 
 /**

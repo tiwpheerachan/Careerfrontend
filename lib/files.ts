@@ -30,6 +30,9 @@ export const MAX_APPLICATION_BYTES =
 
 const startsWith = (bytes: Uint8Array, signature: number[]) => signature.every((b, i) => bytes[i] === b);
 
+/** How much of a file sniff() looks at. */
+export const SNIFF_BYTES = 64 * 1024;
+
 /** The type the bytes say they are, or undefined for anything not on the list. */
 export function sniff(bytes: Uint8Array): FileType | undefined {
   if (startsWith(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])) return 'pdf'; // %PDF-
@@ -39,10 +42,32 @@ export function sniff(bytes: Uint8Array): FileType | undefined {
   if (startsWith(bytes, [0x50, 0x4b, 0x03, 0x04])) {
     // A zip. A .docx is one whose entries include word/ — zip entry names are
     // stored as plain text, so it is enough to look for it.
-    const head = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, 64 * 1024)));
+    const head = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, SNIFF_BYTES)));
     if (head.includes('word/')) return 'docx';
   }
   return undefined;
+}
+
+/** The most pixels a PNG photo may have. The wizard's own photo is 640×800 (and a JPEG). */
+const MAX_PNG_PIXELS = 4_000_000;
+
+/**
+ * Whether a PNG is safe to decode. pdf-lib unpacks the whole picture, so a
+ * 259 KB file of 8000×8000 pixels takes 800 MB. Its decoder goes by the last
+ * IHDR and also unpacks animation frames: exactly one IHDR, and no frames.
+ */
+export function pngFits(bytes: Uint8Array): boolean {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let headers = 0;
+  for (let at = 8; at + 12 <= bytes.length; at += 12 + view.getUint32(at)) {
+    const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
+    if (type === 'IEND') break;
+    if (type === 'acTL' || type === 'fcTL' || type === 'fdAT') return false;
+    if (type !== 'IHDR') continue;
+    if (++headers > 1 || at + 16 > bytes.length) return false;
+    if (view.getUint32(at + 8) * view.getUint32(at + 12) > MAX_PNG_PIXELS) return false;
+  }
+  return headers === 1;
 }
 
 /** A file name safe to show and to offer as a download name: no paths, no control characters, ≤ 150 chars. */

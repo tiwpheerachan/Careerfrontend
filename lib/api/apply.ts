@@ -7,7 +7,7 @@ import { ApplicationFields } from '@/lib/api/schemas';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import type { ApplicationFileKind } from '@/lib/db/schema';
 import { BadRequestError, NotFoundError, TooManyRequestsError } from '@/lib/errors';
-import { CONTENT_TYPES, FILE_RULES, MAX_APPLICATION_BYTES, cleanFileName, sniff } from '@/lib/files';
+import { CONTENT_TYPES, FILE_RULES, MAX_APPLICATION_BYTES, SNIFF_BYTES, cleanFileName, sniff } from '@/lib/files';
 import type { Logger } from '@/lib/log';
 import type { ApplicationFileInput } from '@/lib/repositories/applications';
 import { objectPath, objectStore } from '@/lib/storage';
@@ -34,7 +34,6 @@ async function checkFiles(files: Record<ApplicationFileKind, File[]>) {
   const accepted: Array<{
     kind: ApplicationFileKind;
     file: File;
-    bytes: Uint8Array;
     type: keyof typeof CONTENT_TYPES;
   }> = [];
   const field = { RESUME: 'resume', TRANSCRIPT: 'transcript', ATTACHMENT: 'attachments' } as const;
@@ -53,8 +52,7 @@ async function checkFiles(files: Record<ApplicationFileKind, File[]>) {
         issues.push({ path, message: `${cleanFileName(file.name)} is larger than ${rule.maxBytes / 1024 / 1024} MB` });
         continue;
       }
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const type = sniff(bytes);
+      const type = sniff(new Uint8Array(await file.slice(0, SNIFF_BYTES).arrayBuffer()));
       if (!type || !rule.types.includes(type)) {
         issues.push({
           path,
@@ -62,7 +60,7 @@ async function checkFiles(files: Record<ApplicationFileKind, File[]>) {
         });
         continue;
       }
-      accepted.push({ kind, file, bytes, type });
+      accepted.push({ kind, file, type });
     }
   }
   return { issues, accepted };
@@ -128,15 +126,16 @@ export async function submitApplication(request: Request, code: string, log: Log
   const counters: Record<ApplicationFileKind, number> = { RESUME: 0, TRANSCRIPT: 0, ATTACHMENT: 0 };
   const files: ApplicationFileInput[] = [];
   try {
-    for (const { kind, file, bytes, type } of accepted) {
+    for (const { kind, file, type } of accepted) {
       const storagePath = objectPath(folder, kind, counters[kind]++, type);
-      await objects.put(storagePath, bytes, CONTENT_TYPES[type]);
+      // Read only now, one at a time: no second copy of every file waits for its turn.
+      await objects.put(storagePath, new Uint8Array(await file.arrayBuffer()), CONTENT_TYPES[type]);
       files.push({
         kind,
         storagePath,
         fileName: cleanFileName(file.name),
         contentType: CONTENT_TYPES[type],
-        sizeBytes: bytes.byteLength,
+        sizeBytes: file.size,
       });
     }
 
