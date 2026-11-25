@@ -35,6 +35,9 @@ export async function register(): Promise<void> {
   const { log } = await import('@/lib/log');
   log.info({ sentry: Boolean(env.SENTRY_DSN), env: env.NODE_ENV }, 'server starting');
 
+  const { startMemoryLog } = await import('@/lib/memory-log');
+  startMemoryLog();
+
   // Development only, as in shd_onelink: where things are. A deployed server
   // has no npm to run and no collection beside it. Deferred so it lands under
   // Next's own banner rather than above it — this runs before the server is

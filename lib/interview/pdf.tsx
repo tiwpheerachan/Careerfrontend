@@ -37,6 +37,7 @@ import { newestPerEvaluator } from './summary';
  * and Latin, Noto Sans SC the Chinese — a fallback per glyph, so a Thai name
  * on the Chinese form still prints. Free text is wrapped here, by measuring
  * (lib/pdf/thai.ts wrapToWidth): react-pdf alone cannot break Thai lines.
+ * Noto Sans SC is 8 MB, so it is loaded only for a form that needs it, and once.
  */
 
 export type PdfLanguage = 'th' | 'en' | 'zh';
@@ -88,7 +89,8 @@ Font.register({
 // No bold Chinese face: bold Chinese text is drawn regular rather than failing.
 Font.register({
   family: 'NotoSansSC',
-  fonts: [{ src: FONT.chinese }, { src: FONT.chinese, fontWeight: 'bold' }],
+  // Registered once: a second weight of the same file would load its 8 MB again.
+  fonts: [{ src: FONT.chinese }],
 });
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -115,7 +117,6 @@ const s = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 34,
     paddingHorizontal: MARGIN,
-    fontFamily: ['Sarabun', 'NotoSansSC'] as unknown as string,
     fontSize: 9,
     // One line height for every script: Chinese glyphs are taller than Thai, and
     // left to its own metrics the Chinese form ran onto a second page.
@@ -189,7 +190,7 @@ const s = StyleSheet.create({
 
 // --- Measuring, for wrapping -------------------------------------------------------------------
 
-let fonts: { regular: fontkit.Font; bold: fontkit.Font; chinese: fontkit.Font } | undefined;
+let fonts: { regular: fontkit.Font; bold: fontkit.Font } | undefined;
 function loadedFonts() {
   fonts ??= {
     // Paths written out in each call: the build traces only what it can see is a fixed file.
@@ -197,11 +198,25 @@ function loadedFonts() {
       readFileSync(path.join(process.cwd(), 'assets', 'fonts', 'Sarabun-Regular.ttf')),
     ) as fontkit.Font,
     bold: fontkit.create(readFileSync(path.join(process.cwd(), 'assets', 'fonts', 'Sarabun-Bold.ttf'))) as fontkit.Font,
-    chinese: fontkit.create(
-      readFileSync(path.join(process.cwd(), 'assets', 'fonts', 'NotoSansSC-Regular.otf')),
-    ) as fontkit.Font,
   };
   return fonts;
+}
+
+/** react-pdf's own copy of the Chinese font, once loaded (renderInterviewPdf): measured with the one it draws with. */
+const chineseFont = () =>
+  (Font.getFont({ fontFamily: 'NotoSansSC' })?.data ?? undefined) as unknown as fontkit.Font | undefined;
+
+/** Whether the form prints anything Sarabun cannot draw. */
+function needsChinese(ctx: Ctx): boolean {
+  if (ctx.input.language === 'zh') return true;
+  const { regular, bold } = loadedFonts();
+  const { pdf, items, scale, form } = ctx.m;
+  const dates = ctx.input.evaluations.flatMap((e) => [ctx.date(e.interviewDate), ctx.when(e.updatedAt)]);
+  const printed = [pdf, items, scale, form.rounds, form.results, ctx.input, dates, ctx.when(ctx.input.printedAt)];
+  return [...new Set(JSON.stringify(printed))].some((char) => {
+    const code = char.codePointAt(0)!;
+    return !regular.hasGlyphForCodePoint(code) || !bold.hasGlyphForCodePoint(code);
+  });
 }
 
 /** The width of a string at a size, as react-pdf will draw it (Sarabun, Noto SC for what Sarabun lacks). */
@@ -211,7 +226,7 @@ function widthAt(size: number, bold = false) {
   return (text: string) => {
     let width = 0;
     for (const char of text) {
-      const face = latin.hasGlyphForCodePoint(char.codePointAt(0)!) ? latin : f.chinese;
+      const face = latin.hasGlyphForCodePoint(char.codePointAt(0)!) ? latin : (chineseFont() ?? latin);
       width += (face.layout(char).advanceWidth / face.unitsPerEm) * size;
     }
     return width;
@@ -252,6 +267,9 @@ interface Ctx {
   input: InterviewPdfInput;
   date: (iso: string) => string;
   when: (d: Date) => string;
+  /** Whether the form needs Noto Sans SC. */
+  chinese: boolean;
+  page: Style[];
 }
 
 /** The letterhead, the title and the candidate block — the top of every page. */
@@ -334,7 +352,7 @@ function FormPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: PrintedRo
   );
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="A4" style={ctx.page}>
       <Top
         ctx={ctx}
         dates={datesOf(
@@ -446,7 +464,7 @@ function ConclusionPage({ ctx, r1, r2 }: { ctx: Ctx; r1?: PrintedRound; r2?: Pri
   };
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="A4" style={ctx.page}>
       <Top
         ctx={ctx}
         dates={datesOf(
@@ -510,7 +528,7 @@ function SummaryPage({ ctx, byRound }: { ctx: Ctx; byRound: Record<1 | 2, Printe
   );
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="A4" style={ctx.page}>
       <Top ctx={ctx} dates={datesOf(ctx, all)} />
       <T style={s.formFor}>{`${p.formFor[input.role]} — ${p.summaryTitle}`}</T>
       <T style={s.summaryNote}>
@@ -551,7 +569,7 @@ function SummaryPage({ ctx, byRound }: { ctx: Ctx; byRound: Record<1 | 2, Printe
   );
 }
 
-function InterviewForm({ input }: { input: InterviewPdfInput }) {
+function contextOf(input: InterviewPdfInput): Ctx {
   const m = MESSAGES[input.language].interviews;
   const ctx: Ctx = {
     m,
@@ -567,8 +585,17 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
         timeStyle: 'short',
         timeZone: 'Asia/Bangkok',
       }).format(d),
+    chinese: false,
+    page: [],
   };
+  ctx.chinese = needsChinese(ctx);
+  const family = ctx.chinese ? ['Sarabun', 'NotoSansSC'] : ['Sarabun'];
+  ctx.page = [s.page, { fontFamily: family as unknown as string }];
+  return ctx;
+}
 
+function InterviewForm({ ctx }: { ctx: Ctx }) {
+  const { input } = ctx;
   const kept = newestPerEvaluator(input.evaluations);
   const byRound = { 1: kept.filter((e) => e.round === 1), 2: kept.filter((e) => e.round === 2) } as Record<
     1 | 2,
@@ -607,5 +634,7 @@ function InterviewForm({ input }: { input: InterviewPdfInput }) {
 
 /** The filled-in form, as PDF bytes. */
 export async function renderInterviewPdf(input: InterviewPdfInput): Promise<Uint8Array> {
-  return new Uint8Array(await renderToBuffer(<InterviewForm input={input} />));
+  const ctx = contextOf(input);
+  if (ctx.chinese) await Font.load({ fontFamily: 'NotoSansSC' });
+  return new Uint8Array(await renderToBuffer(<InterviewForm ctx={ctx} />));
 }
