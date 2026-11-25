@@ -36,3 +36,6 @@ next-env.d.ts
 # Playwright (npm run e2e)
 /playwright-report
 /test-results
+
+# pictures in every width (npm run build:images)
+/public/_img

@@ -37,6 +37,12 @@ export function createLocalStore(directory: string): ObjectStore {
 
     read,
 
+    // Development only: whole is fine.
+    async open(objectPath) {
+      const bytes = await read(objectPath);
+      return { body: bytes as BodyInit, size: bytes.byteLength };
+    },
+
     async move(from, to) {
       const source = fileOf(from);
       const target = fileOf(to);
