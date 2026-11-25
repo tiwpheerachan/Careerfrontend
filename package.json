@@ -7,7 +7,8 @@
   "scripts": {
     "predev": "npm run docs:api",
     "dev": "next dev -p 3000",
-    "build": "npm run docs:api && next build",
+    "build": "npm run docs:api && npm run build:images && next build",
+    "build:images": "node scripts/build-images.mjs",
     "start": "next start -H 0.0.0.0",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint .",
@@ -90,6 +91,7 @@
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.1.2",
     "prettier": "^3.9.9",
+    "sharp": "0.35.5",
     "typescript": "5.9.3",
     "vitest": "4.1.11"
   }

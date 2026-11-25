@@ -16,7 +16,8 @@ services:
     # Migrations run on every deploy, before the new instance takes traffic.
     # A failed migration stops the deploy and the old version keeps serving.
     preDeployCommand: npm run db:migrate:deploy
-    startCommand: npm run start
+    # Not `npm run start`: npm stays in memory beside the server (~30 MB of 512).
+    startCommand: node node_modules/next/dist/bin/next start -H 0.0.0.0
 
     # Answers 200 even when Postgres is unreachable (the failure is in the
     # body), so a database blip does not make Render cycle the instance.

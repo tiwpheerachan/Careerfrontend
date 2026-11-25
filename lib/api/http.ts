@@ -93,10 +93,13 @@ export function handler<P = unknown>(
     const audit = auditStart(request);
 
     let response: Response;
+    held.by.set(request, 0);
     try {
       response = await run(request, { log: logger, requestId: id }, route);
     } catch (err) {
       response = failure(err, logger);
+    } finally {
+      releaseBody(request);
     }
 
     response.headers.set('x-request-id', id);
@@ -146,39 +149,81 @@ function issuesOf(zodError: z.ZodError): Array<{ path: string; message: string }
 /** The largest JSON body any endpoint takes. The biggest real one (a full application form) is a few KB. */
 export const MAX_JSON_BYTES = 1024 * 1024;
 
+/** Upload bytes held by all requests together. One request alone may pass it, up to its own limit. */
+const BODY_BUDGET = 40 * 1024 * 1024;
+
+/** Once per process (Symbol.for on globalThis), not once per bundle. */
+const HELD = Symbol.for('shd-careers.heldBodies');
+const held: { total: number; by: WeakMap<Request, number> } = ((
+  globalThis as { [HELD]?: { total: number; by: WeakMap<Request, number> } }
+)[HELD] ??= { total: 0, by: new WeakMap() });
+
 /**
- * The body's bytes, refused once they pass `max`. Counted as they arrive: a
- * chunked request has no content-length to check, and request.json() or
- * request.formData() would buffer whatever is sent — a few 500 MB posts are
- * enough to take the instance down.
+ * A body is held until its request is answered, not just while it arrives:
+ * handler() starts the count and ends it. A chunk that arrives after that, or
+ * a request outside handler(), is not counted — nothing would ever give it back.
  */
-export async function readBody(request: Request, max: number, message = 'The request body is too large.') {
+function releaseBody(request: Request): void {
+  held.total -= held.by.get(request) ?? 0;
+  held.by.delete(request);
+}
+
+/**
+ * The body as a stream that fails once it passes `max`. Counted as it arrives:
+ * a chunked request has no content-length to check, and request.json() or
+ * request.formData() would buffer whatever is sent — a few 500 MB posts are
+ * enough to take the instance down. So are two of 60 MB, each within its
+ * limit: past BODY_BUDGET in all, a request is told to try again (503). By
+ * what has arrived, not what was declared: a slow or idle upload blocks nobody.
+ */
+function limited(request: Request, max: number, message: string) {
   if (Number(request.headers.get('content-length') ?? 0) > max) throw new BadRequestError(message);
-  const chunks: Uint8Array[] = [];
   let size = 0;
-  const reader = request.body?.getReader();
-  if (!reader) return Buffer.alloc(0);
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) return Buffer.concat(chunks);
-    size += value.byteLength;
-    if (size > max) {
-      await reader.cancel();
-      throw new BadRequestError(message);
-    }
-    chunks.push(value);
+  const state: { error?: Error } = {};
+  const refuse = (error: Error) => {
+    state.error = error;
+    throw error;
+  };
+  const stream = request.body?.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        size += chunk.byteLength;
+        if (size > max) refuse(new BadRequestError(message));
+        const before = held.by.get(request);
+        if (before === undefined) return controller.enqueue(chunk);
+        const own = before + chunk.byteLength;
+        const total = held.total + chunk.byteLength;
+        if (total > BODY_BUDGET && total > own) {
+          refuse(new UnavailableError('Too many uploads at the moment. Please try again in a minute.'));
+        }
+        held.by.set(request, own);
+        held.total = total;
+        controller.enqueue(chunk);
+      },
+    }),
+  );
+  return { body: new Response(stream ?? null, { headers: bodyHeaders(request) }), state };
+}
+
+const bodyHeaders = (request: Request) => ({ 'content-type': request.headers.get('content-type') ?? '' });
+
+/** The body's bytes, refused once they pass `max`. */
+export async function readBody(request: Request, max: number, message = 'The request body is too large.') {
+  const { body, state } = limited(request, max, message);
+  try {
+    return Buffer.from(await body.arrayBuffer());
+  } catch (err) {
+    throw state.error ?? err;
   }
 }
 
 /** A multipart body, capped like readBody. Unreadable → 400 with `invalid`. */
 export async function readFormData(request: Request, max: number, tooLarge: string, invalid: string) {
-  const bytes = await readBody(request, max, tooLarge);
+  const { body, state } = limited(request, max, tooLarge);
   try {
-    return await new Response(bytes, {
-      headers: { 'content-type': request.headers.get('content-type') ?? '' },
-    }).formData();
+    return await body.formData();
   } catch {
-    throw new BadRequestError(invalid);
+    throw state.error ?? new BadRequestError(invalid);
   }
 }
 

@@ -29,6 +29,16 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
     }
   }
 
+  async function fetchObject(objectPath: string): Promise<Response> {
+    const response = await call(`object/authenticated/${options.bucket}/${encode(objectPath)}`, { method: 'GET' });
+    if (response.status === 404 || response.status === 400) {
+      await response.body?.cancel();
+      throw new NotFoundError('file', objectPath);
+    }
+    if (!response.ok) throw new Error(`Storage read failed (${response.status}): ${await response.text()}`);
+    return response;
+  }
+
   return {
     async put(objectPath, bytes, contentType) {
       const response = await call(`object/${options.bucket}/${encode(objectPath)}`, {
@@ -63,11 +73,16 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
       }
     },
 
+    async open(objectPath) {
+      const response = await fetchObject(objectPath);
+      const length = response.headers.get('content-length');
+      // fetch undoes a content-encoding, and then the length is not the body's.
+      const size = length && !response.headers.has('content-encoding') ? Number(length) : null;
+      return { body: response.body ?? '', size };
+    },
+
     async read(objectPath) {
-      const response = await call(`object/authenticated/${options.bucket}/${encode(objectPath)}`, { method: 'GET' });
-      if (response.status === 404 || response.status === 400) throw new NotFoundError('file', objectPath);
-      if (!response.ok) throw new Error(`Storage read failed (${response.status}): ${await response.text()}`);
-      return new Uint8Array(await response.arrayBuffer());
+      return new Uint8Array(await (await fetchObject(objectPath)).arrayBuffer());
     },
   };
 }

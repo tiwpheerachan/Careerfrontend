@@ -135,6 +135,16 @@ describe('a photo with the form', () => {
     }
     expect((await call(formList.GET)).body.total).toBe(0);
   });
+
+  it('400 for a tiny PNG of a huge picture, without decoding it', async () => {
+    const bytes = new Uint8Array(await FILES.photo().arrayBuffer());
+    const view = new DataView(bytes.buffer);
+    view.setUint32(16, 8000);
+    view.setUint32(20, 8000);
+    const res = await sendWith(new File([bytes], 'me.png', { type: 'image/png' }));
+    expect(res.status).toBe(400);
+    expect(res.body.error.issues[0]).toEqual({ path: 'photo', message: 'too many pixels' });
+  });
 });
 
 describe('the admin side', () => {
