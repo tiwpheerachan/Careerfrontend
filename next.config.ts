@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { DEVICE_SIZES, IMAGE_SIZES } from './lib/image-widths';
 
 /**
  * Sent on every response. No CSP yet: it needs a nonce for Next's inline
@@ -18,17 +19,28 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    // The default minus 3840. The optimizer resizes in this process with sharp,
-    // and a 4K variant of a large photo was the biggest memory spike on the
-    // 512 MB Render instance. Sources in public/images are kept ≤ 2560 px wide.
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
-    qualities: [75],
-    // Photos change with a deploy, not daily: fewer re-optimisations, and
-    // Cloudflare can hold /_next/image this long once a Cache Rule allows it.
-    minimumCacheTTL: 2678400, // 31 days
+    // Nothing is resized while serving: scripts/build-images.mjs makes every width at build
+    // time. Resizing in this process (sharp) took the 512 MB Render instance down. With a
+    // custom loader /_next/image answers 404.
+    loader: 'custom',
+    loaderFile: './lib/image-loader.ts',
+    deviceSizes: DEVICE_SIZES,
+    imageSizes: IMAGE_SIZES,
+  },
+  experimental: {
+    // What Next buffers of a body sent to a page (proxy.ts matches it; /api is not matched and
+    // has its own limits). The default is 10 MB per request; no page takes an upload.
+    proxyClientMaxBodySize: '1mb',
   },
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      // A day, not longer: the names carry no hash, so a replaced picture keeps its url.
+      {
+        source: '/_img/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
+    ];
   },
 };
 
