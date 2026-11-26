@@ -1,5 +1,16 @@
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, date, index, pgTable, smallint, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  boolean,
+  date,
+  index,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { lifecycle, timestamps } from './columns';
 import { applicationFileKind, applicationStage, educationLevel, locale } from './enums';
 import { primaryPk, publicId, refPk } from './ids';
@@ -38,10 +49,13 @@ export const applications = pgTable(
     websiteUrl: text('website_url'),
     sourceChannel: text('source_channel'),
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /** The browser's id for this submission (migration 0014): sent again, it is the same application. */
+    submissionId: uuid('submission_id'),
     ...timestamps(),
   },
   (table) => [
     uniqueIndex('applications_id_idx').on(table.id),
+    uniqueIndex('applications_submission_idx').on(table.submissionId),
     index('applications_job_idx').on(table.jobsPk),
     index('applications_stage_idx').on(table.stage),
     index('applications_created_idx').on(table.createdAt.desc()),

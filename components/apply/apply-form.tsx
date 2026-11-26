@@ -24,6 +24,7 @@ import { acceptOf, checkFile, fileKey, MAX_ATTACHMENTS } from './files';
 import { MonthRange } from './month-year-picker';
 import { MAX_EDUCATIONS, MAX_EXPERIENCES, OTHER_COUNTRY, PHONE_CODES, RESIDENCE_COUNTRIES } from './options';
 import { SkillsPicker } from './skills-picker';
+import { fileMark, submissionDone, submissionHeaders } from '@/components/submission';
 import { sendApplication, type Issue } from './submit';
 import { SubmitDialog, type Phase } from './submit-dialog';
 import { Turnstile } from './turnstile';
@@ -562,8 +563,13 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
     if (resumeFile) body.append('resume', resumeFile);
     attachments.forEach((f) => body.append('attachments', f));
 
+    const { turnstileToken: token, ...sentFields } = textFields();
+    const headers = await submissionHeaders(
+      JSON.stringify([job.code, sentFields, fileMark(resumeFile), attachments.map(fileMark)]),
+      token,
+    );
     let uploaded = false;
-    const outcome = await sendApplication(job.code, body, {
+    const outcome = await sendApplication(job.code, body, headers, {
       onProgress: (percent) => setHint(t('modal.hintUploading', { percent })),
       onUploaded: () => {
         uploaded = true;
@@ -577,6 +583,7 @@ export function ApplyForm({ job, turnstileSiteKey }: { job: ApplyJob; turnstileS
 
     switch (outcome.kind) {
       case 'created':
+        submissionDone();
         try {
           sessionStorage.removeItem(draftKey(job.code));
         } catch {

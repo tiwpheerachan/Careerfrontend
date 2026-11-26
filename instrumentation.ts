@@ -29,6 +29,11 @@ export async function register(): Promise<void> {
       // Errors only. Tracing is a separate decision, with its own cost.
       tracesSampleRate: 0,
       dataCollection: SENTRY_DATA_COLLECTION,
+      // A failed query's message ends with every value it was sent.
+      beforeSend(event) {
+        for (const e of event.exception?.values ?? []) e.value = e.value?.split('\nparams:')[0];
+        return event;
+      },
     });
   }
 

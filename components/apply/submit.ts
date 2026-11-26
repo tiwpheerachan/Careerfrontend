@@ -1,3 +1,5 @@
+import { SUBMIT_TIMEOUT_MS } from '@/components/submission';
+
 /**
  * POST /api/v1/jobs/{code}/applications with XMLHttpRequest — fetch cannot
  * report upload progress. Resolves with what the server said; never throws.
@@ -24,6 +26,7 @@ interface ErrorBody {
 export function sendApplication(
   code: string,
   body: FormData,
+  headers: Record<string, string>,
   handlers: { onProgress: (percent: number) => void; onUploaded: () => void },
 ): Promise<SubmitOutcome> {
   return new Promise((resolve) => {
@@ -31,6 +34,8 @@ export function sendApplication(
     xhr.open('POST', `/api/v1/jobs/${encodeURIComponent(code)}/applications`);
     xhr.responseType = 'text';
     xhr.setRequestHeader('Accept', 'application/json');
+    for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
+    xhr.timeout = SUBMIT_TIMEOUT_MS;
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) handlers.onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));

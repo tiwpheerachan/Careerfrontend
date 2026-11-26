@@ -11,7 +11,8 @@ import {
   UnavailableError,
 } from '@/lib/errors';
 import { log, type Logger } from '@/lib/log';
-import { auditStart } from './audit';
+import { auditStart, noteBody } from './audit';
+import { requestEnded, requestStarted } from './in-flight';
 
 /**
  * The HTTP edge: input in, JSON and status codes out.
@@ -59,7 +60,9 @@ export function failure(err: unknown, logger: Logger = log): Response {
       'retry-after': String(err.retryAfter),
     });
   }
-  if (err instanceof UnavailableError) return error(503, 'unavailable', err.message);
+  if (err instanceof UnavailableError) {
+    return json<ErrorBody>({ error: { code: 'unavailable', message: err.message } }, 503, { 'retry-after': '30' });
+  }
 
   logger.error({ err }, 'unhandled error');
   return error(500, 'internal', 'Something went wrong handling that request.');
@@ -75,6 +78,26 @@ export interface HandlerContext {
   /** A logger carrying this request's id; every line it writes can be found by that id. */
   log: Logger;
   requestId: string;
+}
+
+/** What takes memory or time among the GETs. */
+const HEAVY = /\/(files\/[^/]+|resume|pdf|export|application-form)$/;
+
+/** The path for the log: an invitation's token is the key to it. */
+function logPath(request: Request): string {
+  return new URL(request.url).pathname.replace(/\/evaluate\/[^/]+/, '/evaluate/{token}');
+}
+
+/**
+ * A change to the admin or an evaluation from another site's page is refused,
+ * whatever cookies came along. Browsers say where a request comes from
+ * (Sec-Fetch-Site); tools that do not send it carry no one's cookies.
+ */
+function refuseForeign(request: Request): void {
+  if (request.method === 'GET' || request.method === 'HEAD') return;
+  if (!/^\/api\/v1\/(admin|evaluate)\//.test(new URL(request.url).pathname)) return;
+  const site = request.headers.get('sec-fetch-site');
+  if (site && site !== 'same-origin' && site !== 'none') throw new ForbiddenError('Not from this site.');
 }
 
 /**
@@ -93,13 +116,19 @@ export function handler<P = unknown>(
     const audit = auditStart(request);
 
     let response: Response;
+    const path = logPath(request);
+    const flight = requestStarted(request.method, path);
+    // Written before the work too, for what can be heavy: a killed process logs no ending.
+    if (request.method !== 'GET' || HEAVY.test(path)) logger.info({ method: request.method, path }, 'request start');
     held.by.set(request, 0);
     try {
+      refuseForeign(request);
       response = await run(request, { log: logger, requestId: id }, route);
     } catch (err) {
       response = failure(err, logger);
     } finally {
       releaseBody(request);
+      requestEnded(flight);
     }
 
     response.headers.set('x-request-id', id);
@@ -107,7 +136,7 @@ export function handler<P = unknown>(
     logger.info(
       {
         method: request.method,
-        path: new URL(request.url).pathname,
+        path,
         status: response.status,
         ms: Math.round(performance.now() - started),
       },
@@ -168,71 +197,98 @@ function releaseBody(request: Request): void {
   held.by.delete(request);
 }
 
+/** An upload that sends less than this in each window, or takes longer than the total, is dropped. */
+const UPLOAD_WINDOW_MS = 15_000;
+const UPLOAD_WINDOW_BYTES = 64 * 1024;
+const UPLOAD_TOTAL_MS = 180_000;
+
 /**
  * The body as a stream that fails once it passes `max`. Counted as it arrives:
  * a chunked request has no content-length to check, and request.json() or
  * request.formData() would buffer whatever is sent — a few 500 MB posts are
- * enough to take the instance down. So are two of 60 MB, each within its
- * limit: past BODY_BUDGET in all, a request is told to try again (503). By
- * what has arrived, not what was declared: a slow or idle upload blocks nobody.
+ * enough to take the instance down.
+ *
+ * An upload also shares BODY_BUDGET: two of 60 MB, each within its limit, would
+ * take the instance down, so past it an upload is told to try again (503) —
+ * uploads only, never JSON, or one upload would stop everyone's saving. And it
+ * must keep arriving: one left half sent would keep its share.
  */
-function limited(request: Request, max: number, message: string) {
+function limited(request: Request, max: number, message: string, upload: boolean) {
   if (Number(request.headers.get('content-length') ?? 0) > max) throw new BadRequestError(message);
   let size = 0;
   const state: { error?: Error } = {};
+  const stopped = new AbortController();
   const refuse = (error: Error) => {
     state.error = error;
     throw error;
   };
-  const stream = request.body?.pipeThrough(
-    new TransformStream<Uint8Array, Uint8Array>({
-      transform(chunk, controller) {
-        size += chunk.byteLength;
-        if (size > max) refuse(new BadRequestError(message));
-        const before = held.by.get(request);
-        if (before === undefined) return controller.enqueue(chunk);
-        const own = before + chunk.byteLength;
-        const total = held.total + chunk.byteLength;
-        if (total > BODY_BUDGET && total > own) {
-          refuse(new UnavailableError('Too many uploads at the moment. Please try again in a minute.'));
-        }
-        held.by.set(request, own);
-        held.total = total;
-        controller.enqueue(chunk);
-      },
-    }),
-  );
-  return { body: new Response(stream ?? null, { headers: bodyHeaders(request) }), state };
+  const transform = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      size += chunk.byteLength;
+      if (size > max) refuse(new BadRequestError(message));
+      const before = held.by.get(request);
+      if (!upload || before === undefined) return controller.enqueue(chunk);
+      const own = before + chunk.byteLength;
+      const total = held.total + chunk.byteLength;
+      if (total > BODY_BUDGET && total > own) {
+        refuse(new UnavailableError('Too many uploads at the moment. Please try again in a minute.'));
+      }
+      held.by.set(request, own);
+      held.total = total;
+      controller.enqueue(chunk);
+    },
+  });
+  const started = Date.now();
+  let seen = 0;
+  const watch = setInterval(() => {
+    if (size - seen < UPLOAD_WINDOW_BYTES || Date.now() - started > UPLOAD_TOTAL_MS) {
+      state.error ??= new BadRequestError('The upload took too long. Please try again.');
+      stopped.abort(state.error);
+    }
+    seen = size;
+  }, UPLOAD_WINDOW_MS);
+  watch.unref();
+  const stream = request.body?.pipeThrough(transform, { signal: stopped.signal });
+  return {
+    body: new Response(stream ?? null, { headers: bodyHeaders(request) }),
+    state,
+    done: () => clearInterval(watch),
+  };
 }
 
 const bodyHeaders = (request: Request) => ({ 'content-type': request.headers.get('content-type') ?? '' });
 
 /** The body's bytes, refused once they pass `max`. */
 export async function readBody(request: Request, max: number, message = 'The request body is too large.') {
-  const { body, state } = limited(request, max, message);
+  const { body, state, done } = limited(request, max, message, false);
   try {
     return Buffer.from(await body.arrayBuffer());
   } catch (err) {
     throw state.error ?? err;
+  } finally {
+    done();
   }
 }
 
 /** A multipart body, capped like readBody. Unreadable → 400 with `invalid`. */
 export async function readFormData(request: Request, max: number, tooLarge: string, invalid: string) {
-  const { body, state } = limited(request, max, tooLarge);
+  const { body, state, done } = limited(request, max, tooLarge, true);
   try {
     return await body.formData();
   } catch {
     throw state.error ?? new BadRequestError(invalid);
+  } finally {
+    done();
   }
 }
 
 /** Parses and validates a JSON body against the endpoint's schema. Too large, malformed or invalid → 400. */
 export async function parseBody<S extends z.ZodType>(request: Request, schema: S): Promise<z.infer<S>> {
-  const bytes = await readBody(request, MAX_JSON_BYTES);
+  const text = (await readBody(request, MAX_JSON_BYTES)).toString('utf8');
+  noteBody(request, text);
   let raw: unknown;
   try {
-    raw = JSON.parse(bytes.toString('utf8'));
+    raw = JSON.parse(text);
   } catch {
     throw new BadRequestError('Request body must be valid JSON.');
   }

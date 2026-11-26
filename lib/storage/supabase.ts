@@ -1,6 +1,9 @@
 import { NotFoundError, UnavailableError } from '@/lib/errors';
 import type { ObjectStore } from './index';
 
+/** Long enough for a 10 MB file; a storage that stopped answering must not hold an upload for ever. */
+const TIMEOUT_MS = 60_000;
+
 /**
  * Supabase Storage over its REST API with fetch — the same approach as
  * shd_onelink (lib/api/storage.ts): a few calls, no client library.
@@ -23,6 +26,7 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
         // `apikey`, Storage authorises on `authorization`.
         headers: { apikey: options.key, authorization: `Bearer ${options.key}`, ...init.headers },
         cache: 'no-store',
+        signal: init.signal ?? AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (error) {
       throw new UnavailableError(`File storage is unreachable: ${error instanceof Error ? error.message : error}`);
@@ -30,7 +34,13 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
   }
 
   async function fetchObject(objectPath: string): Promise<Response> {
-    const response = await call(`object/authenticated/${options.bucket}/${encode(objectPath)}`, { method: 'GET' });
+    // Until the answer starts, not until it ends: a large download to a slow client takes its time.
+    const starting = new AbortController();
+    const timer = setTimeout(() => starting.abort(), TIMEOUT_MS);
+    const response = await call(`object/authenticated/${options.bucket}/${encode(objectPath)}`, {
+      method: 'GET',
+      signal: starting.signal,
+    }).finally(() => clearTimeout(timer));
     if (response.status === 404 || response.status === 400) {
       await response.body?.cancel();
       throw new NotFoundError('file', objectPath);
@@ -75,10 +85,7 @@ export function createSupabaseStore(options: { origin: string; key: string; buck
 
     async open(objectPath) {
       const response = await fetchObject(objectPath);
-      const length = response.headers.get('content-length');
-      // fetch undoes a content-encoding, and then the length is not the body's.
-      const size = length && !response.headers.has('content-encoding') ? Number(length) : null;
-      return { body: response.body ?? '', size };
+      return response.body ?? '';
     },
 
     async read(objectPath) {

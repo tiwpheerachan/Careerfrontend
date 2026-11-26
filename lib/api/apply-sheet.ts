@@ -3,6 +3,14 @@ import type { Logger } from '@/lib/log';
 import type { ApplicationInput } from '@/lib/repositories/applications';
 
 /**
+ * Text a sheet must show, not run: a cell starting with = + - @ is a formula to
+ * Google Sheets (=IMPORTXML(...) in a name would send other rows away). The
+ * leading ' is how a sheet marks text, and is not shown.
+ */
+const asCells = (_key: string, value: unknown) =>
+  typeof value === 'string' && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+
+/**
  * One row per application in HR's Google Sheet, through the same Apps Script
  * webhook the old site used. Off unless APPLY_SHEET_WEBHOOK_URL is set.
  *
@@ -26,26 +34,29 @@ export async function pushToApplySheet(
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       signal: AbortSignal.timeout(15_000),
-      body: JSON.stringify({
-        submitted_at: new Date().toISOString(),
-        application_id: application.id,
-        job_id: application.jobCode,
-        job_title: application.jobTitle,
-        first_name: input.firstName,
-        last_name: input.lastName,
-        email: input.email,
-        phone: input.phone,
-        residence_country: input.residenceCountry,
-        address: input.address,
-        visa_required: input.visaRequired,
-        available_start_date: input.availableFrom,
-        website_url: input.websiteUrl,
-        source_channel: input.sourceChannel,
-        skills_json: input.skills,
-        education_json: input.educations,
-        experience_json: input.experiences,
-        attachments_count: input.files.length,
-      }),
+      body: JSON.stringify(
+        {
+          submitted_at: new Date().toISOString(),
+          application_id: application.id,
+          job_id: application.jobCode,
+          job_title: application.jobTitle,
+          first_name: input.firstName,
+          last_name: input.lastName,
+          email: input.email,
+          phone: input.phone,
+          residence_country: input.residenceCountry,
+          address: input.address,
+          visa_required: input.visaRequired,
+          available_start_date: input.availableFrom,
+          website_url: input.websiteUrl,
+          source_channel: input.sourceChannel,
+          skills_json: input.skills,
+          education_json: input.educations,
+          experience_json: input.experiences,
+          attachments_count: input.files.length,
+        },
+        asCells,
+      ),
     });
     if (!response.ok) log.warn({ status: response.status, applicationId: application.id }, 'apply sheet: not accepted');
   } catch (err) {

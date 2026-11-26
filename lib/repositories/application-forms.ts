@@ -24,6 +24,7 @@ export interface ApplicationFormCreate {
   resume?: { path: string; name: string; type: string } | null;
   /** The applicant's photo, already in storage; null for none. */
   photo?: { path: string; type: string } | null;
+  submissionId?: string | null;
 }
 
 export interface ApplicationFormListItem {
@@ -45,7 +46,8 @@ export function createApplicationFormRepository(db: Database) {
   const live = ne(applicationForms.status, 'DELETED');
 
   return {
-    async create({ resume, photo, ...input }: ApplicationFormCreate): Promise<{ id: string }> {
+    /** `repeated`: this submission was already saved; nothing was written. */
+    async create({ resume, photo, ...input }: ApplicationFormCreate): Promise<{ id: string; repeated: boolean }> {
       const now = new Date();
       const [row] = await db
         .insert(applicationForms)
@@ -59,8 +61,14 @@ export function createApplicationFormRepository(db: Database) {
           sensitiveConsentAt: input.sensitive ? now : null,
           certifiedAt: now,
         })
+        .onConflictDoNothing({ target: applicationForms.submissionId })
         .returning({ id: applicationForms.id });
-      return row!;
+      if (row) return { id: row.id, repeated: false };
+      const [saved] = await db
+        .select({ id: applicationForms.id })
+        .from(applicationForms)
+        .where(eq(applicationForms.submissionId, input.submissionId!));
+      return { id: saved!.id, repeated: true };
     },
 
     /** Newest first; `q` matches the names, email, mobile or position. */

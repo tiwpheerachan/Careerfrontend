@@ -1,3 +1,4 @@
+import { inflateSync } from 'node:zlib';
 import type { ApplicationFileKind } from '@/lib/db/schema';
 
 /**
@@ -50,24 +51,50 @@ export function sniff(bytes: Uint8Array): FileType | undefined {
 
 /** The most pixels a PNG photo may have. The wizard's own photo is 640×800 (and a JPEG). */
 const MAX_PNG_PIXELS = 4_000_000;
+/** The most its pixels may unpack to: 4 bytes of 2 for each, and a filter byte a row. */
+const MAX_PNG_RAW = MAX_PNG_PIXELS * 8 + MAX_PNG_PIXELS;
+/** All a still picture needs. Text, colour profiles and animation are left out. */
+const PNG_CHUNKS = new Set(['IHDR', 'PLTE', 'tRNS', 'IDAT', 'IEND']);
 
 /**
- * Whether a PNG is safe to decode. pdf-lib unpacks the whole picture, so a
- * 259 KB file of 8000×8000 pixels takes 800 MB. Its decoder goes by the last
- * IHDR and also unpacks animation frames: exactly one IHDR, and no frames.
+ * The same PNG, made safe for pdf-lib to decode, or null. Its decoder trusts the
+ * file: it unpacks whatever size the header says (a 259 KB file took 800 MB),
+ * goes by the last of several headers, and reads a text chunk for as long as
+ * the chunk claims to be (48 bytes ended the process). So: only the chunks that
+ * are the picture, each inside the file, one small header, and pixels that
+ * really unpack.
  */
-export function pngFits(bytes: Uint8Array): boolean {
+export function safePng(bytes: Uint8Array): Uint8Array | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let headers = 0;
-  for (let at = 8; at + 12 <= bytes.length; at += 12 + view.getUint32(at)) {
+  const kept: Uint8Array[] = [bytes.subarray(0, 8)];
+  const pixels: Uint8Array[] = [];
+  let header = false;
+  for (let at = 8; at + 12 <= bytes.length;) {
+    const size = view.getUint32(at);
+    const end = at + 12 + size;
+    if (end > bytes.length) return null;
     const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
-    if (type === 'IEND') break;
-    if (type === 'acTL' || type === 'fcTL' || type === 'fdAT') return false;
-    if (type !== 'IHDR') continue;
-    if (++headers > 1 || at + 16 > bytes.length) return false;
-    if (view.getUint32(at + 8) * view.getUint32(at + 12) > MAX_PNG_PIXELS) return false;
+    if (type === 'IHDR') {
+      if (header || size !== 13 || at !== 8) return null;
+      const width = view.getUint32(at + 8);
+      const height = view.getUint32(at + 12);
+      if (!width || !height || width * height > MAX_PNG_PIXELS) return null;
+      header = true;
+    }
+    if (type === 'IDAT') pixels.push(bytes.subarray(at + 8, at + 8 + size));
+    if (PNG_CHUNKS.has(type)) kept.push(bytes.subarray(at, end));
+    if (type === 'IEND') {
+      if (!header || !pixels.length) return null;
+      try {
+        inflateSync(Buffer.concat(pixels), { maxOutputLength: MAX_PNG_RAW });
+      } catch {
+        return null;
+      }
+      return new Uint8Array(Buffer.concat(kept));
+    }
+    at = end;
   }
-  return headers === 1;
+  return null;
 }
 
 /** A file name safe to show and to offer as a download name: no paths, no control characters, ≤ 150 chars. */

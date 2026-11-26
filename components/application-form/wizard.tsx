@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { SUBMIT_TIMEOUT_MS, fileMark, submissionDone, submissionHeaders } from '@/components/submission';
 import s from '@/components/apply/apply.module.css';
 import { FieldError } from '@/components/apply/field';
 import { acceptOf, checkFile } from '@/components/apply/files';
@@ -225,7 +226,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
 
     setSending(true);
     setOutcome(null);
-    const { input, educationLevels, languageCodes } = toInput(draft, locale, turnstileToken || undefined);
+    const { input, educationLevels, languageCodes } = toInput(draft, locale);
     try {
       // With files the form goes as multipart (the browser sets its boundary): the JSON in `data`,
       // the files in `resume` and `photo` (the draft's data URL, back to a file).
@@ -239,10 +240,13 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
       }
       const response = await fetch(`/api/v1/application-forms?locale=${locale}`, {
         method: 'POST',
-        headers: multipart
-          ? { accept: 'application/json' }
-          : { 'content-type': 'application/json', accept: 'application/json' },
+        headers: {
+          accept: 'application/json',
+          ...(multipart ? {} : { 'content-type': 'application/json' }),
+          ...(await submissionHeaders(JSON.stringify([input, draft.photo, fileMark(resume)]), turnstileToken)),
+        },
         body: payload,
+        signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
       });
       const body = (await response.json().catch(() => null)) as {
         id?: string;
@@ -250,6 +254,7 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
       } | null;
 
       if (response.status === 201 && body?.id) {
+        submissionDone();
         try {
           sessionStorage.removeItem(STORAGE_KEY);
         } catch {
@@ -282,9 +287,17 @@ export function ApplicationFormWizard({ jobs, turnstileSiteKey }: { jobs: JobOpt
       }
       setOutcome({
         kind: 'failed',
-        message: response.status === 429 ? te('rateLimited') : (body?.error?.message ?? te('failed')),
+        message:
+          response.status === 429
+            ? te('rateLimited')
+            : response.status === 503
+              ? te('unavailable')
+              : (body?.error?.message ?? te('failed')),
       });
     } catch {
+      // The token may have been used: a second try needs a new one.
+      setTurnstileReset((n) => n + 1);
+      setTurnstileToken('');
       setOutcome({ kind: 'failed', message: te('network') });
     } finally {
       setSending(false);

@@ -6,6 +6,22 @@ import { timeZones } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 
+/** A database that does not answer is as unreachable as one that refuses: Render would restart us for waiting. */
+const TIMEOUT_MS = 3000;
+
+/** One probe at a time: while the database hangs, every poll would take another connection. */
+let probe: Promise<unknown> | undefined;
+async function query() {
+  probe ??= Promise.resolve(
+    db().execute(sql`select current_setting('TimeZone') as time_zone, clock_timestamp()::text as db_clock`),
+  ).finally(() => (probe = undefined));
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer in ${TIMEOUT_MS} ms`)), TIMEOUT_MS);
+  });
+  return Promise.race([probe, late]).finally(() => clearTimeout(timer));
+}
+
 /**
  * GET /api/v1/health — is the database actually reachable.
  *
@@ -23,9 +39,7 @@ export const dynamic = 'force-dynamic';
 export const GET = handler(async (_request, { log }) => {
   const started = performance.now();
   try {
-    const rows = (await db().execute(
-      sql`select current_setting('TimeZone') as time_zone, clock_timestamp()::text as db_clock`,
-    )) as unknown as Array<{
+    const rows = (await query()) as Array<{
       time_zone: string;
       db_clock: string;
     }>;

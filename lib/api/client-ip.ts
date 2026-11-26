@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { serverEnv } from '@/lib/env';
 
 /**
@@ -23,5 +24,5 @@ export function clientIp(request: Request): string | undefined {
     .map((entry) => entry.trim())
     .filter(Boolean);
   const ip = entries[entries.length - env.TRUST_PROXY_HOPS];
-  return ip && /^[0-9a-fA-F:.]{2,45}$/.test(ip) ? ip : undefined;
+  return ip && isIP(ip) ? ip : undefined;
 }

@@ -127,7 +127,23 @@ describe('applications: list', () => {
     const other = await openJob({ code: 'JOB-B' });
     await repos.applications.create(pk, applicationInput());
     await repos.applications.create(other.pk, applicationInput({ email: 'x@example.com' }));
-    expect(await repos.applications.exportRows({ jobId: other.job.id })).toHaveLength(1);
+    const one = [];
+    for await (const rows of repos.applications.exportRows({ jobId: other.job.id })) one.push(...rows);
+    expect(one).toHaveLength(1);
+  });
+
+  it('export in batches: every row once, in the order asked for', async () => {
+    const { pk } = await openJob({ code: 'JOB-A' });
+    for (const firstName of ['bo', 'Al', 'cy', 'di', 'Ed'])
+      await repos.applications.create(pk, applicationInput({ firstName, email: `${firstName}@example.com` }));
+    const batches = [];
+    for await (const rows of repos.applications.exportRows({ sort: 'name' }, 2))
+      batches.push(rows.map((r) => r.firstName));
+    expect(batches).toEqual([['Al', 'bo'], ['cy', 'di'], ['Ed']]);
+
+    const newest = [];
+    for await (const rows of repos.applications.exportRows({}, 2)) newest.push(...rows.map((r) => r.firstName));
+    expect(newest).toEqual(['Ed', 'di', 'cy', 'Al', 'bo']);
   });
 });
 
@@ -152,6 +168,24 @@ describe('applications: analytics', () => {
     expect(a.daily).toHaveLength(30);
     expect(a.daily.at(-1)!.count).toBe(2);
     expect(a.publishedWithoutApplicants.map((j) => j.code)).toEqual(['JOB-EMPTY']);
+  });
+});
+
+describe('applications: analytics and deleted jobs', () => {
+  it('an applicant of a deleted job counts in every number, as in the list', async () => {
+    const { pk, job } = await openJob({ code: 'JOB-A' });
+    await repos.applications.create(pk, applicationInput());
+    const gone = await repos.applications.create(pk, applicationInput({ email: 'b@example.com' }));
+    await repos.applications.softDelete(gone.id, null);
+    await repos.jobs.softDelete(job.id, null);
+
+    const a = await repos.applications.analytics({ days: 7, timeZone: 'Asia/Bangkok' });
+    const listed = (await repos.applications.list({ page: 1, pageSize: 20 })).total;
+    expect(listed).toBe(1);
+    const sum = (rows: Array<{ count: number }>) => rows.reduce((n, r) => n + r.count, 0);
+    expect(a.totals.applications).toBe(listed);
+    for (const rows of [a.daily, a.byDepartment, a.bySource, a.byJob]) expect(sum(rows)).toBe(listed);
+    expect(a.totals.publishedJobs).toBe(0);
   });
 });
 

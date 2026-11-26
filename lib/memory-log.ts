@@ -1,10 +1,13 @@
 import 'server-only';
 import { getHeapStatistics } from 'node:v8';
+import { inFlight } from '@/lib/api/in-flight';
 import { log } from '@/lib/log';
 
-const EVERY_MS = 60_000;
+const EVERY_MS = 5_000;
 /** A line only when the process grew or shrank by this much: a quiet server stays quiet. */
 const STEP_MB = 32;
+/** Of the instance's 512: worth a warning, at most once a minute. */
+const HIGH_MB = 400;
 
 const mb = (bytes: number) => Math.round(bytes / 1024 / 1024);
 
@@ -19,10 +22,17 @@ export function startMemoryLog(): void {
     'memory limits',
   );
   let last = 0;
+  let warned = 0;
   setInterval(() => {
     const now = process.memoryUsage();
-    if (Math.abs(mb(now.rss) - last) < STEP_MB) return;
-    last = mb(now.rss);
-    log.info({ rssMb: last, heapMb: mb(now.heapUsed), externalMb: mb(now.external) }, 'memory');
+    const rssMb = mb(now.rss);
+    const high = rssMb > HIGH_MB && Date.now() - warned > 60_000;
+    if (!high && Math.abs(rssMb - last) < STEP_MB) return;
+    last = rssMb;
+    if (high) warned = Date.now();
+    log[high ? 'warn' : 'info'](
+      { rssMb, heapMb: mb(now.heapUsed), externalMb: mb(now.external), inFlight: inFlight() },
+      high ? 'memory high' : 'memory',
+    );
   }, EVERY_MS).unref();
 }

@@ -143,7 +143,42 @@ describe('a photo with the form', () => {
     view.setUint32(20, 8000);
     const res = await sendWith(new File([bytes], 'me.png', { type: 'image/png' }));
     expect(res.status).toBe(400);
-    expect(res.body.error.issues[0]).toEqual({ path: 'photo', message: 'too many pixels' });
+    expect(res.body.error.issues[0]).toMatchObject({ path: 'photo' });
+  });
+
+  it('400 for a PNG with a chunk longer than the file', async () => {
+    const good = new Uint8Array(await FILES.photo().arrayBuffer());
+    const text = Buffer.from([0x3b, 0x9a, 0xca, 0, ...Buffer.from('tEXta'), 0, 0, 0, 0]);
+    const bytes = Buffer.concat([good.subarray(0, 33), text, good.subarray(33)]);
+    const res = await sendWith(new File([new Uint8Array(bytes)], 'me.png', { type: 'image/png' }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('the same form sent twice', () => {
+  const twice = (id?: string) =>
+    Promise.all(
+      [1, 2].map(() =>
+        call(submit.POST, {
+          path: '/api/v1/application-forms',
+          json: applicationFormInput(),
+          headers: id ? { 'x-submission-id': id } : {},
+        }),
+      ),
+    );
+
+  it('with its id: saved once, both answered with the same form', async () => {
+    const [a, b] = await twice('0b0e7c52-6a0c-4f0e-9c55-1d7c6f1c2a11');
+    expect([a!.status, b!.status]).toEqual([201, 201]);
+    expect(a!.body).toEqual(b!.body);
+    expect((await call(formList.GET)).body.total).toBe(1);
+  });
+
+  it('without an id, or with one that is not a uuid: two forms, as before', async () => {
+    await twice();
+    expect((await call(formList.GET)).body.total).toBe(2);
+    await twice('not-a-uuid');
+    expect((await call(formList.GET)).body.total).toBe(4);
   });
 });
 

@@ -4,6 +4,7 @@ import { clientIp } from '@/lib/api/client-ip';
 import { pushToApplySheet } from '@/lib/api/apply-sheet';
 import { errorMapFor, readFormData, validationLanguage } from '@/lib/api/http';
 import { ApplicationFields } from '@/lib/api/schemas';
+import { submissionIdOf } from '@/lib/api/submission';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import type { ApplicationFileKind } from '@/lib/db/schema';
 import { BadRequestError, NotFoundError, TooManyRequestsError } from '@/lib/errors';
@@ -12,6 +13,7 @@ import type { Logger } from '@/lib/log';
 import type { ApplicationFileInput } from '@/lib/repositories/applications';
 import { objectPath, objectStore } from '@/lib/storage';
 import { store } from '@/lib/store';
+import { TURNSTILE_HEADER } from '@/lib/submission-headers';
 
 /** 5 applications per 10 minutes per IP. Generous for a person, slow for a script. */
 const APPLY_LIMIT = { windowMs: 10 * 60 * 1000, limit: 5 };
@@ -80,7 +82,8 @@ function fieldsOf(form: FormData): Record<string, string> {
 
 /**
  * POST /jobs/{code}/applications, start to finish. The order is cheapest
- * refusal first: rate limit, size, job, fields, Turnstile, files — and only
+ * refusal first: rate limit, job, Turnstile (from its header), size, fields,
+ * files — nothing of the body is read for a closed job or a script — and only
  * then the uploads and the one database transaction. If the transaction
  * fails, the files just uploaded are removed again.
  */
@@ -95,6 +98,12 @@ export async function submitApplication(request: Request, code: string, log: Log
     log.warn('apply: no client IP (TRUST_PROXY_HEADER unset?) — rate limit skipped');
   }
 
+  const job = await repos.jobs.getPublic(code, 'th');
+  const jobsPk = job && (await repos.jobs.openJobPk(code));
+  if (!job || !jobsPk) throw new NotFoundError('job', code);
+
+  await verifyTurnstile(request.headers.get(TURNSTILE_HEADER) ?? undefined, ip);
+
   // Before anything else reads it: refused early by content-length, and by counting when there is none.
   const form = await readFormData(
     request,
@@ -102,10 +111,6 @@ export async function submitApplication(request: Request, code: string, log: Log
     'The files are too large altogether.',
     'Send the application as multipart/form-data.',
   );
-
-  const job = await repos.jobs.getPublic(code, 'th');
-  const jobsPk = job && (await repos.jobs.openJobPk(code));
-  if (!job || !jobsPk) throw new NotFoundError('job', code);
 
   const raw = fieldsOf(form);
   // Field messages in the language the form was filled in.
@@ -118,16 +123,17 @@ export async function submitApplication(request: Request, code: string, log: Log
   if (!parsed.success || issues.length) throw new BadRequestError('The application is not complete.', issues);
   const fields = parsed.data;
 
-  await verifyTurnstile(fields.turnstileToken, ip);
-
   // Upload, then save. Every path is new, under one random folder in jobs/ (forms/ has the application forms').
   const objects = objectStore();
   const folder = `jobs/${crypto.randomUUID()}`;
   const counters: Record<ApplicationFileKind, number> = { RESUME: 0, TRANSCRIPT: 0, ATTACHMENT: 0 };
   const files: ApplicationFileInput[] = [];
+  // Every path tried, before it is written: one whose answer was lost may be there too.
+  const paths: string[] = [];
   try {
     for (const { kind, file, type } of accepted) {
       const storagePath = objectPath(folder, kind, counters[kind]++, type);
+      paths.push(storagePath);
       // Read only now, one at a time: no second copy of every file waits for its turn.
       await objects.put(storagePath, new Uint8Array(await file.arrayBuffer()), CONTENT_TYPES[type]);
       files.push({
@@ -140,16 +146,19 @@ export async function submitApplication(request: Request, code: string, log: Log
     }
 
     const { turnstileToken: _token, termsAccepted: _terms, ...rest } = fields;
-    const input = { ...rest, files };
-    const saved = await repos.applications.create(jobsPk, input);
+    const input = { ...rest, files, submissionId: submissionIdOf(request) };
+    const { repeated, ...saved } = await repos.applications.create(jobsPk, input);
+    if (repeated) {
+      await objects.remove(paths).catch((err) => log.error({ err, folder }, 'apply: cleanup failed'));
+      log.info({ applicationId: saved.id, job: job.code }, 'application sent again');
+      return saved;
+    }
 
     afterResponse(() => pushToApplySheet({ id: saved.id, jobCode: job.code, jobTitle: job.title, input }, log));
     log.info({ applicationId: saved.id, job: job.code, files: files.length }, 'application received');
     return saved;
   } catch (error) {
-    await objects
-      .remove(files.map((f) => f.storagePath))
-      .catch((err) => log.error({ err, folder }, 'apply: cleanup failed'));
+    await objects.remove(paths).catch((err) => log.error({ err, folder }, 'apply: cleanup failed'));
     throw error;
   }
 }

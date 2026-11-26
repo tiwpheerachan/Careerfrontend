@@ -72,7 +72,11 @@ export async function checkInvitee(
 function cookieFrom(request: Request): string | undefined {
   const header = request.headers.get('cookie') ?? '';
   const match = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`).exec(header);
-  return match ? decodeURIComponent(match[1]!) : undefined;
+  try {
+    return match ? decodeURIComponent(match[1]!) : undefined;
+  } catch {
+    return undefined; // malformed: not signed in
+  }
 }
 
 /** For the API: the access, or the matching error (401 / 403 / 404 / 409 / 410 / 503). */

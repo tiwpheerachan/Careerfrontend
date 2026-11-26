@@ -2,13 +2,15 @@ import 'server-only';
 import { clientIp } from '@/lib/api/client-ip';
 import { PDFDocument } from 'pdf-lib';
 import { parseBody, parseValue, readFormData } from '@/lib/api/http';
+import { submissionIdOf } from '@/lib/api/submission';
 import { verifyTurnstile } from '@/lib/api/turnstile';
 import { submitApplicationForm as contract } from '@/lib/api/contracts';
 import { BadRequestError, NotFoundError, TooManyRequestsError } from '@/lib/errors';
-import { CONTENT_TYPES, FILE_RULES, cleanFileName, pngFits, sniff, type FileType } from '@/lib/files';
+import { CONTENT_TYPES, FILE_RULES, cleanFileName, safePng, sniff, type FileType } from '@/lib/files';
 import type { Logger } from '@/lib/log';
 import { objectPath, objectStore } from '@/lib/storage';
 import { store } from '@/lib/store';
+import { TURNSTILE_HEADER } from '@/lib/submission-headers';
 
 /** 5 forms per 10 minutes per IP — the same allowance as applications. */
 const FORM_LIMIT = { windowMs: 10 * 60 * 1000, limit: 5 };
@@ -61,8 +63,14 @@ async function photoOf(file: FormDataEntryValue | null) {
   if (file.size > PHOTO_RULE.maxBytes) {
     throw new BadRequestError('The photo is too large.', [{ path: 'photo', message: 'larger than 5 MB' }]);
   }
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const type = sniff(bytes);
+  const sent = new Uint8Array(await file.arrayBuffer());
+  const type = sniff(sent);
+  const bytes = type === 'png' ? safePng(sent) : sent;
+  if (!bytes) {
+    throw new BadRequestError('The photo cannot be used.', [
+      { path: 'photo', message: 'must be a JPG or a smaller PNG' },
+    ]);
+  }
   // Opened as the PDF will open it: a file that only starts like an image would break every print of the form.
   const opens = async () => {
     const doc = await PDFDocument.create();
@@ -71,9 +79,6 @@ async function photoOf(file: FormDataEntryValue | null) {
       () => false,
     );
   };
-  if (type === 'png' && !pngFits(bytes)) {
-    throw new BadRequestError('The photo is too large.', [{ path: 'photo', message: 'too many pixels' }]);
-  }
   if (!type || !PHOTO_RULE.types.includes(type) || !(await opens())) {
     throw new BadRequestError('The photo must be a JPG or PNG image.', [
       { path: 'photo', message: 'must be JPG or PNG' },
@@ -84,7 +89,7 @@ async function photoOf(file: FormDataEntryValue | null) {
 
 /**
  * The form's photo for its PDF, or null: none sent, its object gone from
- * storage, or too large to decode (stored before pngFits) — the form still prints, with the box empty.
+ * storage, or not safe to decode (stored before safePng) — the form still prints, with the box empty.
  */
 export async function photoOfForm(form: { photoPath: string | null; photoType: string | null }) {
   if (!form.photoPath || !form.photoType) return null;
@@ -95,13 +100,14 @@ export async function photoOfForm(form: { photoPath: string | null; photoType: s
       throw error;
     });
   const png = form.photoType === CONTENT_TYPES.png;
-  if (!bytes || (png && !pngFits(bytes))) return null;
-  return { bytes, png };
+  const safe = bytes && png ? safePng(bytes) : bytes;
+  return safe && { bytes: safe, png };
 }
 
 /**
- * POST /application-forms, start to finish: rate limit, the form (and its
- * résumé and photo, if they came), Turnstile, the job (when one was chosen),
+ * POST /application-forms, start to finish: rate limit, Turnstile (from its
+ * header, before any file is read), the form (and its résumé and photo, if they
+ * came), the job (when one was chosen),
  * the files into storage, then one insert — the files removed again if that fails.
  *
  * The sensitive part (PDPA s.26) is dropped unless its own consent box was
@@ -118,8 +124,12 @@ export async function submitApplicationForm(request: Request, log: Logger): Prom
     log.warn('application form: no client IP (TRUST_PROXY_HEADER unset?) — rate limit skipped');
   }
 
+  const token = request.headers.get(TURNSTILE_HEADER) ?? undefined;
+  const multipart = request.headers.get('content-type')?.includes('multipart/form-data');
+  if (multipart || token) await verifyTurnstile(token, ip);
   const { form, resume, photo } = await bodyOf(request);
-  await verifyTurnstile(form.turnstileToken, ip);
+  // Plain JSON is small enough to read first, and may carry the token itself.
+  if (!multipart && !token) await verifyTurnstile(form.turnstileToken, ip);
 
   let jobsPk: number | null = null;
   let position = form.positionOther;
@@ -156,8 +166,10 @@ export async function submitApplicationForm(request: Request, log: Logger): Prom
   };
   const storedPhoto = photo && { path: objectPath(folder, 'PHOTO', 0, photo.type), type: CONTENT_TYPES[photo.type] };
   const written = [stored?.path, storedPhoto?.path].filter((p): p is string => Boolean(p));
+  const cleanUp = () =>
+    objects.remove(written).catch((err) => log.error({ err, folder }, 'application form: cleanup failed'));
   // The files, then one insert — the files removed again if anything fails.
-  const saved = await (async () => {
+  const { repeated, ...saved } = await (async () => {
     if (resume && stored) await objects.put(stored.path, resume.bytes, stored.type);
     if (photo && storedPhoto) await objects.put(storedPhoto.path, photo.bytes, storedPhoto.type);
     return repos.applicationForms.create({
@@ -173,11 +185,17 @@ export async function submitApplicationForm(request: Request, log: Logger): Prom
       sensitive: sensitiveConsent && sensitive && Object.values(sensitive).some((v) => v !== null) ? sensitive : null,
       resume: stored,
       photo: storedPhoto,
+      submissionId: submissionIdOf(request),
     });
   })().catch(async (error: unknown) => {
-    if (written.length) await objects.remove(written).catch(() => {});
+    if (written.length) await cleanUp();
     throw error;
   });
+  if (repeated) {
+    if (written.length) await cleanUp();
+    log.info({ applicationFormId: saved.id }, 'application form sent again');
+    return saved;
+  }
   log.info(
     {
       applicationFormId: saved.id,
