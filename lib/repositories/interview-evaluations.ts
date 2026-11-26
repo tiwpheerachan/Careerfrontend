@@ -82,6 +82,103 @@ export interface Evaluator {
   name: string | null;
 }
 
+export type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+interface CandidateLinks {
+  applicationsPk: number | null;
+  applicationFormsPk: number | null;
+  interviewCandidatesPk: number | null;
+}
+
+/** An added candidate's links as they are now, held (FOR SHARE) until the transaction ends so link() cannot race it. */
+export async function currentLinks(tx: Tx, links: CandidateLinks): Promise<CandidateLinks> {
+  const { applicationsPk, applicationFormsPk, interviewCandidatesPk } = links;
+  const given = { applicationsPk, applicationFormsPk, interviewCandidatesPk };
+  if (!interviewCandidatesPk || applicationsPk || applicationFormsPk) return given;
+  const [row] = await tx
+    .select({
+      applicationsPk: interviewCandidates.linkedApplicationsPk,
+      applicationFormsPk: interviewCandidates.linkedApplicationFormsPk,
+    })
+    .from(interviewCandidates)
+    .where(eq(interviewCandidates.pk, interviewCandidatesPk))
+    .for('share');
+  return { ...given, ...row };
+}
+
+/**
+ * One evaluation per evaluator, candidate, round and side: before inserting
+ * one, both writers (the admin, an invitation) take their turn here, in their
+ * transaction. The candidate is resolved and held first — the added candidate
+ * FOR SHARE, the application or form FOR KEY SHARE, both against link() —
+ * then the advisory lock, always in that order, so no two can deadlock.
+ * `first`, under the lock, lets a writer refuse before the twin check.
+ * Returns the links to store; a second evaluation is a 409 naming the first.
+ */
+export async function reserveEvaluation(
+  tx: Tx,
+  row: CandidateLinks & Pick<InterviewEvaluationRow, 'candidateName' | 'round' | 'evaluatorRole' | 'evaluatorEmail'>,
+  first?: () => Promise<void>,
+): Promise<CandidateLinks> {
+  const links = await currentLinks(tx, row);
+  const { applicationsPk, applicationFormsPk, interviewCandidatesPk } = links;
+  if (applicationsPk)
+    await tx
+      .select({ pk: applications.pk })
+      .from(applications)
+      .where(eq(applications.pk, applicationsPk))
+      .for('key share');
+  if (applicationFormsPk)
+    await tx
+      .select({ pk: applicationForms.pk })
+      .from(applicationForms)
+      .where(eq(applicationForms.pk, applicationFormsPk))
+      .for('key share');
+
+  const unlinked = and(isNull(interviewEvaluations.applicationsPk), isNull(interviewEvaluations.applicationFormsPk));
+  const [key, who] = applicationsPk
+    ? [`application:${applicationsPk}`, eq(interviewEvaluations.applicationsPk, applicationsPk)]
+    : applicationFormsPk
+      ? [`form:${applicationFormsPk}`, eq(interviewEvaluations.applicationFormsPk, applicationFormsPk)]
+      : interviewCandidatesPk
+        ? [
+            `pending:${interviewCandidatesPk}`,
+            and(unlinked, eq(interviewEvaluations.interviewCandidatesPk, interviewCandidatesPk)),
+          ]
+        : [
+            `name:${row.candidateName.trim()}`,
+            and(
+              unlinked,
+              isNull(interviewEvaluations.interviewCandidatesPk),
+              sql`lower(btrim(${interviewEvaluations.candidateName})) = lower(btrim(${row.candidateName}))`,
+            ),
+          ];
+  // Transaction-level: released at commit, and safe through a transaction pooler.
+  const slot = JSON.stringify(['evaluation', key, row.round, row.evaluatorRole, row.evaluatorEmail]);
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(lower(${slot}::text), 0))`);
+  await first?.();
+
+  // A statement of its own: READ COMMITTED sees whatever the lock waited for.
+  const [twin] = await tx
+    .select({ id: interviewEvaluations.id })
+    .from(interviewEvaluations)
+    .where(
+      and(
+        ne(interviewEvaluations.status, 'DELETED'),
+        who,
+        eq(interviewEvaluations.round, row.round),
+        eq(interviewEvaluations.evaluatorRole, row.evaluatorRole),
+        sql`lower(${interviewEvaluations.evaluatorEmail}) = lower(${row.evaluatorEmail})`,
+      ),
+    )
+    .limit(1);
+  if (twin)
+    throw new ConflictError(
+      `You have already evaluated this round of this candidate (evaluation ${twin.id}) — ask for an edit link to change it.`,
+    );
+  return links;
+}
+
 /** Interview evaluations — migration 0006. */
 export function createInterviewEvaluationRepository(db: Database) {
   const live = ne(interviewEvaluations.status, 'DELETED');
@@ -100,15 +197,27 @@ export function createInterviewEvaluationRepository(db: Database) {
     pendingId: string | null;
   };
 
-  function present({ row, applicationId, applicationFormId, pendingId }: Joined): InterviewEvaluation {
-    // Once a candidate HR added is linked, the application or form decides whose it is.
-    const candidate: EvaluationCandidate = {
+  /** Once a candidate HR added is linked, the application or form decides whose it is. */
+  function candidateOf({
+    row,
+    applicationId,
+    applicationFormId,
+    pendingId,
+  }: Omit<Joined, 'row'> & {
+    row: Pick<InterviewEvaluationRow, 'candidateName' | 'position' | 'department'>;
+  }): EvaluationCandidate {
+    return {
       kind: applicationId ? 'application' : applicationFormId ? 'form' : pendingId ? 'pending' : 'manual',
       id: applicationId ?? applicationFormId ?? pendingId ?? null,
       name: row.candidateName,
       position: row.position,
       department: row.department,
     };
+  }
+
+  function present(from: Joined): InterviewEvaluation {
+    const { row } = from;
+    const candidate = candidateOf(from);
     const scores = { general: row.generalScores, senior: row.seniorScores };
     return {
       id: row.id,
@@ -140,7 +249,7 @@ export function createInterviewEvaluationRepository(db: Database) {
       .leftJoin(interviewCandidates, eq(interviewCandidates.pk, interviewEvaluations.interviewCandidatesPk));
 
   /** The links and the stored columns for one input; 400 for an application or form that is not there. */
-  async function valuesOf(input: InterviewEvaluationInput) {
+  async function valuesOf(db: Tx, input: InterviewEvaluationInput) {
     let applicationsPk: number | null = null;
     let applicationFormsPk: number | null = null;
     let interviewCandidatesPk: number | null = null;
@@ -172,12 +281,10 @@ export function createInterviewEvaluationRepository(db: Database) {
       linkedName = row.name;
     }
     if (input.interviewCandidateId) {
-      const row = await pendingRow(input.interviewCandidateId);
+      const row = await pendingRow(input.interviewCandidateId, db);
       if (!row)
         throw new BadRequestError('No such candidate.', [{ path: 'interviewCandidateId', message: 'not found' }]);
-      // Linked since: the evaluation goes with the application or form, as the others now do.
-      applicationsPk = row.linkedApplicationsPk;
-      applicationFormsPk = row.linkedApplicationFormsPk;
+      // Linked since? reserveEvaluation says: then it goes with the application or form, as the others now do.
       interviewCandidatesPk = row.pk;
       linkedName = row.name;
     }
@@ -204,8 +311,8 @@ export function createInterviewEvaluationRepository(db: Database) {
   }
 
   /** A live candidate HR added, by public id. */
-  async function pendingRow(id: string) {
-    const [row] = await db
+  async function pendingRow(id: string, via: Database | Tx = db) {
+    const [row] = await via
       .select()
       .from(interviewCandidates)
       .where(and(eq(interviewCandidates.id, id), ne(interviewCandidates.status, 'DELETED')))
@@ -432,30 +539,20 @@ export function createInterviewEvaluationRepository(db: Database) {
     forCandidate,
 
     async create(input: InterviewEvaluationInput, evaluator: Evaluator): Promise<InterviewEvaluation> {
-      // One evaluation per evaluator, candidate, round and side — a second is a
-      // 409 pointing at the first (changed through an edit link, not again).
-      const ref: CandidateRef = input.applicationId
-        ? { kind: 'application', id: input.applicationId }
-        : input.applicationFormId
-          ? { kind: 'form', id: input.applicationFormId }
-          : input.interviewCandidateId
-            ? { kind: 'pending', id: input.interviewCandidateId }
-            : { kind: 'manual', name: input.candidateName };
-      const twin = (await forCandidate(ref)).find(
-        (e) =>
-          e.round === input.round &&
-          e.evaluatorRole === input.evaluatorRole &&
-          e.evaluator.email.toLowerCase() === evaluator.email.toLowerCase(),
-      );
-      if (twin)
-        throw new ConflictError(
-          `You have already evaluated this round of this candidate (evaluation ${twin.id}) — ask for an edit link to change it.`,
-        );
-      const [row] = await db
-        .insert(interviewEvaluations)
-        .values({ ...(await valuesOf(input)), evaluatorEmail: evaluator.email, evaluatorName: evaluator.name })
-        .returning({ id: interviewEvaluations.id });
-      return get(row!.id);
+      const id = await db.transaction(async (tx) => {
+        const values = {
+          ...(await valuesOf(tx, input)),
+          evaluatorEmail: evaluator.email,
+          evaluatorName: evaluator.name,
+        };
+        const links = await reserveEvaluation(tx, values);
+        const [row] = await tx
+          .insert(interviewEvaluations)
+          .values({ ...values, ...links })
+          .returning({ id: interviewEvaluations.id });
+        return row!.id;
+      });
+      return get(id);
     },
 
     /** Newest interview first; `q` matches the candidate, position, department or evaluator. */
@@ -489,34 +586,72 @@ export function createInterviewEvaluationRepository(db: Database) {
      * The admin list: one item per candidate (grouped as forCandidate does),
      * with every evaluation of theirs. Newest interview first; `q` matches the
      * candidate, position, department or evaluator of any of them.
-     * ponytail: grouped in memory over every live evaluation — fine for an HR
-     * team's interviews; a GROUP BY on the key in SQL once there are tens of thousands.
+     * ponytail: grouped in memory over every live evaluation (only the columns
+     * that needs; the page's are then read in full) — fine for an HR team's
+     * interviews; a GROUP BY on the key in SQL once there are tens of thousands.
      */
     async byCandidate(filter: Page & { q?: string }): Promise<{ items: CandidateEvaluations[]; total: number }> {
-      const rows = (await joined().where(live)).map(present);
-      const groups = new Map<string, InterviewEvaluation[]>();
+      const rows = await db
+        .select({
+          row: {
+            pk: interviewEvaluations.pk,
+            candidateName: interviewEvaluations.candidateName,
+            position: interviewEvaluations.position,
+            department: interviewEvaluations.department,
+            interviewDate: interviewEvaluations.interviewDate,
+            evaluatorEmail: interviewEvaluations.evaluatorEmail,
+            evaluatorName: interviewEvaluations.evaluatorName,
+            updatedAt: interviewEvaluations.updatedAt,
+          },
+          applicationId: applications.id,
+          applicationFormId: applicationForms.id,
+          pendingId: interviewCandidates.id,
+        })
+        .from(interviewEvaluations)
+        .leftJoin(applications, eq(applications.pk, interviewEvaluations.applicationsPk))
+        .leftJoin(applicationForms, eq(applicationForms.pk, interviewEvaluations.applicationFormsPk))
+        .leftJoin(interviewCandidates, eq(interviewCandidates.pk, interviewEvaluations.interviewCandidatesPk))
+        .where(live)
+        // A stable order: candidates interviewed on the same day never move between pages.
+        .orderBy(asc(interviewEvaluations.pk));
+      type Light = (typeof rows)[number];
+      const groups = new Map<string, Light[]>();
       for (const e of rows) {
         // lower(): a typed-in name groups case-insensitively, as in forCandidate (ids are lower case already).
-        const key = candidateKey(e.candidate).toLowerCase();
-        groups.set(key, [...(groups.get(key) ?? []), e]);
+        const key = candidateKey(candidateOf(e)).toLowerCase();
+        const group = groups.get(key);
+        if (group) group.push(e);
+        else groups.set(key, [e]);
       }
       const q = filter.q?.trim().toLowerCase();
-      const matches = (e: InterviewEvaluation) =>
-        [e.candidate.name, e.candidate.position, e.candidate.department, e.evaluator.email, e.evaluator.name].some(
-          (field) => field?.toLowerCase().includes(q!),
+      const matches = ({ row }: Light) =>
+        [row.candidateName, row.position, row.department, row.evaluatorEmail, row.evaluatorName].some((field) =>
+          field?.toLowerCase().includes(q!),
         );
-      const newest = (list: InterviewEvaluation[]) =>
-        list.reduce((a, b) => (b.interviewDate > a.interviewDate ? b : a));
-      const all = [...groups.values()]
+      const found = [...groups.values()]
         .filter((list) => !q || list.some(matches))
-        .sort((a, b) => newest(b).interviewDate.localeCompare(newest(a).interviewDate))
-        .map((evaluations): CandidateEvaluations => {
-          // Who it is: as the newest change has them (as the candidate page shows them).
-          const { candidate } = evaluations.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a));
-          return { key: candidateKey(candidate), candidate, evaluations };
-        });
+        .map((list) => ({
+          list,
+          newest: list.reduce((date, { row }) => (row.interviewDate > date ? row.interviewDate : date), ''),
+        }))
+        .sort((a, b) => b.newest.localeCompare(a.newest));
       const from = offsetOf(filter);
-      return { items: all.slice(from, from + filter.pageSize), total: all.length };
+      const page = found.slice(from, from + filter.pageSize);
+
+      const pks = page.flatMap(({ list }) => list.map(({ row }) => row.pk));
+      const full = new Map(
+        pks.length
+          ? (await joined().where(inArray(interviewEvaluations.pk, pks))).map((e) => [e.row.pk, present(e)])
+          : [],
+      );
+      const items = page.flatMap(({ list }): CandidateEvaluations[] => {
+        const evaluations = list.flatMap(({ row }) => full.get(row.pk) ?? []);
+        if (!evaluations.length) return [];
+        // Who it is: as the newest change has them (as the candidate page shows them).
+        const candidate = candidateOf(list.reduce((a, b) => (b.row.updatedAt > a.row.updatedAt ? b : a)));
+        return [{ key: candidateKey(candidate), candidate, evaluations }];
+      });
+      return { items, total: found.length };
     },
 
     get,

@@ -9,6 +9,7 @@ import * as submitForm from '@/app/api/v1/application-forms/route';
 import * as evaluate from '@/app/api/v1/evaluate/[token]/route';
 import * as editLinkRoute from '@/app/api/v1/admin/interview-evaluations/[id]/edit-link/route';
 import * as oneEvaluation from '@/app/api/v1/admin/interview-evaluations/[id]/route';
+import type { InterviewEvaluationInput } from '@/lib/interview/schema';
 import { resetPermissionsCache } from '@/lib/auth/permissions';
 import { seal, SESSION_COOKIE } from '@/lib/auth/session';
 import { resetServerEnv } from '@/lib/env';
@@ -185,6 +186,97 @@ describe('invitation links', () => {
     expect(inv!.invitees.find((p) => p.email === 'head@shd-technology.co.th')!.submittedAt).toBeInstanceOf(Date);
     expect(inv!.state).toBe('PENDING'); // the other person has not sent yet
     expect(saved).toMatchObject({ viaInvitation: true, edited: null });
+  });
+
+  it('409 for someone who evaluated it in the admin already: nothing added or changed, the link stays open', async () => {
+    const application = await anApplication();
+    const token = tokenOf((await made(application.id)).link);
+    const ref = { kind: 'application' as const, id: application.id };
+    const first = await repos.interviewEvaluations.create(
+      {
+        ...evaluation(),
+        applicationId: application.id,
+        applicationFormId: null,
+        interviewCandidateId: null,
+        candidateName: 'x',
+        position: null,
+        department: null,
+        interviewDate: '2026-10-07',
+        round: 1,
+        evaluatorRole: 'DEPARTMENT',
+        seniorScores: null,
+        failReason: null,
+      } as InterviewEvaluationInput,
+      { email: 'Head@shd-technology.co.th', name: null },
+    );
+    const send = async () =>
+      call(evaluate.POST, {
+        params: { token },
+        json: evaluation({ generalScores: scores(1) }),
+        headers: await as('head@shd-technology.co.th'),
+      });
+    const refused = await send();
+    expect(refused.status).toBe(409);
+    expect(refused.body.error.message).toContain(first.id);
+    expect((await repos.interviewEvaluations.forCandidate(ref)).map((e) => e.total)).toEqual([40]);
+
+    // HR deletes the first: the same link still sends.
+    await repos.interviewEvaluations.softDelete(first.id, 'hr');
+    expect((await send()).status).toBe(201);
+    expect((await repos.interviewEvaluations.forCandidate(ref)).map((e) => e.total)).toEqual([10]);
+  });
+
+  it('a double click and the admin, all at once: one evaluation', async () => {
+    const application = await anApplication();
+    const token = tokenOf((await made(application.id)).link);
+    const headers = await as('head@shd-technology.co.th');
+    const send = () => call(evaluate.POST, { params: { token }, json: evaluation(), headers });
+    const admin = () =>
+      repos.interviewEvaluations.create(
+        {
+          ...evaluation(),
+          applicationId: application.id,
+          applicationFormId: null,
+          interviewCandidateId: null,
+          candidateName: 'x',
+          position: null,
+          department: null,
+          interviewDate: '2026-10-07',
+          round: 1,
+          evaluatorRole: 'DEPARTMENT',
+          seniorScores: null,
+          failReason: null,
+        } as InterviewEvaluationInput,
+        { email: 'head@shd-technology.co.th', name: null },
+      );
+    const results = await Promise.all([
+      send().then((r) => r.status),
+      admin().then(
+        () => 201,
+        (error: Error) => (error.name === 'ConflictError' ? 409 : error.message),
+      ),
+      send().then((r) => r.status),
+    ]);
+    expect(results.sort()).toEqual([201, 409, 409]);
+    expect(await repos.interviewEvaluations.forCandidate({ kind: 'application', id: application.id })).toHaveLength(1);
+  });
+
+  it('400 for an applicant or form that was deleted', async () => {
+    const application = await anApplication();
+    await repos.applications.softDelete(application.id, 'hr');
+    const headers = await as('hr@shd-technology.co.th');
+    const res = await call(invitationsRoute.POST, { json: invite(application.id), headers });
+    expect(res.status).toBe(400);
+    expect(res.body.error.issues[0].path).toBe('applicationId');
+
+    const form = await call(submitForm.POST, { path: '/api/v1/application-forms', json: applicationFormInput() });
+    await repos.applicationForms.softDelete(form.body.id, 'hr');
+    const forForm = await call(invitationsRoute.POST, {
+      json: { ...invite(application.id), applicationId: null, applicationFormId: form.body.id },
+      headers,
+    });
+    expect(forForm.status).toBe(400);
+    expect(forForm.body.error.issues[0].path).toBe('applicationFormId');
   });
 
   it('what was sent through a link is read only in the admin; manage may delete it', async () => {

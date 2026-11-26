@@ -5,6 +5,7 @@ import { Gallery } from '@/components/home/gallery';
 import { Hero } from '@/components/home/hero';
 import { Offices } from '@/components/home/offices';
 import type { HomeJob } from '@/components/home/offices-data';
+import { ClientMessages } from '@/lib/i18n/client-messages';
 import type { Locale } from '@/lib/i18n/routing';
 import { store } from '@/lib/store';
 
@@ -27,7 +28,7 @@ export default async function HomePage({ params }: Props) {
   const { locale } = (await params) as { locale: Locale };
   setRequestLocale(locale);
 
-  const jobs = await store().jobs.listPublic({ locale });
+  const jobs = await store().jobs.listPublicSummaries({ locale });
   const homeJobs: HomeJob[] = jobs.map(({ code, title, countryCode, department, level }) => ({
     code,
     title,
@@ -37,11 +38,11 @@ export default async function HomePage({ params }: Props) {
   }));
 
   return (
-    <>
+    <ClientMessages use={['home.offices']}>
       <Hero openings={jobs.length} />
       <Offices jobs={homeJobs} />
       <FindYourFit departments={topDepartments(jobs.map((j) => j.department))} />
       <Gallery />
-    </>
+    </ClientMessages>
   );
 }

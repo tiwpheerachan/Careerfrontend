@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { GuardedLink } from '@/components/admin/shell/unsaved-guard';
 import { PageHeader, RESULT_STYLE } from '@/components/admin/ui';
@@ -31,8 +31,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { AdminApiError, adminFetch } from '@/lib/admin/client';
-import { discardUnsavedChanges, useGuardedNavigation, useUnsavedChanges } from '@/lib/admin/unsaved';
+import { AdminApiError, adminFetch, apiMessage, twinOf } from '@/lib/admin/client';
+import { discardUnsavedChanges, hasUnsavedChanges, useGuardedNavigation, useUnsavedChanges } from '@/lib/admin/unsaved';
 import { EVALUATION_RESULTS, EVALUATOR_ROLES } from '@/lib/constants';
 import { GENERAL_ITEMS, outcomeOf, SCORE_LEVELS, SENIOR_ITEMS, suggestRound } from '@/lib/interview/scoring';
 import type { InterviewEvaluation } from '@/lib/repositories/interview-evaluations';
@@ -40,27 +40,16 @@ import { cn } from '@/lib/utils';
 import type { PastEvaluation } from '@/lib/repositories/interview-evaluations';
 import type { CandidateKind } from '@/lib/interview/candidate-key';
 import { CandidatePicker, type PickedCandidate } from './candidate-picker';
+import {
+  draftStorageKey,
+  restoreDraft,
+  type EvaluationDraft,
+  type FormState,
+  type Score,
+} from './evaluation-form-draft';
 import { FIELD, Labeled, onRadioKeyDown, radioTabIndex, Segmented } from './fields';
 
-type Score = number | null;
-type Result = (typeof EVALUATION_RESULTS)[number];
 type Role = (typeof EVALUATOR_ROLES)[number];
-
-interface FormState {
-  link: { kind: CandidateKind; id: string } | null;
-  candidateName: string;
-  position: string;
-  department: string;
-  interviewDate: string;
-  round: 1 | 2;
-  evaluatorRole: Role;
-  senior: boolean;
-  general: Score[];
-  seniorScores: Score[];
-  result: Result | '';
-  failReason: string;
-  comment: string;
-}
 
 /** Who a new evaluation starts with (from ?candidate=), as the candidate picker would fill it. */
 export interface Prefill {
@@ -136,7 +125,13 @@ export function EvaluationForm({
    * round and side are the link's and cannot change; it is sent once, to
    * POST /api/v1/evaluate/{token}, after a confirmation.
    */
-  guest?: { token: string; round: 1 | 2; evaluatorRole: Role; senior: boolean };
+  guest?: {
+    token: string;
+    /** A hash of the token, naming the draft in this tab. */ draftId: string;
+    round: 1 | 2;
+    evaluatorRole: Role;
+    senior: boolean;
+  };
   /** Where "back" (and a save) goes: the page it was opened from. */
   backHref?: string;
   /** The candidate's application, under their details (an invitation link). */
@@ -156,6 +151,7 @@ export function EvaluationForm({
   const t = useTranslations('interviews.form');
   const items = useTranslations('interviews.items');
   const scale = useTranslations('interviews.scale');
+  const invitee = useTranslations('invitee.refused');
   const router = useRouter();
   const nav = useGuardedNavigation();
   const format = useFormatter();
@@ -176,8 +172,63 @@ export function EvaluationForm({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const dirty = JSON.stringify(form) !== JSON.stringify(initial);
-  useUnsavedChanges(dirty && !readOnly);
+  /** Saved or sent: nothing left to guard or keep. */
+  const [done, setDone] = useState(false);
+  const dirty = !readOnly && !done && JSON.stringify(form) !== JSON.stringify(initial);
+
+  // --- The tab's draft -------------------------------------------------------
+  const draftKey = draftStorageKey(
+    guest?.draftId ?? evaluation?.id ?? (prefill?.link ? `new.${prefill.link.kind}.${prefill.link.id}` : 'new'),
+  );
+  const [restored, setRestored] = useState(false);
+  const fixed = !!guest;
+
+  // Once, after the first render (the server has no sessionStorage).
+  useEffect(() => {
+    if (readOnly) return;
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      const draft = raw ? restoreDraft(raw, initial, evaluator, fixed) : undefined;
+      if (draft) {
+        /* eslint-disable react-hooks/set-state-in-effect -- reading browser storage, once */
+        setForm(draft.form);
+        if (!fixed) setHistory(draft.history);
+      }
+    } catch {
+      /* no storage: start empty */
+    }
+    setRestored(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [draftKey, initial, evaluator, fixed, readOnly]);
+
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      if (!dirty) sessionStorage.removeItem(draftKey);
+      else sessionStorage.setItem(draftKey, JSON.stringify({ evaluator, form, history } satisfies EvaluationDraft));
+    } catch {
+      /* storage full or blocked: the form still works, it just will not survive a reload */
+    }
+  }, [restored, dirty, draftKey, evaluator, form, history]);
+
+  // Leaving after "discard" in the guard's dialog drops the draft too; a reload or an error page keeps it.
+  // Above useUnsavedChanges: its cleanup, next, takes this editor off the list.
+  const wasDirty = useRef(false);
+  useEffect(() => {
+    wasDirty.current = dirty;
+  }, [dirty]);
+  useEffect(
+    () => () => {
+      if (!wasDirty.current || hasUnsavedChanges()) return;
+      try {
+        sessionStorage.removeItem(draftKey);
+      } catch {
+        /* no storage */
+      }
+    },
+    [draftKey],
+  );
+  useUnsavedChanges(dirty);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -250,18 +301,23 @@ export function EvaluationForm({
     try {
       await adminFetch('/interview-evaluations', { method: 'POST', json: body });
       toast.success(t('created'));
+      setDone(true);
       discardUnsavedChanges();
       router.push(backHref);
       router.refresh();
     } catch (error) {
-      const status = error instanceof AdminApiError ? error.status : undefined;
+      const { status, message } = error instanceof AdminApiError ? error : { status: undefined, message: '' };
       // The same person, round and side already evaluated: offer the one there is.
-      const twin =
-        status === 409 && error instanceof Error ? /evaluation ([0-9a-f-]{36})/.exec(error.message)?.[1] : null;
+      const twin = status === 409 ? twinOf(message) : undefined;
+      const action = twin
+        ? { label: t('openExisting'), onClick: () => nav.push(`/admin/interviews/${twin}`) }
+        : status === 401
+          ? signIn
+          : undefined;
       toast.error(t('saveFailed'), {
-        description: problemOf(status) ?? (error instanceof AdminApiError ? error.message : undefined),
-        action: twin ? { label: t('openExisting'), onClick: () => nav.push(`/admin/interviews/${twin}`) } : undefined,
-        duration: twin ? 10_000 : undefined,
+        description: problemOf(status, message) ?? (message || undefined),
+        action,
+        duration: action ? 10_000 : undefined,
       });
     } finally {
       setSaving(false);
@@ -279,24 +335,35 @@ export function EvaluationForm({
       router.refresh();
     } catch (error) {
       const status = error instanceof AdminApiError ? error.status : undefined;
-      toast.error(t('deleteFailed'), { description: problemOf(status) });
+      toast.error(t('deleteFailed'), { description: problemOf(status, '') });
       setDeleting(false);
     }
   };
 
   /** What a refusal means, in the reader's language (the API's own message is English). */
-  const problemOf = (status: number | undefined) =>
+  const problemOf = (status: number | undefined, message: string) =>
     status === 401
       ? t('errors.signedOut')
       : status === 403
         ? t('errors.forbidden')
         : status === 409
-          ? guest
+          ? guest && !twinOf(message)
             ? t('errors.alreadySent')
             : t('errors.duplicate')
           : status === 410
             ? t('errors.gone')
             : undefined;
+
+  /** Back here after signing in; the draft is still in the tab. */
+  const signIn = {
+    label: invitee('signInButton'),
+    onClick: () =>
+      // A route handler that goes to the central system: a full navigation.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign(
+        `/sso/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+      ),
+  };
 
   /** Scroll to (and focus) the first thing to fix, top to bottom. */
   const goToFirstError = (found: Record<string, string>) => {
@@ -340,10 +407,21 @@ export function EvaluationForm({
         }),
       });
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-        toast.error(t('saveFailed'), { description: problemOf(response.status) ?? body?.error?.message });
-        // Expired, switched off or already sent: the page says which.
-        if ([401, 403, 409, 410].includes(response.status)) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: { code?: string; message?: string };
+        } | null;
+        const { code, message = '' } = body?.error ?? {};
+        const signedOut = response.status === 401;
+        toast.error(t('saveFailed'), {
+          description: problemOf(response.status, message) ?? (apiMessage(code, message, response.status) || undefined),
+          action: signedOut ? signIn : undefined,
+          duration: signedOut ? 10_000 : undefined,
+        });
+        // Signed out, or they have evaluated this already (not through this link): nothing
+        // was saved and the link is still open — the form stays, and its draft.
+        if (signedOut || (response.status === 409 && twinOf(message))) setConfirming(false);
+        // Not on it, expired, switched off or already sent: the page says which.
+        else if ([403, 409, 410].includes(response.status)) {
           setConfirming(false);
           discardUnsavedChanges();
           router.refresh();
@@ -351,12 +429,13 @@ export function EvaluationForm({
         return;
       }
       setConfirming(false);
+      setDone(true);
       discardUnsavedChanges();
       // Through an edit link the evaluation was changed, not made.
       toast.success(evaluation ? t('saved') : t('created'));
       router.refresh();
     } catch {
-      toast.error(t('saveFailed'));
+      toast.error(t('saveFailed'), { description: apiMessage('network', '') });
     } finally {
       setSaving(false);
     }

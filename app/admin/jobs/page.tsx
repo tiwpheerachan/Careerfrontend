@@ -35,14 +35,11 @@ export default async function JobsPage({
   const locale = (await getLocale()) as AdminLocale;
 
   const jobs = store().jobs;
-  const [all, searched, rows] = await Promise.all([
-    jobs.list(),
-    q ? jobs.list({ q }) : undefined,
-    jobs.list({ q: q || undefined, publishState }),
-  ]);
+  const [all, searched] = await Promise.all([jobs.list(), q ? jobs.list({ q }) : undefined]);
 
   // The chips count what the search matches, so they say what a click will show.
   const pool = searched ?? all;
+  const rows = publishState ? pool.filter((job) => job.publishState === publishState) : pool;
   const counts = Object.fromEntries(
     PUBLISH_STATES.map((state) => [state, pool.filter((job) => job.publishState === state).length]),
   ) as Record<JobPublishState, number>;

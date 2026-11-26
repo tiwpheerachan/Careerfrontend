@@ -26,6 +26,18 @@ redirects to the new one.
 evaluations of the same person are grouped by `lib/interview/candidate-key.ts` (`application:<id>`, `form:<id>`,
 `pending:<id>`, `name:<name>` — case- and space-insensitive for typed-in names). The evaluator is the signed-in SSO user, never typed.
 
+**One per evaluator, candidate, round and side.** Saving in the admin and sending through an invitation take the same
+lock in one transaction (`reserveEvaluation`; a Postgres advisory lock, fine through a transaction pooler), so two at once
+make one evaluation and a 409. An added candidate counts as the application or form it is linked to, even if linking
+happens meanwhile. An **invited** evaluator who already has one (from the admin or an earlier link) is told so on the
+page and gets the same 409 on sending: nothing is added, the first is not overwritten (that takes an edit link), the link
+stays open and what they scored stays on their screen. HR makes an edit link, or deletes the first so this one can be sent.
+
+**Drafts.** What is typed into the form (an invitation's or the admin's) is kept in the tab's `sessionStorage` — never
+`localStorage`, never on the server — under a hash of the link's token, the evaluation's id, or the candidate's, with the
+evaluator it belongs to: another account in the same tab never sees it. It holds personal data (the candidate's name,
+scores, comments), so it goes once sent or discarded, and with the tab. An expired sign-in keeps it.
+
 **Scoring.** Items 1–10 (0–5 each, out of 50) for everyone; items 11–15 (out of 25) for Senior positions and above.
 Pass mark: ≥ 40; Senior: items 11–15 **over 20** and all fifteen ≥ 60 (the Thai form's "เกิน 20", chosen over the
 Chinese "20分以上"). It is shown as a recommendation — the evaluator still picks pending / pass / fail. CHECKs in the

@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/navigation';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('common');
-  return { title: '404', description: t('notFound') };
-}
+// No text in a language: for a url whose first part is none of ours (/wp-login.php) there is none set yet
+// here, and looking for it would read the request's headers — an error on a cached page.
+export const metadata: Metadata = { title: '404' };
 
 /**
  * The localized 404 — ported from frontend/src/pages/NotFoundPage.tsx.

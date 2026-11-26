@@ -75,10 +75,23 @@ export interface AdminJobFilter {
   publishState?: JobPublishState;
 }
 
+/** Everything of a translation but its long text (description, qualifications). */
+const shortText = {
+  jobsPk: jobTranslations.jobsPk,
+  locale: jobTranslations.locale,
+  title: jobTranslations.title,
+  location: jobTranslations.location,
+};
+type ShortText = Pick<JobTranslationRow, keyof typeof shortText>;
+
 const live = ne(jobs.status, 'DELETED');
 const isPublic = and(live, eq(jobs.publishState, 'PUBLISHED'));
 
-function toPublic(job: JobRow, texts: JobTranslationRow[], locale: Locale): PublicJob | undefined {
+function toPublic(
+  job: JobRow,
+  texts: Array<ShortText & Partial<JobTranslationRow>>,
+  locale: Locale,
+): PublicJob | undefined {
   const text = pickTranslation(texts, locale);
   if (!text) return undefined;
   return {
@@ -86,8 +99,8 @@ function toPublic(job: JobRow, texts: JobTranslationRow[], locale: Locale): Publ
     locale: text.locale,
     title: text.title,
     location: text.location,
-    description: text.description,
-    qualifications: text.qualifications,
+    description: text.description ?? null,
+    qualifications: text.qualifications ?? null,
     countryCode: job.countryCode,
     department: job.department,
     level: job.level,
@@ -97,8 +110,8 @@ function toPublic(job: JobRow, texts: JobTranslationRow[], locale: Locale): Publ
   };
 }
 
-function textsByJob(rows: JobTranslationRow[]): Map<number, JobTranslationRow[]> {
-  const map = new Map<number, JobTranslationRow[]>();
+function textsByJob<T extends { jobsPk: number }>(rows: T[]): Map<number, T[]> {
+  const map = new Map<number, T[]>();
   for (const row of rows) map.set(row.jobsPk, [...(map.get(row.jobsPk) ?? []), row]);
   return map;
 }
@@ -111,6 +124,31 @@ export function createJobRepository(db: Database) {
   async function translationsOf(jobPks: number[]): Promise<Map<number, JobTranslationRow[]>> {
     if (jobPks.length === 0) return new Map();
     return textsByJob(await db.select().from(jobTranslations).where(inArray(jobTranslations.jobsPk, jobPks)));
+  }
+
+  async function publicJobRows(filter: PublicJobFilter): Promise<JobRow[]> {
+    const conditions = [isPublic];
+    if (filter.countryCode) conditions.push(eq(jobs.countryCode, filter.countryCode));
+    if (filter.department) conditions.push(eq(jobs.department, filter.department));
+    if (filter.level) conditions.push(eq(jobs.level, filter.level));
+    if (filter.q) {
+      const pattern = likePattern(filter.q);
+      conditions.push(
+        or(
+          ilike(jobs.code, pattern),
+          ilike(jobs.department, pattern),
+          ilike(jobs.level, pattern),
+          sql`exists (select 1 from ${jobTranslations} t where t.jobs_pk = ${JOBS_PK}
+                      and (t.title ilike ${pattern} or t.location ilike ${pattern}))`,
+        )!,
+      );
+    }
+
+    return db
+      .select()
+      .from(jobs)
+      .where(and(...conditions))
+      .orderBy(desc(sql`coalesce(${jobs.publishedAt}, ${jobs.updatedAt})`), asc(jobs.code));
   }
 
   async function adminJobs(where: SQL | undefined): Promise<AdminJob[]> {
@@ -172,29 +210,19 @@ export function createJobRepository(db: Database) {
 
     /** Published jobs, newest first, in the asked language (falling back per job). */
     async listPublic(filter: PublicJobFilter): Promise<PublicJob[]> {
-      const conditions = [isPublic];
-      if (filter.countryCode) conditions.push(eq(jobs.countryCode, filter.countryCode));
-      if (filter.department) conditions.push(eq(jobs.department, filter.department));
-      if (filter.level) conditions.push(eq(jobs.level, filter.level));
-      if (filter.q) {
-        const pattern = likePattern(filter.q);
-        conditions.push(
-          or(
-            ilike(jobs.code, pattern),
-            ilike(jobs.department, pattern),
-            ilike(jobs.level, pattern),
-            sql`exists (select 1 from ${jobTranslations} t where t.jobs_pk = ${JOBS_PK}
-                        and (t.title ilike ${pattern} or t.location ilike ${pattern}))`,
-          )!,
-        );
-      }
-
-      const rows = await db
-        .select()
-        .from(jobs)
-        .where(and(...conditions))
-        .orderBy(desc(sql`coalesce(${jobs.publishedAt}, ${jobs.updatedAt})`), asc(jobs.code));
+      const rows = await publicJobRows(filter);
       const texts = await translationsOf(rows.map((r) => r.pk));
+      return rows.flatMap((job) => toPublic(job, texts.get(job.pk) ?? [], filter.locale) ?? []);
+    },
+
+    /** listPublic for lists and titles: the long text is not read, so description and qualifications are null. */
+    async listPublicSummaries(filter: PublicJobFilter): Promise<PublicJob[]> {
+      const rows = await publicJobRows(filter);
+      if (rows.length === 0) return [];
+      const pks = rows.map((r) => r.pk);
+      const texts = textsByJob(
+        await db.select(shortText).from(jobTranslations).where(inArray(jobTranslations.jobsPk, pks)),
+      );
       return rows.flatMap((job) => toPublic(job, texts.get(job.pk) ?? [], filter.locale) ?? []);
     },
 
@@ -274,6 +302,21 @@ export function createJobRepository(db: Database) {
     },
 
     get: adminJob,
+
+    /** Every job's titles by its id, deleted jobs included — for the applications export. */
+    async titles(): Promise<Map<string, { deleted: boolean; titles: Partial<Record<Locale, string>> }>> {
+      const rows = await db
+        .select({ id: jobs.id, status: jobs.status, locale: jobTranslations.locale, title: jobTranslations.title })
+        .from(jobs)
+        .leftJoin(jobTranslations, eq(jobTranslations.jobsPk, jobs.pk));
+      const map = new Map<string, { deleted: boolean; titles: Partial<Record<Locale, string>> }>();
+      for (const { id, status, locale, title } of rows) {
+        const job = map.get(id) ?? { deleted: status === 'DELETED', titles: {} };
+        if (locale && title !== null) job.titles[locale] = title;
+        map.set(id, job);
+      }
+      return map;
+    },
 
     /** Distinct values already in use, for the editor's autocomplete. */
     async options(): Promise<{ countryCodes: string[]; departments: string[]; levels: string[] }> {

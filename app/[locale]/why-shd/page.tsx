@@ -5,6 +5,7 @@ import { LifeSection } from '@/components/why/life-section';
 import { PillarsSection } from '@/components/why/pillars-section';
 import { StoriesSection } from '@/components/why/stories-section';
 import { WhyHero } from '@/components/why/why-hero';
+import { ClientMessages } from '@/lib/i18n/client-messages';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -27,12 +28,12 @@ export default async function WhyPage({ params }: Props) {
   setRequestLocale((await params).locale);
 
   return (
-    <>
+    <ClientMessages use={['why']}>
       <WhyHero />
       <PillarsSection />
       <StoriesSection />
       <LifeSection />
       <CtaSection />
-    </>
+    </ClientMessages>
   );
 }

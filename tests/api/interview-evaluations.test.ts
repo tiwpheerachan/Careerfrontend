@@ -237,6 +237,11 @@ describe('one candidate, and the paper form', () => {
     const sales = await repos.interviewEvaluations.byCandidate({ page: 1, pageSize: 10, q: 'sales' });
     expect(sales.items.map((c) => [c.candidate.name, c.evaluations.length])).toEqual([['Somsri Dee', 3]]);
 
+    // Each in full, as forCandidate has them.
+    const full = await repos.interviewEvaluations.forCandidate({ kind: 'manual', name: 'Somsri Dee' });
+    expect(all.items[1]!.evaluations).toEqual(expect.arrayContaining(full));
+    expect(await repos.interviewEvaluations.byCandidate({ page: 9, pageSize: 10 })).toEqual({ items: [], total: 2 });
+
     const second = await repos.interviewEvaluations.byCandidate({ page: 2, pageSize: 1 });
     expect(second).toMatchObject({ total: 2, items: [{ candidate: { name: 'Somsri Dee' } }] });
   });
@@ -310,6 +315,17 @@ describe('with SSO on: an evaluation is its evaluator’s', () => {
     expect(
       (await post(evaluation({ evaluatorRole: 'DEPARTMENT' }), await as('other@shd-technology.co.th'))).status,
     ).toBe(201);
+  });
+
+  it('two at once: one row, one 409', async () => {
+    grant('edit');
+    const head = await as('head@shd-technology.co.th');
+    const { id } = await anApplication();
+    for (let round = 1; round <= 2; round++) {
+      const sent = await Promise.all([1, 2, 3].map(() => post(evaluation({ applicationId: id, round }), head)));
+      expect(sent.map((r) => r.status).sort()).toEqual([201, 409, 409]);
+    }
+    expect(await repos.interviewEvaluations.forCandidate({ kind: 'application', id })).toHaveLength(2);
   });
 
   it('view can read but not evaluate; edit cannot delete', async () => {

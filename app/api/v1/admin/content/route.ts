@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/admin';
 import { defaultTextOf } from '@/lib/content/defaults';
 import { checkOverride, describeProblem } from '@/lib/content/validate';
 import { BadRequestError } from '@/lib/errors';
+import { publicContentChanged } from '@/lib/i18n/public-content';
 import { store } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,7 @@ export const PUT = handler(async (request) => {
     throw new BadRequestError('The request body is not valid.', [{ path: 'value', message }]);
   }
   await store().siteContent.set(key, locale, value, actor.email);
+  publicContentChanged();
   return new Response(null, { status: 204 });
 });
 
@@ -38,5 +40,6 @@ export const DELETE = handler(async (request) => {
   const actor = await requireAdmin(request, { resource: 'content', level: 'edit' });
   const { key, locale } = parseQuery(request, adminRevertContent.query);
   await store().siteContent.revert(key, locale, actor.email);
+  publicContentChanged();
   return new Response(null, { status: 204 });
 });

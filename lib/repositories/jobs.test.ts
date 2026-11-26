@@ -115,6 +115,20 @@ describe('jobs: public', () => {
     expect(await repos.jobs.listPublic({ locale: 'en', q: '%' })).toEqual([]);
   });
 
+  it('summaries are the same list without the long text', async () => {
+    await repos.jobs.create(jobInput({ code: 'TH-1' }), null);
+    await repos.jobs.create(jobInput({ code: 'PH-1', countryCode: 'PH' }), null);
+    for (const locale of ['th', 'en', 'zh'] as const) {
+      const full = await repos.jobs.listPublic({ locale });
+      expect(await repos.jobs.listPublicSummaries({ locale })).toEqual(
+        full.map((job) => ({ ...job, description: null, qualifications: null })),
+      );
+    }
+    expect((await repos.jobs.listPublicSummaries({ locale: 'th', countryCode: 'PH' })).map((j) => j.code)).toEqual([
+      'PH-1',
+    ]);
+  });
+
   it('facets come from every published job, not from the filtered results', async () => {
     await repos.jobs.create(jobInput({ code: 'TH-1' }), null);
     await repos.jobs.create(jobInput({ code: 'PH-1', countryCode: 'PH', department: 'Engineering' }), null);

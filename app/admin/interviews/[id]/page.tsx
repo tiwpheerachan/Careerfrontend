@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { cache } from 'react';
 import { EditLink } from '@/components/admin/interviews/edit-link';
 import { EvaluationForm } from '@/components/admin/interviews/evaluation-form';
 import { abilitiesOf, requireAdminPage } from '@/lib/auth/admin';
@@ -13,14 +14,15 @@ type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-async function load(id: string) {
+/** Once per request, shared by generateMetadata and the page. */
+const load = cache(async (id: string) => {
   try {
     return await store().interviewEvaluations.get(id);
   } catch (error) {
     if (error instanceof NotFoundError) notFound();
     throw error;
   }
-}
+});
 
 export async function generateMetadata({ params }: Props) {
   await requireAdminPage({ resource: 'applications', level: 'view' });

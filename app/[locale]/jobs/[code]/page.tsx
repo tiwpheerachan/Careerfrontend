@@ -14,6 +14,9 @@ import type { PublicJob } from '@/lib/repositories/jobs';
 import { redirectLegacyJob } from '@/lib/legacy-links';
 import { store } from '@/lib/store';
 
+// Whether a job is open is asked on each request; an unknown code must not become a cached page.
+export const dynamic = 'force-dynamic';
+
 type Props = { params: Promise<{ locale: string; code: string }> };
 
 /** One query per request, shared by generateMetadata and the page. */
@@ -52,7 +55,7 @@ export default async function JobDetailPage({ params }: Props) {
   const locale = rawLocale as Locale;
   setRequestLocale(locale);
 
-  const job = await loadJob(code, locale);
+  const [job, all] = await Promise.all([loadJob(code, locale), store().jobs.listPublicSummaries({ locale })]);
   if (!job) {
     // An old site link (its job_id in the url) goes to the job's new address.
     await redirectLegacyJob(code, locale);
@@ -62,7 +65,6 @@ export default async function JobDetailPage({ params }: Props) {
   const t = await getTranslations('jobs.detail');
   const tc = await getTranslations('common');
   const nav = await getTranslations('nav');
-  const all = await store().jobs.listPublic({ locale });
   const recommended = recommendJobs(job, all);
   const applyHref = `/jobs/${encodeURIComponent(job.code)}/apply`;
   const country = countryName(job.countryCode, locale);
