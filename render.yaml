@@ -1,4 +1,6 @@
-# Render blueprint (Blueprints > New Blueprint Instance). Nothing here is read at runtime.
+# Documentation: the live service is set by hand in the Render dashboard and is not managed by a
+# Blueprint, so editing this file changes nothing. Keep the two the same. It can be adopted as a
+# Blueprint (Blueprints > New Blueprint Instance); check every value against the dashboard first.
 #
 #   User -> Cloudflare (custom domain) -> Render -> Next.js -> Supabase
 #
@@ -8,7 +10,14 @@ services:
   - type: web
     name: shd-careers
     runtime: node
-    plan: starter
+    plan: starter # 512 MB, 0.5 CPU
+    numInstances: 1
+    branch: release
+    # Every push to release deploys. Recommended instead: checksPass ("After CI checks pass").
+    autoDeployTrigger: commit
+    domains:
+      - careers.shd-technology.co.th
+    renderSubdomainPolicy: disabled # no *.onrender.com: everything comes through the custom domain
 
     # --include=dev is not optional: Render sets NODE_ENV=production, npm then
     # skips devDependencies, and `next build` finds no typescript.
@@ -17,11 +26,13 @@ services:
     # A failed migration stops the deploy and the old version keeps serving.
     preDeployCommand: npm run db:migrate:deploy
     # Not `npm run start`: npm stays in memory beside the server (~30 MB of 512).
+    # scripts/smoke-memory.mjs starts the app with the same command.
     startCommand: node node_modules/next/dist/bin/next start -H 0.0.0.0
 
-    # Answers 200 even when Postgres is unreachable (the failure is in the
-    # body), so a database blip does not make Render cycle the instance.
-    healthCheckPath: /api/v1/health
+    # Empty on the live service on purpose: set it to /api/v1/health once the version whose
+    # health check has a database timeout is deployed. Without the timeout, a hung database
+    # hangs the check, and Render restarts an instance that is fine.
+    # healthCheckPath: /api/v1/health
 
     envVars:
       # Pinned with .nvmrc and package.json "engines" — the same LTS major everywhere.

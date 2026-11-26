@@ -17,7 +17,8 @@ export function createDatabase(url: string, options: { max?: number } = {}) {
   const client = postgres(url, {
     prepare: false,
     max: options.max ?? 10,
-    idle_timeout: 30,
+    // Seconds. Longer than the gaps between visits: a new connection costs several round trips.
+    idle_timeout: 300,
     connect_timeout: 10,
     onnotice: () => {},
   });

@@ -27,7 +27,12 @@ const nextConfig: NextConfig = {
     deviceSizes: DEVICE_SIZES,
     imageSizes: IMAGE_SIZES,
   },
+  // Public pages are cached (app/[locale]/layout.tsx). Kept in memory only, and little of it (the
+  // default is 50 MB of the instance's 512): a url with a dot or under /api… skips proxy.ts, so any
+  // such name is a [locale] with a 404 of its own, and on disk those would pile up.
+  cacheMaxMemorySize: 16 * 1024 * 1024,
   experimental: {
+    isrFlushToDisk: false,
     // What Next buffers of a body sent to a page (proxy.ts matches it; /api is not matched and
     // has its own limits). The default is 10 MB per request; no page takes an upload.
     proxyClientMaxBodySize: '1mb',
@@ -35,12 +40,28 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: SECURITY_HEADERS },
+      // The cached pages are this server's to keep, not the browser's: Next's own header allows a
+      // year of stale-while-revalidate, which Chrome uses, and a save would not be seen.
+      // Not expireTime: past it Next no longer keeps a page whose revalidation fails.
+      { source: '/:locale(th|en|zh)/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-cache' }] },
       // A day, not longer: the names carry no hash, so a replaced picture keeps its url.
       {
-        source: '/_img/:path*',
+        // Only names with an extension: proxy.ts redirects the others to a language.
+        source: '/:dir(_img|images|videos)/:path(.*\\.\\w+)',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
       },
     ];
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [],
+      // Tried after public/: only a missing file gets here. Without this it matches
+      // app/[locale]/[...rest], whose 404 keeps the day of caching set above. "/" is the one path
+      // no route matches (proxy.ts, which redirects it, has already run), so Next answers its own
+      // 404 with no-store.
+      afterFiles: [{ source: '/:dir(_img|images|videos)/:path*', destination: '/' }],
+      fallback: [],
+    };
   },
 };
 
