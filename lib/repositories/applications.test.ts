@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { NotFoundError } from '@/lib/errors';
 import { testDb } from '@/tests/support/db';
+import type { ApplicationFormAnswers } from '@/lib/application-form/schema';
 import { applicationInput, openJob, repos } from '@/tests/support/fixtures';
 
 const countApplications = async () =>
@@ -156,7 +157,7 @@ describe('applications: analytics', () => {
     await repos.applications.setStage(id, 'HIRED', null);
 
     const a = await repos.applications.analytics({ days: 30, timeZone: 'Asia/Bangkok' });
-    expect(a.totals).toEqual({ applications: 2, publishedJobs: 2, hired: 1, hireRate: 0.5, avgPerPublishedJob: 1 });
+    expect(a.totals).toEqual({ applications: 2, forms: 0, publishedJobs: 2, hired: 1, hireRate: 0.5, avgPerPublishedJob: 1 });
     expect(a.byStage).toMatchObject({ NEW: 1, HIRED: 1 });
     expect(a.bySource).toEqual(
       expect.arrayContaining([
@@ -167,6 +168,46 @@ describe('applications: analytics', () => {
     expect(a.byJob).toEqual([{ id: expect.any(String), code: 'JOB-A', title: 'หัวหน้าทีม CS', count: 2 }]);
     expect(a.daily).toHaveLength(30);
     expect(a.daily.at(-1)!.count).toBe(2);
+    expect(a.publishedWithoutApplicants.map((j) => j.code)).toEqual(['JOB-EMPTY']);
+  });
+});
+
+describe('applications: analytics and application forms', () => {
+  const form = (jobsPk: number | null, email: string) =>
+    repos.applicationForms.create({
+      locale: 'th',
+      letterhead: 'SHD',
+      jobsPk,
+      position: 'พนักงานขาย',
+      nameTh: 'ผู้กรอก แบบฟอร์ม',
+      nameEn: null,
+      email,
+      mobile: '0811111111',
+      answers: {} as ApplicationFormAnswers,
+      sensitive: null,
+    });
+
+  it('counts forms as applicants in totals, days, jobs and departments, not in stages or sources', async () => {
+    const { pk } = await openJob({ code: 'JOB-A' });
+    await openJob({ code: 'JOB-FORM' }).then(({ pk: formJob }) => form(formJob, 'f1@example.com'));
+    await openJob({ code: 'JOB-EMPTY' });
+    await repos.applications.create(pk, applicationInput());
+    await form(pk, 'f2@example.com');
+    const gone = await form(null, 'f3@example.com');
+    await form(null, 'f4@example.com');
+    await repos.applicationForms.softDelete(gone.id, null);
+
+    const a = await repos.applications.analytics({ days: 7, timeZone: 'Asia/Bangkok' });
+    const sum = (rows: Array<{ count: number }>) => rows.reduce((n, r) => n + r.count, 0);
+    expect(a.totals).toMatchObject({ applications: 4, forms: 3, hireRate: 0 });
+    expect(a.daily.at(-1)!.count).toBe(4);
+    expect(sum(a.byDepartment)).toBe(4);
+    expect(a.byJob.map((j) => [j.code, j.count])).toEqual([
+      ['JOB-A', 2],
+      ['JOB-FORM', 1],
+    ]);
+    expect(sum(Object.values(a.byStage).map((count) => ({ count })))).toBe(1);
+    expect(sum(a.bySource)).toBe(1);
     expect(a.publishedWithoutApplicants.map((j) => j.code)).toEqual(['JOB-EMPTY']);
   });
 });

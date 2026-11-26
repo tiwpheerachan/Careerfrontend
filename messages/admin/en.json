@@ -239,7 +239,8 @@
       "applications": "Total applicants",
       "publishedJobs": "Open jobs",
       "hireRate": "Hire rate",
-      "avgPerJob": "Avg. applicants per open job"
+      "avgPerJob": "Avg. applicants per open job",
+      "applicationsHint": "{applications} via job posts · {forms} forms"
     },
     "trend": {
       "title": "Applicants, last {days} days",
@@ -249,11 +250,12 @@
     },
     "byStage": {
       "title": "By stage",
-      "subtitle": "Click to filter applicants"
+      "subtitle": "Click to filter applicants",
+      "forms": "Application forms (no stage)"
     },
     "topJobs": {
       "title": "Top jobs",
-      "subtitle": "Most applicants"
+      "subtitle": "Most applicants (forms included)"
     },
     "byDepartment": {
       "title": "By department",
@@ -261,7 +263,7 @@
     },
     "bySource": {
       "title": "Source channel",
-      "subtitle": "How applicants heard about us"
+      "subtitle": "How applicants heard about us (job-post applications only)"
     },
     "zeroJobs": {
       "title": "Open jobs with no applicants yet",

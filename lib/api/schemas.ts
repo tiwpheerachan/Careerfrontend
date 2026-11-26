@@ -374,7 +374,8 @@ export const AnalyticsQuery = z.object({ days: z.coerce.number().int().min(7).ma
 
 export const AnalyticsResponse = z.object({
   totals: z.object({
-    applications: z.number().int(),
+    applications: z.number().int().meta({ description: 'Applications and application forms' }),
+    forms: z.number().int().meta({ description: 'Application forms among them' }),
     publishedJobs: z.number().int(),
     hired: z.number().int(),
     hireRate: z.number().meta({ description: '0–1' }),
