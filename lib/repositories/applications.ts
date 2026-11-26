@@ -3,6 +3,7 @@ import type { Database } from '@/lib/db/client';
 import {
   applicationEducations,
   applicationExperiences,
+  applicationForms,
   applicationFiles,
   applicationNotes,
   applications,
@@ -132,7 +133,15 @@ export interface ApplicationDetail extends ApplicationListItem {
 }
 
 export interface Analytics {
-  totals: { applications: number; publishedJobs: number; hired: number; hireRate: number; avgPerPublishedJob: number };
+  /** `applications` counts both kinds; `forms` is the paper application forms among them (no stage, no source). */
+  totals: {
+    applications: number;
+    forms: number;
+    publishedJobs: number;
+    hired: number;
+    hireRate: number;
+    avgPerPublishedJob: number;
+  };
   byStage: Record<ApplicationStage, number>;
   byDepartment: Array<{ name: string | null; count: number }>;
   bySource: Array<{ name: string | null; count: number }>;
@@ -540,7 +549,21 @@ export function createApplicationRepository(db: Database) {
       // The list's predicate: an applicant of a deleted job stays an applicant (jobs.softDelete), everywhere here.
       const appsLive = live;
 
-      const [stageRows, departmentRows, sourceRows, jobRows, dailyRows, publishedRows, emptyRows] = await Promise.all([
+      // Application forms count as applicants too (jobs, departments, days), though they carry no stage or source.
+      const formsLive = ne(applicationForms.status, 'DELETED');
+
+      const [
+        stageRows,
+        departmentRows,
+        sourceRows,
+        jobRows,
+        dailyRows,
+        publishedRows,
+        emptyRows,
+        formRows,
+        formDepartmentRows,
+        formJobRows,
+      ] = await Promise.all([
         db
           .select({ stage: applications.stage, n: count() })
           .from(applications)
@@ -566,9 +589,7 @@ export function createApplicationRepository(db: Database) {
           .from(applications)
           .innerJoin(jobs, eq(jobs.pk, applications.jobsPk))
           .where(appsLive)
-          .groupBy(jobs.pk, jobs.id, jobs.code)
-          .orderBy(desc(count()), asc(jobs.code))
-          .limit(20),
+          .groupBy(jobs.pk, jobs.id, jobs.code),
         db.execute(sql`
           with days as (
             select generate_series(
@@ -577,10 +598,14 @@ export function createApplicationRepository(db: Database) {
               interval '1 day'
             )::date as day
           )
-          select to_char(d.day, 'YYYY-MM-DD') as date, count(${applications.pk})::int as count
+          , sent as (
+            select ${applications.createdAt} as at from ${applications} where ${appsLive}
+            union all
+            select ${applicationForms.createdAt} from ${applicationForms} where ${formsLive}
+          )
+          select to_char(d.day, 'YYYY-MM-DD') as date, count(s.at)::int as count
           from days d
-          left join ${applications}
-            on (${applications.createdAt} at time zone ${timeZone})::date = d.day and ${appsLive}
+          left join sent s on (s.at at time zone ${timeZone})::date = d.day
           group by d.day order by d.day
         `) as unknown as Promise<Array<{ date: string; count: number }>>,
         db
@@ -595,10 +620,36 @@ export function createApplicationRepository(db: Database) {
               ne(jobs.status, 'DELETED'),
               eq(jobs.publishState, 'PUBLISHED'),
               sql`not exists (select 1 from ${applications} a where a.jobs_pk = ${JOBS_PK} and a.status <> 'DELETED')`,
+              sql`not exists (select 1 from ${applicationForms} f where f.jobs_pk = ${JOBS_PK} and f.status <> 'DELETED')`,
             ),
           )
           .orderBy(asc(jobs.code)),
+        db.select({ n: count() }).from(applicationForms).where(formsLive),
+        // A form for "other" has no job: its department is not specified.
+        db
+          .select({ name: jobs.department, n: count() })
+          .from(applicationForms)
+          .leftJoin(jobs, eq(jobs.pk, applicationForms.jobsPk))
+          .where(formsLive)
+          .groupBy(jobs.department),
+        db
+          .select({ id: jobs.id, code: jobs.code, title: jobTitle, n: count() })
+          .from(applicationForms)
+          .innerJoin(jobs, eq(jobs.pk, applicationForms.jobsPk))
+          .where(formsLive)
+          .groupBy(jobs.pk, jobs.id, jobs.code),
       ]);
+
+      // Adds the forms' counts to the applications' per key, most first.
+      function merge<T extends { n: number }>(a: T[], b: T[], key: (row: T) => string | null) {
+        const rows = new Map<string | null, T>();
+        for (const row of [...a, ...b]) {
+          const k = key(row);
+          const seen = rows.get(k);
+          rows.set(k, seen ? { ...seen, n: seen.n + row.n } : row);
+        }
+        return [...rows.values()].sort((x, y) => y.n - x.n);
+      }
 
       const byStage = Object.fromEntries(STAGES.map((s) => [s, 0])) as Record<ApplicationStage, number>;
       for (const { stage, n } of stageRows) byStage[stage] = n;
@@ -619,21 +670,28 @@ export function createApplicationRepository(db: Database) {
         return [...groups.values()].sort((x, y) => y.count - x.count).map(({ name, count }) => ({ name, count }));
       }
 
-      const total = STAGES.reduce((sum, s) => sum + byStage[s], 0);
+      const staged = STAGES.reduce((sum, s) => sum + byStage[s], 0);
+      const forms = formRows[0]?.n ?? 0;
+      const total = staged + forms;
       const publishedJobs = publishedRows[0]?.n ?? 0;
 
       return {
         totals: {
           applications: total,
+          forms,
           publishedJobs,
           hired: byStage.HIRED,
-          hireRate: total ? byStage.HIRED / total : 0,
+          // Only applications have a stage, so only they can be hired.
+          hireRate: staged ? byStage.HIRED / staged : 0,
           avgPerPublishedJob: publishedJobs ? Math.round((total / publishedJobs) * 10) / 10 : 0,
         },
         byStage,
-        byDepartment: departmentRows.map((r) => ({ name: r.name, count: r.n })),
+        byDepartment: merge(departmentRows, formDepartmentRows, (r) => r.name).map((r) => ({ name: r.name, count: r.n })),
         bySource: groupSources(sourceRows),
-        byJob: jobRows.map((r) => ({ id: r.id, code: r.code, title: r.title, count: r.n })),
+        byJob: merge(jobRows, formJobRows, (r) => r.id)
+          .sort((x, y) => y.n - x.n || x.code.localeCompare(y.code))
+          .slice(0, 20)
+          .map((r) => ({ id: r.id, code: r.code, title: r.title, count: r.n })),
         daily: dailyRows.map((r) => ({ date: r.date, count: Number(r.count) })),
         publishedWithoutApplicants: emptyRows,
       };

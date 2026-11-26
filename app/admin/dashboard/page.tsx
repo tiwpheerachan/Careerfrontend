@@ -71,6 +71,10 @@ export default async function DashboardPage() {
             tone="bg-blue-50"
             label={t('kpi.applications')}
             value={number.format(a.totals.applications)}
+            hint={t('kpi.applicationsHint', {
+              applications: number.format(a.totals.applications - a.totals.forms),
+              forms: number.format(a.totals.forms),
+            })}
             href="/admin/applications"
           />
           <Kpi
@@ -123,6 +127,14 @@ export default async function DashboardPage() {
                   <span className="text-lg font-black text-gray-900">{number.format(a.byStage[stage] ?? 0)}</span>
                 </Link>
               ))}
+              <Link
+                prefetch={false}
+                href="/admin/applications/forms"
+                className="flex items-center justify-between rounded-xl border-t border-gray-100 px-3 py-2 transition hover:bg-gray-50"
+              >
+                <span className="text-sm text-gray-500">{t('byStage.forms')}</span>
+                <span className="text-lg font-black text-gray-900">{number.format(a.totals.forms)}</span>
+              </Link>
             </div>
           </Panel>
         </div>

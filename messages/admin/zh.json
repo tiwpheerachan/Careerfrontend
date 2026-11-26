@@ -239,7 +239,8 @@
       "applications": "应聘者总数",
       "publishedJobs": "招聘中的职位",
       "hireRate": "录用率",
-      "avgPerJob": "每个招聘职位的平均应聘人数"
+      "avgPerJob": "每个招聘职位的平均应聘人数",
+      "applicationsHint": "通过职位申请 {applications} · 申请表 {forms}"
     },
     "trend": {
       "title": "最近 {days} 天的应聘者",
@@ -249,11 +250,12 @@
     },
     "byStage": {
       "title": "按阶段",
-      "subtitle": "点击筛选应聘者"
+      "subtitle": "点击筛选应聘者",
+      "forms": "申请表（无阶段）"
     },
     "topJobs": {
       "title": "热门职位",
-      "subtitle": "应聘人数最多"
+      "subtitle": "应聘人数最多（含申请表）"
     },
     "byDepartment": {
       "title": "按部门",
@@ -261,7 +263,7 @@
     },
     "bySource": {
       "title": "来源渠道",
-      "subtitle": "应聘者如何得知我们"
+      "subtitle": "应聘者如何得知我们（仅限职位申请）"
     },
     "zeroJobs": {
       "title": "尚无应聘者的招聘职位",

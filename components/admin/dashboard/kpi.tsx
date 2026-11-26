@@ -8,6 +8,7 @@ export function Kpi({
   tone,
   label,
   value,
+  hint,
   href,
 }: {
   icon: ReactNode;
@@ -15,6 +16,8 @@ export function Kpi({
   tone: string;
   label: string;
   value: string;
+  /** A small line under the label, e.g. what the number is made of. */
+  hint?: string;
   href?: string;
 }) {
   const body = (
@@ -22,6 +25,7 @@ export function Kpi({
       <div className={cn('grid h-11 w-11 place-items-center rounded-2xl', tone)}>{icon}</div>
       <div className="mt-4 text-3xl font-black text-gray-900">{value}</div>
       <div className="text-sm text-gray-500">{label}</div>
+      {hint && <div className="mt-1 text-xs text-gray-400">{hint}</div>}
     </div>
   );
   return href ? (
