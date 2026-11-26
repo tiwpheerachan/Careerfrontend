@@ -31,22 +31,22 @@ export async function Footer() {
             <div className="font-semibold text-slate-900">{t('navigation')}</div>
             <ul className="mt-2 space-y-1">
               <li>
-                <Link href="/about" className="hover:text-slate-900">
+                <Link prefetch={false} href="/about" className="hover:text-slate-900">
                   {nav('about')}
                 </Link>
               </li>
               <li>
-                <Link href="/why-shd" className="hover:text-slate-900">
+                <Link prefetch={false} href="/why-shd" className="hover:text-slate-900">
                   {nav('why')}
                 </Link>
               </li>
               <li>
-                <Link href="/jobs" className="hover:text-slate-900">
+                <Link prefetch={false} href="/jobs" className="hover:text-slate-900">
                   {nav('jobs')}
                 </Link>
               </li>
               <li>
-                <Link href="/partners" className="hover:text-slate-900">
+                <Link prefetch={false} href="/partners" className="hover:text-slate-900">
                   {nav('partners')}
                 </Link>
               </li>

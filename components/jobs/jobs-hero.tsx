@@ -17,7 +17,7 @@ export interface JobFacets {
 }
 
 /**
- * The Jobs page hero: photo (another one fades in on hover), glass search,
+ * The Jobs page hero: photo (another one, requested on the first hover, fades in once loaded), glass search,
  * open-count chip, "clear filters" and the three filters. Ported from the old
  * JobsPage. The filter choices come from every published job, not from the
  * current results, so choosing one country no longer hides the others.
@@ -28,6 +28,7 @@ export function JobsHero({ total, facets }: { total: number; facets: JobFacets }
   const locale = useLocale() as Locale;
   const { query, pending, update } = useJobsNav();
   const [hover, setHover] = useState(false);
+  const [hoverLoaded, setHoverLoaded] = useState(false);
 
   // The search box: typed text goes to the url 250ms after the last key.
   const [draft, setDraft] = useState(query.q);
@@ -64,16 +65,19 @@ export function JobsHero({ total, facets }: { total: number; facets: JobFacets }
     <div className="relative overflow-hidden border-b border-slate-200">
       <div className="pointer-events-none absolute inset-0 select-none">
         <Image src="/images/jobs-hero.jpg" alt="" fill priority sizes="100vw" className="object-cover object-center" />
-        <Image
-          src="/images/jobs-hero-hover.jpg"
-          alt=""
-          fill
-          sizes="100vw"
-          className={cx(
-            'object-cover object-center transition-opacity duration-500',
-            hover ? 'opacity-100' : 'opacity-0',
-          )}
-        />
+        {hover || hoverLoaded ? (
+          <Image
+            src="/images/jobs-hero-hover.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            onLoad={() => setHoverLoaded(true)}
+            className={cx(
+              'object-cover object-center transition-opacity duration-500',
+              hover && hoverLoaded ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        ) : null}
         <div className="absolute inset-0 bg-[radial-gradient(62%_58%_at_18%_18%,rgba(0,0,0,0.38),transparent_62%)]" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-b from-white/0 to-white" />
       </div>

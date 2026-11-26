@@ -128,10 +128,12 @@ export function createInterviewCandidateRepository(db: Database) {
         const kind = target.applicationId ? 'application' : 'form';
         const targetId = (target.applicationId ?? target.applicationFormId)!;
         const table = kind === 'application' ? applications : applicationForms;
+        // FOR UPDATE: waits for any evaluation being added to it (reserveEvaluation), so the clash check sees it.
         const [linked] = await tx
           .select({ pk: table.pk })
           .from(table)
           .where(and(eq(table.id, targetId), ne(table.status, 'DELETED')))
+          .for('update')
           .limit(1);
         if (!linked) {
           const path = kind === 'application' ? 'applicationId' : 'applicationFormId';

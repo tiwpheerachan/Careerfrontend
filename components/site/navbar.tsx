@@ -25,11 +25,15 @@ function useActive(href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/** The application form is big and few visitors open it: fetched on click only. */
+const prefetchOf = (href: string) => (href === '/application-form' ? false : undefined);
+
 function NavItem({ href, label, scrolled }: { href: string; label: string; scrolled: boolean }) {
   const active = useActive(href);
   return (
     <Link
       href={href}
+      prefetch={prefetchOf(href)}
       aria-current={active ? 'page' : undefined}
       className={cx(
         'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition',
@@ -227,6 +231,7 @@ export function Navbar() {
                       <Link
                         key={link.key}
                         href={link.href}
+                        prefetch={prefetchOf(link.href)}
                         onClick={() => setOpen(false)}
                         className="rounded-2xl px-4 py-3 text-sm font-semibold text-white/90 hover:bg-white/10"
                       >

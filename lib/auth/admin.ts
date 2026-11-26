@@ -67,7 +67,11 @@ function check(actor: AdminActor, need: Need | undefined): AdminActor {
 function cookieFrom(request: Request): string | undefined {
   const header = request.headers.get('cookie') ?? '';
   const match = new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`).exec(header);
-  return match ? decodeURIComponent(match[1]!) : undefined;
+  try {
+    return match ? decodeURIComponent(match[1]!) : undefined;
+  } catch {
+    return undefined; // malformed: not signed in
+  }
 }
 
 /** The gate for API routes: 401 / 403 / 503 as AdminApiError-shaped JSON (lib/api/http.ts). */

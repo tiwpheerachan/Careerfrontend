@@ -1,4 +1,5 @@
-import { CheckCircle2, Clock } from 'lucide-react';
+import { createHash } from 'node:crypto';
+import { CheckCircle2, CircleAlert, Clock } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Brand } from '@/components/admin/ui';
 import { CandidateMaterials, type FormMaterials } from '@/components/admin/interviews/candidate-materials';
@@ -61,6 +62,22 @@ export default async function EvaluatePage({ params }: Props) {
   if (fresh.editOf && !editing) return <Refused reason="notFound" />;
 
   const candidate = fresh.candidate;
+  // Already evaluated some other way (the admin, an earlier link): sending would be refused, so say it before they score.
+  const evaluated =
+    !editing &&
+    (
+      await store().interviewEvaluations.forCandidate(
+        candidate.kind !== 'manual' && candidate.id
+          ? { kind: candidate.kind, id: candidate.id }
+          : { kind: 'manual', name: candidate.name },
+      )
+    ).some(
+      (e) =>
+        e.round === fresh.round &&
+        e.evaluatorRole === fresh.evaluatorRole &&
+        e.evaluator.email.toLowerCase() === identity.email,
+    );
+  const tForm = await getTranslations('interviews.form');
   const application =
     candidate.kind === 'application' && candidate.id ? await store().applications.get(candidate.id) : null;
   const formRow = candidate.kind === 'form' && candidate.id ? await store().applicationForms.get(candidate.id) : null;
@@ -98,6 +115,15 @@ export default async function EvaluatePage({ params }: Props) {
       </h1>
       <p className="mt-1 mb-6 text-sm text-gray-500">{editing ? t('editIntro') : t('intro')}</p>
 
+      {evaluated && (
+        <p
+          role="alert"
+          className="mb-6 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {tForm('errors.duplicate')}
+        </p>
+      )}
+
       <EvaluationForm
         evaluation={editing}
         today={today()}
@@ -109,7 +135,13 @@ export default async function EvaluatePage({ params }: Props) {
           position: candidate.position,
           department: candidate.department,
         }}
-        guest={{ token, round: fresh.round, evaluatorRole: fresh.evaluatorRole, senior: fresh.senior }}
+        guest={{
+          token,
+          draftId: createHash('sha256').update(token).digest('hex').slice(0, 32),
+          round: fresh.round,
+          evaluatorRole: fresh.evaluatorRole,
+          senior: fresh.senior,
+        }}
         materials={<CandidateMaterials token={token} application={application} form={form} pending={pending} />}
       />
     </main>

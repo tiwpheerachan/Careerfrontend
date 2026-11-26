@@ -3,4 +3,4 @@
  * (scripts/build-images.mjs), and the only ones next/image may ask for (next.config.ts).
  */
 export const IMAGE_SIZES = [128, 384];
-export const DEVICE_SIZES = [640, 1080, 1920];
+export const DEVICE_SIZES = [640, 828, 1290, 1920];

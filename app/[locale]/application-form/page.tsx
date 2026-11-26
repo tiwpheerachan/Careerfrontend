@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import s from '@/components/apply/apply.module.css';
 import { ApplicationFormWizard } from '@/components/application-form/wizard';
 import { cx } from '@/lib/cx';
+import { ClientMessages } from '@/lib/i18n/client-messages';
 import type { Locale } from '@/lib/i18n/routing';
 import { store } from '@/lib/store';
 
@@ -29,15 +30,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ApplicationFormPage({ params }: Props) {
   const locale = (await params).locale as Locale;
   setRequestLocale(locale);
-  const jobs = await store().jobs.listPublic({ locale });
+  const jobs = await store().jobs.listPublicSummaries({ locale });
 
   return (
     <section className={cx('container-page pt-24 pb-14 sm:pt-28', s.applyBg, s.applySection)}>
       <div className="mx-auto max-w-3xl">
-        <ApplicationFormWizard
-          jobs={jobs.map((job) => ({ code: job.code, title: job.title, countryCode: job.countryCode }))}
-          turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined}
-        />
+        <ClientMessages use={['applicationForm', 'apply']}>
+          <ApplicationFormWizard
+            jobs={jobs.map((job) => ({ code: job.code, title: job.title, countryCode: job.countryCode }))}
+            turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined}
+          />
+        </ClientMessages>
       </div>
     </section>
   );

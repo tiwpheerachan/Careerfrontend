@@ -3,7 +3,7 @@ import type { ApplicationDetail } from '@/lib/repositories/applications';
 /**
  * Repository results as the API sends them. The storage path of a file never
  * leaves the server: the admin gets this API's download endpoint instead,
- * which signs a link at the moment of the click.
+ * which streams the file itself after the sign-in check (no signed links).
  */
 export function presentApplication(application: ApplicationDetail) {
   return {

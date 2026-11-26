@@ -7,10 +7,14 @@ import { ApplyForm } from '@/components/apply/apply-form';
 import { ApplySidebar } from '@/components/apply/apply-sidebar';
 import s from '@/components/apply/apply.module.css';
 import { cx } from '@/lib/cx';
+import { ClientMessages } from '@/lib/i18n/client-messages';
 import { Link } from '@/lib/i18n/navigation';
 import type { Locale } from '@/lib/i18n/routing';
 import { redirectLegacyJob } from '@/lib/legacy-links';
 import { store } from '@/lib/store';
+
+// Whether a job is open is asked on each request; an unknown code must not become a cached page.
+export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ locale: string; code: string }> };
 
@@ -67,10 +71,12 @@ export default async function ApplyPage({ params }: Props) {
       </div>
 
       <div className="mt-4 grid gap-6 lg:mt-6 lg:grid-cols-[1fr_360px]">
-        <ApplyForm
-          job={{ code: job.code, title: job.title, location: job.location }}
-          turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined}
-        />
+        <ClientMessages use={['apply', 'jobs']}>
+          <ApplyForm
+            job={{ code: job.code, title: job.title, location: job.location }}
+            turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || undefined}
+          />
+        </ClientMessages>
         <ApplySidebar job={job} />
       </div>
     </section>

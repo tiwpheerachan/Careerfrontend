@@ -14,6 +14,7 @@ import type { CandidateKind, CandidateRef } from '@/lib/interview/candidate-key'
 import { expiresAt, newToken, stateOf, type InvitationState } from '@/lib/interview/invitations';
 import type { GuestEvaluationInput, InvitationInput } from '@/lib/interview/schema';
 import { outcomeOf } from '@/lib/interview/scoring';
+import { currentLinks, reserveEvaluation, type Tx } from './interview-evaluations';
 import { isUuid } from './support';
 
 export interface Invitee {
@@ -136,7 +137,7 @@ export function createInterviewInvitationRepository(db: Database) {
     });
   }
 
-  async function pkOfLink(input: InvitationInput) {
+  async function pkOfLink(db: Tx, input: InvitationInput) {
     let applicationsPk: number | null = null;
     let applicationFormsPk: number | null = null;
     let interviewCandidatesPk: number | null = null;
@@ -144,7 +145,7 @@ export function createInterviewInvitationRepository(db: Database) {
       const [row] = await db
         .select({ pk: applications.pk })
         .from(applications)
-        .where(eq(applications.id, input.applicationId));
+        .where(and(eq(applications.id, input.applicationId), ne(applications.status, 'DELETED')));
       if (!row) throw new BadRequestError('No such applicant.', [{ path: 'applicationId', message: 'not found' }]);
       applicationsPk = row.pk;
     }
@@ -152,27 +153,22 @@ export function createInterviewInvitationRepository(db: Database) {
       const [row] = await db
         .select({ pk: applicationForms.pk })
         .from(applicationForms)
-        .where(eq(applicationForms.id, input.applicationFormId));
+        .where(and(eq(applicationForms.id, input.applicationFormId), ne(applicationForms.status, 'DELETED')));
       if (!row)
         throw new BadRequestError('No such application form.', [{ path: 'applicationFormId', message: 'not found' }]);
       applicationFormsPk = row.pk;
     }
     if (input.interviewCandidateId) {
       const [row] = await db
-        .select({
-          pk: interviewCandidates.pk,
-          applicationsPk: interviewCandidates.linkedApplicationsPk,
-          applicationFormsPk: interviewCandidates.linkedApplicationFormsPk,
-        })
+        .select({ pk: interviewCandidates.pk })
         .from(interviewCandidates)
         .where(and(eq(interviewCandidates.id, input.interviewCandidateId), ne(interviewCandidates.status, 'DELETED')));
       if (!row)
         throw new BadRequestError('No such candidate.', [{ path: 'interviewCandidateId', message: 'not found' }]);
-      // Linked since: the invitation goes with the application or form.
-      ({ applicationsPk, applicationFormsPk } = row);
       interviewCandidatesPk = row.pk;
     }
-    return { applicationsPk, applicationFormsPk, interviewCandidatesPk };
+    // Linked since: the invitation goes with the application or form.
+    return currentLinks(db, { applicationsPk, applicationFormsPk, interviewCandidatesPk });
   }
 
   async function byToken(token: string, now = new Date()): Promise<Invitation | undefined> {
@@ -190,9 +186,9 @@ export function createInterviewInvitationRepository(db: Database) {
       now = new Date(),
       createdByName: string | null = null,
     ): Promise<Invitation> {
-      const links = await pkOfLink(input);
       const token = newToken();
       await db.transaction(async (tx) => {
+        const links = await pkOfLink(tx, input);
         const [row] = await tx
           .insert(interviewInvitations)
           .values({
@@ -238,9 +234,7 @@ export function createInterviewInvitationRepository(db: Database) {
           .insert(interviewInvitations)
           .values({
             token,
-            applicationsPk: evaluation.applicationsPk,
-            applicationFormsPk: evaluation.applicationFormsPk,
-            interviewCandidatesPk: evaluation.interviewCandidatesPk,
+            ...(await currentLinks(tx, evaluation)),
             candidateName: evaluation.candidateName,
             position: evaluation.position,
             department: evaluation.department,
@@ -308,7 +302,10 @@ export function createInterviewInvitationRepository(db: Database) {
      * One invitee's evaluation: saved — or, through an edit link, the
      * evaluation it is for changed (and marked edited) — and their part of the
      * link closed, in one transaction. A second send (a double click, another
-     * tab) is a 409 and saves nothing.
+     * tab) is a 409 and saves nothing. So is a new evaluation when this person
+     * already has one of the same candidate, round and side: evaluations change
+     * only through an edit link, so it is neither added nor written over the
+     * first — the link stays open (HR can delete the first, then it is sent).
      */
     async submit(
       token: string,
@@ -338,6 +335,22 @@ export function createInterviewInvitationRepository(db: Database) {
           failReason: input.result === 'FAIL' ? input.failReason : null,
           comment: input.comment,
         };
+        const mine = and(
+          eq(interviewInvitees.invitationsPk, inv.pk),
+          sql`lower(${interviewInvitees.email}) = lower(${evaluator.email})`,
+        );
+        const alreadySent = () => new ConflictError('You have already sent your evaluation through this link.');
+        const links = inv.evaluationsPk
+          ? null
+          : await reserveEvaluation(tx, { ...inv, evaluatorEmail: evaluator.email }, async () => {
+              // Under the lock: a double click is told "already sent", not "evaluate it only once".
+              const [me] = await tx
+                .select({ sent: interviewInvitees.submittedAt })
+                .from(interviewInvitees)
+                .where(mine)
+                .limit(1);
+              if (me?.sent) throw alreadySent();
+            });
         const [evaluation] = inv.evaluationsPk
           ? await tx
               .update(interviewEvaluations)
@@ -347,9 +360,7 @@ export function createInterviewInvitationRepository(db: Database) {
           : await tx
               .insert(interviewEvaluations)
               .values({
-                applicationsPk: inv.applicationsPk,
-                applicationFormsPk: inv.applicationFormsPk,
-                interviewCandidatesPk: inv.interviewCandidatesPk,
+                ...links,
                 candidateName: inv.candidateName,
                 position: inv.position,
                 department: inv.department,
@@ -367,15 +378,9 @@ export function createInterviewInvitationRepository(db: Database) {
         const [closed] = await tx
           .update(interviewInvitees)
           .set({ submittedAt: new Date(), evaluationsPk: evaluation!.pk })
-          .where(
-            and(
-              eq(interviewInvitees.invitationsPk, inv.pk),
-              sql`lower(${interviewInvitees.email}) = lower(${evaluator.email})`,
-              isNull(interviewInvitees.submittedAt),
-            ),
-          )
+          .where(and(mine, isNull(interviewInvitees.submittedAt)))
           .returning({ pk: interviewInvitees.pk });
-        if (!closed) throw new ConflictError('You have already sent your evaluation through this link.');
+        if (!closed) throw alreadySent();
         return { evaluationId: evaluation!.id };
       });
     },

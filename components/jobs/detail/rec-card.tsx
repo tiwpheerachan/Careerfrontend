@@ -13,6 +13,7 @@ export function RecCard({ job, locale }: { job: PublicJob; locale: Locale }) {
 
   return (
     <Link
+      prefetch={false}
       href={`/jobs/${encodeURIComponent(job.code)}`}
       className={cx(
         'group block overflow-hidden rounded-3xl border border-slate-200 bg-white p-5',

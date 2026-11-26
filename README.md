@@ -24,6 +24,7 @@ npm run dev        # http://localhost:3000
 ## Docs
 
 - [docs/setup.md](docs/setup.md) — local setup, the three databases, checks, conventions, the admin and its SSO sign-in
+- [docs/operations.md](docs/operations.md) — production: logs, memory, rollback, migrations, backups, secrets
 - [docs/ui-port.md](docs/ui-port.md) — how the pages were ported from the old site without changing the look
 - [docs/legacy-import.md](docs/legacy-import.md) — importing the old system's data
 - [docs/api/guides](docs/api/guides) — API guides (th / en)

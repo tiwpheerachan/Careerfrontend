@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePrefersReducedMotion } from './hooks';
+import { useEffect, useRef, useState } from 'react';
+import { useOnScreen, usePrefersReducedMotion } from './hooks';
 import styles from './typing-title.module.css';
 
 type Phase = { out: string; mode: 'typing' | 'deleting' };
 
 /**
- * An <h2> that types its text, pauses, deletes it and starts again. Screen
+ * An <h2> that types its text, pauses, deletes it and starts again (while on screen). Screen
  * readers (and the server-rendered HTML) get the whole text; with reduced
  * motion the whole text is shown, without the caret.
  */
@@ -26,11 +26,13 @@ export function TypingTitle({
   typeSpeed?: number;
   deleteSpeed?: number;
 }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const onScreen = useOnScreen(ref);
   const reduced = usePrefersReducedMotion();
   const [{ out, mode }, setPhase] = useState<Phase>({ out: '', mode: 'typing' });
 
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || !onScreen) return;
     let delay = typeSpeed;
     let next: Phase = { out: text.slice(0, out.length + 1), mode };
     if (mode === 'typing' && out.length >= text.length) {
@@ -44,10 +46,10 @@ export function TypingTitle({
     }
     const timer = window.setTimeout(() => setPhase(next), delay);
     return () => window.clearTimeout(timer);
-  }, [reduced, out, mode, text, pauseMs, deleteMs, typeSpeed, deleteSpeed]);
+  }, [reduced, onScreen, out, mode, text, pauseMs, deleteMs, typeSpeed, deleteSpeed]);
 
   return (
-    <h2 className={className}>
+    <h2 ref={ref} className={className}>
       <span className="sr-only">{text}</span>
       <span aria-hidden="true">
         {reduced ? (

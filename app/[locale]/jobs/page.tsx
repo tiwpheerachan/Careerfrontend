@@ -7,8 +7,12 @@ import { JobsHero } from '@/components/jobs/jobs-hero';
 import { JobsNavProvider, ListTop, WhenSettled } from '@/components/jobs/jobs-nav';
 import { JobsPager } from '@/components/jobs/jobs-pager';
 import { PAGE_SIZE, parseJobsQuery } from '@/components/jobs/jobs-query';
+import { ClientMessages } from '@/lib/i18n/client-messages';
 import type { Locale } from '@/lib/i18n/routing';
 import { store } from '@/lib/store';
+
+// Filtered by the url, so not cached (nor are the pages of one job below it).
+export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -42,7 +46,7 @@ export default async function JobsPage({ params, searchParams }: Props) {
   const t = await getTranslations('jobs.list');
   const tc = await getTranslations('common');
   const [jobs, facets] = await Promise.all([
-    store().jobs.listPublic({
+    store().jobs.listPublicSummaries({
       locale,
       q: query.q || undefined,
       countryCode: query.country || undefined,
@@ -57,63 +61,65 @@ export default async function JobsPage({ params, searchParams }: Props) {
   const pagedJobs = jobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <JobsNavProvider query={{ ...query, page }}>
-      <section className="bg-white">
-        <JobsHero total={jobs.length} facets={facets} />
+    <ClientMessages use={['jobs.hero', 'jobs.pagination', 'jobs.hiring', 'jobs.faq']}>
+      <JobsNavProvider query={{ ...query, page }}>
+        <section className="bg-white">
+          <JobsHero total={jobs.length} facets={facets} />
 
-        <div className="container-page py-10">
-          <ListTop className="flex flex-col gap-2">
-            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-              <div>
-                <h2 className="text-2xl font-black tracking-tight">{t('title')}</h2>
-                <div className="mt-1 text-sm text-slate-600">
-                  <WhenSettled fallback={tc('loading')}>
-                    {t('subtitle', { count: jobs.length, perPage: PAGE_SIZE })}
-                  </WhenSettled>
+          <div className="container-page py-10">
+            <ListTop className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">{t('title')}</h2>
+                  <div className="mt-1 text-sm text-slate-600">
+                    <WhenSettled fallback={tc('loading')}>
+                      {t('subtitle', { count: jobs.length, perPage: PAGE_SIZE })}
+                    </WhenSettled>
+                  </div>
                 </div>
+
+                <JobsPager totalPages={totalPages} className="mt-2 md:mt-0" />
               </div>
+            </ListTop>
 
-              <JobsPager totalPages={totalPages} className="mt-2 md:mt-0" />
+            <div className="mt-4">
+              <WhenSettled
+                fallback={
+                  <div className="rounded-3xl border border-slate-200 bg-white p-6">
+                    <div className="text-sm text-slate-600">{tc('loading')}</div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {Array.from({ length: 10 }, (_, i) => (
+                        <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+                      ))}
+                    </div>
+                  </div>
+                }
+              >
+                {jobs.length === 0 ? (
+                  <div className="card p-6 text-sm text-slate-600">{t('empty')}</div>
+                ) : (
+                  <>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {pagedJobs.map((job) => (
+                        <JobCard key={job.code} job={job} locale={locale} />
+                      ))}
+                    </div>
+                    <JobsPager totalPages={totalPages} className="mt-8" />
+                  </>
+                )}
+              </WhenSettled>
             </div>
-          </ListTop>
 
-          <div className="mt-4">
-            <WhenSettled
-              fallback={
-                <div className="rounded-3xl border border-slate-200 bg-white p-6">
-                  <div className="text-sm text-slate-600">{tc('loading')}</div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {Array.from({ length: 10 }, (_, i) => (
-                      <div key={i} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
-                    ))}
-                  </div>
-                </div>
-              }
-            >
-              {jobs.length === 0 ? (
-                <div className="card p-6 text-sm text-slate-600">{t('empty')}</div>
-              ) : (
-                <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {pagedJobs.map((job) => (
-                      <JobCard key={job.code} job={job} locale={locale} />
-                    ))}
-                  </div>
-                  <JobsPager totalPages={totalPages} className="mt-8" />
-                </>
-              )}
-            </WhenSettled>
-          </div>
+            <div className="mt-10">
+              <HiringProcess />
+            </div>
 
-          <div className="mt-10">
-            <HiringProcess />
+            <div className="mt-8">
+              <FaqTabs />
+            </div>
           </div>
-
-          <div className="mt-8">
-            <FaqTabs />
-          </div>
-        </div>
-      </section>
-    </JobsNavProvider>
+        </section>
+      </JobsNavProvider>
+    </ClientMessages>
   );
 }

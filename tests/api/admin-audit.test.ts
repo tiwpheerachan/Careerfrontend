@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as one from '@/app/api/v1/admin/interview-evaluations/[id]/route';
 import * as pdf from '@/app/api/v1/admin/interview-evaluations/pdf/route';
 import * as evaluations from '@/app/api/v1/admin/interview-evaluations/route';
+import { auditStart } from '@/lib/api/audit';
 import { adminAuditLogs } from '@/lib/db/schema';
 import { call } from '@/tests/support/api';
 import { testDb } from '@/tests/support/db';
@@ -53,5 +54,24 @@ describe('the admin audit trail', () => {
     expect(download!.path).toContain('/pdf?candidate=');
     expect(download!.body).toBeNull();
     expect(remove).toMatchObject({ targetId: id, path: `${BASE}/${id}` });
+  });
+
+  it('reads nothing of a body nobody has signed in to send', async () => {
+    let pulled = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (++pulled > 200) controller.close();
+        else controller.enqueue(new Uint8Array(1024 * 1024));
+      },
+    });
+    const request = new Request(`http://localhost${BASE}`, {
+      method: 'POST',
+      body,
+      duplex: 'half',
+      headers: { 'content-type': 'application/json' },
+    } as RequestInit);
+    auditStart(request);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(pulled).toBeLessThan(3);
   });
 });

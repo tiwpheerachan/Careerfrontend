@@ -16,12 +16,17 @@ const DOWNLOAD = /\/(files\/[^/]+|resume|pdf|export)$/;
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const BODY_LIMIT = 16_000;
 
+/** The JSON each request sent, as parseBody read it — within its limit. */
+const bodies = new WeakMap<Request, string>();
+export const noteBody = (request: Request, raw: string) => void bodies.set(request, raw);
+
 /**
  * The admin audit trail (admin_audit_logs): every admin API call that creates,
  * changes or deletes, and every download of personal data — who (as
  * requireAdmin found them), what, which record, the outcome, and the JSON that
- * was sent. Started before the route runs (the body is read from a clone),
- * finished with its response. Not signed in = nothing done, nothing written.
+ * was sent. Started before the route runs, finished with its response. The body is
+ * the one the route read (noteBody): reading it here as well would hold a body
+ * of any size, before anyone has signed in. Not signed in = nothing done, nothing written.
  * A failed write is logged, never the request's failure.
  */
 export function auditStart(request: Request) {
@@ -29,18 +34,11 @@ export function auditStart(request: Request) {
   const action = ACTIONS[request.method];
   if (!url.pathname.startsWith(ADMIN) || !action) return null;
   if (action === 'download' && !DOWNLOAD.test(url.pathname)) return null;
-  const body = request.headers.get('content-type')?.includes('application/json')
-    ? request
-        .clone()
-        .text()
-        .catch(() => null)
-    : null;
-
   return async (response: Response, logger: Logger, requestId: string) => {
     const actor = adminActorOf(request);
     if (!actor) return;
     try {
-      const raw = await body;
+      const raw = bodies.get(request);
       await store().adminAuditLogs.record({
         actorEmail: actor.email,
         actorName: actor.name || null,

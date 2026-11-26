@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, ne, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
 import {
   applicationEducations,
@@ -45,6 +45,7 @@ export interface ApplicationInput {
   availableFrom: string | null;
   websiteUrl: string | null;
   sourceChannel: string | null;
+  submissionId?: string | null;
   educations: Array<{
     level: EducationLevel | null;
     institute: string | null;
@@ -199,6 +200,9 @@ const listColumns = {
   },
 };
 
+/** Rows per query of the CSV export. */
+const EXPORT_BATCH = 1000;
+
 export function createApplicationRepository(db: Database) {
   function conditions(filter: Omit<ApplicationFilter, 'page' | 'pageSize'>, withStage: boolean): SQL | undefined {
     const parts: SQL[] = [live];
@@ -238,8 +242,9 @@ export function createApplicationRepository(db: Database) {
      * application behind, and a retry made a duplicate.)
      *
      * `jobsPk` must come from jobs.openJobPk() — a published job.
+     * `repeated`: this submission was already saved; nothing was written.
      */
-    async create(jobsPk: number, input: ApplicationInput): Promise<{ id: string }> {
+    async create(jobsPk: number, input: ApplicationInput): Promise<{ id: string; repeated: boolean }> {
       return db.transaction(async (tx) => {
         const [row] = await tx
           .insert(applications)
@@ -257,9 +262,18 @@ export function createApplicationRepository(db: Database) {
             websiteUrl: input.websiteUrl,
             sourceChannel: input.sourceChannel,
             termsAcceptedAt: new Date(),
+            submissionId: input.submissionId,
           })
+          .onConflictDoNothing({ target: applications.submissionId })
           .returning({ pk: applications.pk, id: applications.id });
-        const applicationsPk = row!.pk;
+        if (!row) {
+          const [saved] = await tx
+            .select({ id: applications.id })
+            .from(applications)
+            .where(eq(applications.submissionId, input.submissionId!));
+          return { id: saved!.id, repeated: true };
+        }
+        const applicationsPk = row.pk;
 
         if (input.educations.length) {
           await tx.insert(applicationEducations).values(
@@ -295,7 +309,7 @@ export function createApplicationRepository(db: Database) {
         if (input.files.length) {
           await tx.insert(applicationFiles).values(input.files.map((f) => ({ applicationsPk, ...f })));
         }
-        return { id: row!.id };
+        return { id: row.id, repeated: false };
       });
     },
 
@@ -326,21 +340,41 @@ export function createApplicationRepository(db: Database) {
       return { rows, total: totals[0]?.n ?? 0, stageCounts };
     },
 
-    /** Every match, for CSV export — no page and no row cap (the old export stopped at 1000). */
-    async exportRows(filter: Omit<ApplicationFilter, 'page' | 'pageSize'>) {
-      return db
-        .select({
-          ...listColumns,
-          residenceCountry: applications.residenceCountry,
-          address: applications.address,
-          visaRequired: applications.visaRequired,
-          availableFrom: applications.availableFrom,
-          websiteUrl: applications.websiteUrl,
-        })
+    /**
+     * Every match, for CSV export — no page and no row cap (the old export
+     * stopped at 1000), in batches so the rows are never all in memory. The
+     * matching pks are read first, in order: that works for every sort, and a
+     * row added or changed meanwhile moves nothing between batches. Without
+     * the job's title (jobs.titles()).
+     */
+    async *exportRows(filter: Omit<ApplicationFilter, 'page' | 'pageSize'>, batch = EXPORT_BATCH) {
+      const pks = await db
+        .select({ pk: applications.pk })
         .from(applications)
         .innerJoin(jobs, eq(jobs.pk, applications.jobsPk))
         .where(conditions(filter, true))
         .orderBy(...orderOf(filter.sort, filter.dir));
+
+      const { title: _title, ...job } = listColumns.job;
+      for (let i = 0; i < pks.length; i += batch) {
+        const part = pks.slice(i, i + batch).map(({ pk }) => pk);
+        const rows = await db
+          .select({
+            pk: applications.pk,
+            ...listColumns,
+            job,
+            residenceCountry: applications.residenceCountry,
+            address: applications.address,
+            visaRequired: applications.visaRequired,
+            availableFrom: applications.availableFrom,
+            websiteUrl: applications.websiteUrl,
+          })
+          .from(applications)
+          .innerJoin(jobs, eq(jobs.pk, applications.jobsPk))
+          .where(and(live, inArray(applications.pk, part)));
+        const byPk = new Map(rows.map((row) => [row.pk, row]));
+        yield part.flatMap((pk) => byPk.get(pk) ?? []);
+      }
     },
 
     async get(id: string): Promise<ApplicationDetail> {
@@ -503,7 +537,8 @@ export function createApplicationRepository(db: Database) {
     /** The dashboard. Every number is counted in SQL over all rows. */
     async analytics(options: { days: number; timeZone: string }): Promise<Analytics> {
       const { days, timeZone } = options;
-      const appsLive = and(live, ne(jobs.status, 'DELETED'));
+      // The list's predicate: an applicant of a deleted job stays an applicant (jobs.softDelete), everywhere here.
+      const appsLive = live;
 
       const [stageRows, departmentRows, sourceRows, jobRows, dailyRows, publishedRows, emptyRows] = await Promise.all([
         db
@@ -542,10 +577,10 @@ export function createApplicationRepository(db: Database) {
               interval '1 day'
             )::date as day
           )
-          select to_char(d.day, 'YYYY-MM-DD') as date, count(a.pk)::int as count
+          select to_char(d.day, 'YYYY-MM-DD') as date, count(${applications.pk})::int as count
           from days d
-          left join ${applications} a
-            on (a.created_at at time zone ${timeZone})::date = d.day and a.status <> 'DELETED'
+          left join ${applications}
+            on (${applications.createdAt} at time zone ${timeZone})::date = d.day and ${appsLive}
           group by d.day order by d.day
         `) as unknown as Promise<Array<{ date: string; count: number }>>,
         db

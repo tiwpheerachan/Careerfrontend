@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { index, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import type { ApplicationFormAnswers, ApplicationFormSensitive } from '@/lib/application-form/schema';
 import { APPLICATION_FORM_LETTERHEADS } from '@/lib/constants';
 import { lifecycle, timestamps } from './columns';
@@ -42,10 +42,13 @@ export const applicationForms = pgTable(
     /** The applicant's photo (migration 0012), for the form's photo box: object path and type — both or neither. */
     photoPath: text('photo_path'),
     photoType: text('photo_type'),
+    /** The browser's id for this submission (migration 0014): sent again, it is the same form. */
+    submissionId: uuid('submission_id'),
     ...timestamps(),
   },
   (table) => [
     uniqueIndex('application_forms_id_idx').on(table.id),
+    uniqueIndex('application_forms_submission_idx').on(table.submissionId),
     index('application_forms_job_idx').on(table.jobsPk),
     index('application_forms_created_idx').on(table.createdAt.desc()),
     index('application_forms_email_idx').on(sql`lower(${table.email})`),

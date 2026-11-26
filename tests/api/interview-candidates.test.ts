@@ -1,11 +1,14 @@
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import * as resumeRoute from '@/app/api/v1/admin/interview-candidates/[id]/resume/route';
 import * as linkRoute from '@/app/api/v1/admin/interview-candidates/[id]/link/route';
 import * as candidates from '@/app/api/v1/admin/interview-candidates/route';
 import * as evaluations from '@/app/api/v1/admin/interview-evaluations/route';
 import * as submitForm from '@/app/api/v1/application-forms/route';
+import { applicationForms, interviewCandidates } from '@/lib/db/schema';
 import { call, FILES } from '@/tests/support/api';
 import { applicationFormInput } from '@/tests/support/application-form';
+import { testDb } from '@/tests/support/db';
 import { repos } from '@/tests/support/fixtures';
 
 /**
@@ -163,6 +166,56 @@ describe('a candidate added without an application', () => {
     expect(res.status).toBe(409);
     expect(await repos.interviewEvaluations.forCandidate({ kind: 'pending', id })).toHaveLength(1);
     expect((await repos.interviewCandidates.get(id)).linkedTo).toBeNull();
+  });
+
+  it('evaluating the added candidate after linking is a second of the form’s: 409', async () => {
+    const id = await addCandidate();
+    const formId = await aForm();
+    await call(evaluations.POST, { json: evaluation(id) });
+    await call(linkRoute.POST, { params: { id }, json: { applicationFormId: formId } });
+    expect((await call(evaluations.POST, { json: evaluation(id) })).status).toBe(409);
+  });
+
+  it('linking while both are being evaluated: one evaluation, under the form', async () => {
+    const id = await addCandidate();
+    const formId = await aForm();
+    const [pending, direct, link] = await Promise.all([
+      call(evaluations.POST, { json: evaluation(id) }),
+      call(evaluations.POST, { json: { ...evaluation(id), interviewCandidateId: null, applicationFormId: formId } }),
+      call(linkRoute.POST, { params: { id }, json: { applicationFormId: formId } }),
+    ]);
+    const ofForm = await repos.interviewEvaluations.forCandidate({ kind: 'form', id: formId });
+    const ofPending = await repos.interviewEvaluations.forCandidate({ kind: 'pending', id });
+    if (link.status === 200) {
+      expect([pending.status, direct.status].sort()).toEqual([201, 409]);
+      expect([ofForm.length, ofPending.length]).toEqual([1, 0]);
+    } else {
+      // Both were in first: linking would make two, so it is refused and nothing moves.
+      expect([pending.status, direct.status, link.status]).toEqual([201, 201, 409]);
+      expect([ofForm.length, ofPending.length]).toEqual([1, 1]);
+    }
+  });
+
+  it('an evaluation waits for a link in progress, then goes with the form', async () => {
+    const id = await addCandidate();
+    const formId = await aForm();
+    await call(evaluations.POST, {
+      json: { ...evaluation(id), interviewCandidateId: null, applicationFormId: formId },
+    });
+    let saving!: Promise<Awaited<ReturnType<typeof call>>>;
+    // link()'s writes, held open while the evaluation is sent.
+    await testDb.transaction(async (tx) => {
+      const [c] = await tx.select().from(interviewCandidates).where(eq(interviewCandidates.id, id)).for('update');
+      const [form] = await tx.select().from(applicationForms).where(eq(applicationForms.id, formId)).for('update');
+      saving = call(evaluations.POST, { json: evaluation(id) });
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await tx
+        .update(interviewCandidates)
+        .set({ linkedApplicationFormsPk: form!.pk, linkedAt: new Date(), linkedBy: 'hr' })
+        .where(eq(interviewCandidates.pk, c!.pk));
+    });
+    expect((await saving).status).toBe(409);
+    expect(await repos.interviewEvaluations.forCandidate({ kind: 'form', id: formId })).toHaveLength(1);
   });
 
   it('400 for linking to nothing, to both, or to a form that is not there', async () => {

@@ -7,6 +7,7 @@ import { AboutStory } from '@/components/about/about-story';
 import { BgSection } from '@/components/about/bg-section';
 import { MissionVision } from '@/components/about/mission-vision';
 import { WhoWeAre } from '@/components/about/who-we-are';
+import { ClientMessages } from '@/lib/i18n/client-messages';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -33,18 +34,20 @@ export default async function AboutPage({ params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <BgSection bgSrc="/videos/about/x50-ultra-banner.webp" className="pb-4">
-        <AboutHero />
-      </BgSection>
+    <ClientMessages use={['about.hero', 'about.journey']}>
+      <div className="min-h-screen bg-white text-slate-900">
+        <BgSection bgSrc="/videos/about/x50-ultra-banner.webp" className="pb-4">
+          <AboutHero />
+        </BgSection>
 
-      <AboutStory />
-      <MissionVision />
-      <WhoWeAre />
-      <AboutJourney />
-      <AboutAwards />
+        <AboutStory />
+        <MissionVision />
+        <WhoWeAre />
+        <AboutJourney />
+        <AboutAwards />
 
-      <div className="h-10" />
-    </div>
+        <div className="h-10" />
+      </div>
+    </ClientMessages>
   );
 }

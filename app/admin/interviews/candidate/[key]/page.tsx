@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { cache } from 'react';
 import { ResultScore, ResultVerdict, ScoreFormula } from '@/components/admin/interviews/candidate-result';
 import { InvitationsPanel } from '@/components/admin/interviews/invitations-panel';
 import { PendingCandidatePanel } from '@/components/admin/interviews/pending-candidate-panel';
@@ -55,8 +56,8 @@ const pageOf = <T,>(rows: T[], { page, pageSize }: { page: number; pageSize: num
 
 type Props = PageProps<'/admin/interviews/candidate/[key]'>;
 
-/** Who the key is, and everything about them — or a 404. */
-async function load(rawKey: string) {
+/** Who the key is, and everything about them — or a 404. Once per request, shared by generateMetadata and the page. */
+const load = cache(async (rawKey: string) => {
   const key = decodeURIComponent(rawKey);
   const ref = parseCandidateKey(key);
   if (!ref) notFound();
@@ -92,7 +93,7 @@ async function load(rawKey: string) {
     invitations[0]?.candidate;
   if (!who) notFound();
   return { key, ref, evaluations, invitations, who, pending };
-}
+});
 
 export async function generateMetadata({ params }: Props) {
   await requireAdminPage({ resource: 'applications', level: 'view' });

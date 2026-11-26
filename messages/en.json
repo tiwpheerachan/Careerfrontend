@@ -1285,6 +1285,7 @@
       "stepHasErrors": "Some fields need fixing before you go on",
       "rateLimited": "Too many attempts — please try again shortly",
       "failed": "Could not send — please try again",
+      "unavailable": "The system is busy. What you filled in is kept — please try again shortly",
       "network": "No connection — check your internet and try again",
       "verify": "Please confirm you are not a robot",
       "choose": "Please choose one",

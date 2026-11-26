@@ -219,6 +219,16 @@ function needsChinese(ctx: Ctx): boolean {
   });
 }
 
+/** Each character's advance in ems, per font: laying one out is slow, and a form repeats the same few hundred. */
+const advances = new WeakMap<fontkit.Font, Map<string, number>>();
+function advanceOf(face: fontkit.Font, char: string): number {
+  let known = advances.get(face);
+  if (!known) advances.set(face, (known = new Map()));
+  let advance = known.get(char);
+  if (advance === undefined) known.set(char, (advance = face.layout(char).advanceWidth / face.unitsPerEm));
+  return advance;
+}
+
 /** The width of a string at a size, as react-pdf will draw it (Sarabun, Noto SC for what Sarabun lacks). */
 function widthAt(size: number, bold = false) {
   const f = loadedFonts();
@@ -227,7 +237,7 @@ function widthAt(size: number, bold = false) {
     let width = 0;
     for (const char of text) {
       const face = latin.hasGlyphForCodePoint(char.codePointAt(0)!) ? latin : (chineseFont() ?? latin);
-      width += (face.layout(char).advanceWidth / face.unitsPerEm) * size;
+      width += advanceOf(face, char) * size;
     }
     return width;
   };

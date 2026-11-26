@@ -141,6 +141,7 @@ export async function exchange(code: string, config: SsoCredentials): Promise<Id
         client_secret: config.clientSecret,
       }),
       cache: 'no-store',
+      signal: AbortSignal.timeout(8000),
     });
   } catch (cause) {
     throw new SsoError('unavailable', `Could not reach the login service: ${String(cause)}`);

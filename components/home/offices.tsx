@@ -267,6 +267,7 @@ export function Offices({ jobs }: { jobs: HomeJob[] }) {
                               return (
                                 <Link
                                   key={job.code}
+                                  prefetch={false}
                                   href={`/jobs/${job.code}`}
                                   className={cx(
                                     'group min-w-0 rounded-2xl border border-white/60 bg-white/40 p-4 backdrop-blur-xl',

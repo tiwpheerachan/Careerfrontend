@@ -18,7 +18,7 @@ export interface ObjectStore {
   /** Removes objects; used to clean up after a failed application. Missing ones are ignored. */
   remove(paths: string[]): Promise<void>;
   /** The object as it arrives, for a download: never whole in memory. NotFoundError when it is gone. */
-  open(path: string): Promise<{ body: BodyInit; size: number | null }>;
+  open(path: string): Promise<BodyInit>;
   /** The object's bytes (a photo drawn into a PDF). NotFoundError when it is gone. */
   read(path: string): Promise<Uint8Array>;
   /** Moves an object to a new path, in storage (no download). NotFoundError when `from` is not there. */
@@ -50,7 +50,7 @@ export async function fileResponse(
   file: { path: string; name: string; type: string },
   disposition: 'inline' | 'attachment',
 ): Promise<Response> {
-  const { body, size } = await objectStore().open(file.path);
+  const body = await objectStore().open(file.path);
   // The path's extension is the sniffed type; the uploader's name may not end in it ("cv.pdf?"),
   // and a download without it is a file the OS will not open.
   const ext = `.${file.path.split('.').pop()}`;
@@ -58,7 +58,6 @@ export async function fileResponse(
   return new Response(body, {
     headers: {
       'content-type': file.type,
-      ...(size === null ? {} : { 'content-length': String(size) }),
       // RFC 5987 so a Thai file name survives.
       'content-disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(name)}`,
       'cache-control': 'private, no-store',

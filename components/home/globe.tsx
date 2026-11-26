@@ -6,6 +6,7 @@ import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState,
 import * as THREE from 'three';
 import { flagOf } from '@/lib/countries';
 import { cx } from '@/lib/cx';
+import imageLoader from '@/lib/image-loader';
 import type { Office } from './offices-data';
 import { useReducedMotion } from './use-reduced-motion';
 
@@ -19,8 +20,9 @@ import { useReducedMotion } from './use-reduced-motion';
  */
 
 const RADIUS = 0.85;
-const EARTH_DAY = '/images/offices/globe/earth_day.jpg';
-const EARTH_NIGHT = '/images/offices/globe/earth_night.jpg';
+// The originals are at most 1000 wide: this is their full size, as WebP.
+const EARTH_DAY = imageLoader({ src: '/images/offices/globe/earth_day.jpg', width: 1290 });
+const EARTH_NIGHT = imageLoader({ src: '/images/offices/globe/earth_night.jpg', width: 1290 });
 
 function latLngToVec3(lat: number, lng: number, radius: number) {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -330,7 +332,9 @@ export default function Globe({ offices, labels, activeCode, onSelect, loadingLa
   return (
     <div ref={boxRef} className="relative h-full w-full">
       <R3FErrorBoundary onError={onError}>
+        {/* touch-pan-y!: OrbitControls sets touch-action none here, and a finger on the globe could not scroll the page. */}
         <Canvas
+          className="touch-pan-y!"
           camera={{ position: [0, 0, 3.05], fov: 42 }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
