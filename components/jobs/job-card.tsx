@@ -20,6 +20,7 @@ export function JobCard({ job, locale }: { job: PublicJob; locale: Locale }) {
 
   return (
     <Link
+      prefetch={false}
       href={`/jobs/${encodeURIComponent(job.code)}`}
       className={[
         'group relative block w-full',

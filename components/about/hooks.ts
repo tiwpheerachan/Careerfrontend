@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore, type RefObject } from 'react';
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
@@ -41,16 +41,33 @@ export function useCountTo(target: number, ms = 820): number {
   return reduced ? target : value;
 }
 
-/** Alternates between true and false every `intervalMs` (stays true with reduced motion). */
-export function useAlternate(intervalMs: number): boolean {
+/** True while the element is in, or within 200px of, the viewport. False on the server. */
+export function useOnScreen(ref: RefObject<Element | null>): boolean {
+  const [onScreen, setOnScreen] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => setOnScreen(entries.at(-1)?.isIntersecting ?? false), {
+      rootMargin: '200px 0px',
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref]);
+
+  return onScreen;
+}
+
+/** Alternates between true and false every `intervalMs` while `active` (stays true with reduced motion). */
+export function useAlternate(intervalMs: number, active: boolean): boolean {
   const reduced = usePrefersReducedMotion();
   const [on, setOn] = useState(true);
 
   useEffect(() => {
-    if (reduced) return;
+    if (reduced || !active) return;
     const timer = window.setInterval(() => setOn((v) => !v), intervalMs);
     return () => window.clearInterval(timer);
-  }, [intervalMs, reduced]);
+  }, [intervalMs, active, reduced]);
 
   return reduced || on;
 }

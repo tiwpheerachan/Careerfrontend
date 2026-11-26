@@ -116,7 +116,7 @@ export function StoryFlow({
                   a={images.step1[0]}
                   b={images.step1[1]}
                   intervalMs={4200}
-                  sizes="(min-width: 1024px) 260px, 100vw"
+                  sizes="(min-width: 1024px) 260px, calc(100vw - 68px)"
                   className={cx(flipBox, 'h-[200px] sm:h-[220px] lg:h-[190px]')}
                 >
                   <div className="relative h-full w-full" />
@@ -132,7 +132,7 @@ export function StoryFlow({
                   a={images.step2[0]}
                   b={images.step2[1]}
                   intervalMs={4500}
-                  sizes="(min-width: 1024px) 210px, 100vw"
+                  sizes="(min-width: 1024px) 210px, calc(100vw - 68px)"
                   className={cx(flipBox, 'h-[200px] sm:h-[240px] lg:h-[210px]')}
                 >
                   <div className="relative h-full w-full" />
@@ -151,7 +151,7 @@ export function StoryFlow({
               a={images.wide[0]}
               b={images.wide[1]}
               intervalMs={4800}
-              sizes="(min-width: 1180px) 600px, (min-width: 1024px) 55vw, 100vw"
+              sizes="(min-width: 1180px) 600px, (min-width: 1024px) 55vw, calc(100vw - 68px)"
               className={cx(flipBox, 'h-[140px] sm:h-[160px]')}
             >
               <div className="relative h-full w-full" />
